@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     ////////////////////////////////////////////////////////////////////////////////
+     //
+     // Copyright (c) 2010 ESRI
+     //
+     // All rights reserved under the copyright laws of the United States.
+     // You may freely redistribute and use this software, with or
+     // without modification, provided you include the original copyright
+     // and use restrictions.  See use restrictions in the file:
+     // <install location>/License.txt
+     //
+     ////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:viewer="com.esri.viewer.*"
+                   creationComplete="init()"
+                   implements=
+				   "com.esri.viewer.IInfowindowTemplate, com.esri.ags.components.supportClasses.IGraphicRenderer">
+
+    <fx:Script>
+        <![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+            private var _graphic:Graphic;
+
+            //private var _infoData:Object;
+            //set info parameters
+            [Bindable]
+            private var _content:String = "";
+
+            [Bindable]
+            private var _title:String = "";
+
+            private var _infoClass:Class;
+
+            public function set infoClass(value:Class):void
+            {
+                _infoClass = value;
+            }
+
+            public function get infoClass():Class
+            {
+                return _infoClass;
+            }
+
+            private function init():void
+            {
+				this.removeEventListener(FlexEvent.CREATION_COMPLETE, init);
+				this.addEventListener(FlexEvent.DATA_CHANGE, setInfoParameters);
+                infoClass = InfoPopupWidget;
+                setInfoParameters(null);
+            }
+
+            public function set graphic(value:Graphic):void
+            {
+                _graphic = value;
+            }
+
+            public function set infoConfig(value:XML):void
+            {
+
+            }
+
+            private function setInfoParameters(event:FlexEvent):void
+            {
+                if (data == null)
+                {
+                    return;
+                }
+
+                _title = data.title || "";
+                _content = data.content;
+
+                if (_content)
+                {
+                    infoContent.visible = true;
+                }
+
+                //clear picture and link button
+                infoImage.source = "";
+                infoImage.visible = false;
+                infoImage.includeInLayout = false;
+                infoLink.visible = false;
+                infoLink.includeInLayout = false;
+
+                if (data.link)
+                {
+                    var link:String = data.link as String;
+                    var pos:Number = link.length - 4;
+                    var sfx:String = link.substr(pos, 4).toLowerCase();
+                    if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif"))
+                    {
+                        infoImage.source = link;
+                        infoImage.visible = true;
+                        infoImage.includeInLayout = true;
+                    }
+                    else
+                    {
+                        infoLink.text = link;
+                        infoLink.visible = true;
+                        infoLink.includeInLayout = true;
+                    }
+                }
+				
+				//buttons
+				for ( var i:uint = 0; i < tlButtons.numChildren; i++ ) {
+					var btn:Button = tlButtons.getChildAt( i ) as Button;
+					btn.visible = false;
+					btn.includeInLayout = false;
+				}
+				
+				var buttonArray:Array = data.buttons;
+				if ( buttonArray && buttonArray.length > 0 ) {
+					tlButtons.visible = true;
+					tlButtons.includeInLayout = true;
+					
+					for ( i = 0; i < buttonArray.length; i++ ) {
+						var buttonLabel:String = buttonArray[i].label;
+						for ( var j:uint = 0; j < tlButtons.numChildren; j ++ ) {
+							btn = tlButtons.getChildAt( j ) as Button;
+							if ( btn.label == buttonLabel ) {
+								btn.visible = true;
+								btn.includeInLayout = true;
+								btn.enabled = ( data.id && data.id != "" );
+								break;
+							}
+						}
+						btnCamera.enabled = ( data.id && data.id != "" );
+					}
+				} else {
+					tlButtons.visible = false;
+					tlButtons.includeInLayout = false;
+				}
+            }
+
+            //show link
+            private function showLink():void
+            {
+                navigateToURL(new URLRequest(data.link));
+            }
+			
+			private function openDevice( type:String, id:String, desc:String = "" ):void {
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", params: [ type, id, desc ] } );
+			}
+			
+			private function openDeviceMouseClick( event:MouseEvent ):void {
+				openDevice( data.type, data.id, data.title );
+			}
+
+			private function btnCallPerson_clickHandler(event:MouseEvent):void {
+				var param:String = this.data.policeInfo.PoliceId + "," + this.data.policeInfo.PoliceGpsCode;
+				openDevice( "callPerson", param );
+//				ExternalInterface.call( "openDevice", "callPerson", param );
+			}
+
+			private function btnRefreshPerson_clickHandler(event:MouseEvent):void{
+				var param:String = this.data.policeInfo.PoliceId+ "," + this.data.policeInfo.PoliceGpsCode;
+				openDevice( "callPerson", param );
+			}
+
+			protected function btnCallTeam_clickHandler(event:MouseEvent):void {
+				var param:String = this.data.policeInfo.TeamId + "," + this.data.policeInfo.TeamGpsCode;
+				openDevice( "callTeam", param );
+//				ExternalInterface.call( "openDevice", "callTeam", param );
+			}
+
+
+			protected function btnSentryDesc_clickHandler(event:MouseEvent):void {
+				ExternalInterface.call( "viewSentry", this.data.id );
+			}
+			
+		]]>
+    </fx:Script>
+
+    <s:Group id="infoCanvas"
+             width="210"
+             minHeight="30">
+        <s:layout>
+            <s:VerticalLayout gap="0"
+                              horizontalAlign="left"
+                              paddingBottom="4"
+                              paddingLeft="4"
+                              paddingRight="4"
+                              paddingTop="0"
+                              verticalAlign="middle"/>
+        </s:layout>
+        <s:Label id="infoTitle"
+                            width="100%"
+                            text="{_title}"
+                            visible="false"/>
+		<mx:HRule width="100%" strokeWidth="2" strokeColor="0" />
+        <mx:Text id="infoContent" fontSize="14"
+                            width="100%" 
+							htmlText="{_content}"
+                            visible="false"/>
+        <mx:Image id="infoImage"
+                  height="150"
+                  buttonMode="true"
+                  click="showLink()"
+                  includeInLayout="false"
+                  maxWidth="{infoCanvas.width - 10}"
+                  useHandCursor="true"
+                  visible="false"/>
+        <s:Label id="infoLink"
+                 width="100%"
+                 click="showLink()"
+                 includeInLayout="false"
+                 maxDisplayedLines="1"
+                 showTruncationTip="true"
+                 textDecoration="underline"
+                 visible="false"/>
+		<s:TileGroup id="tlButtons" 
+					 width="100%" 
+					 direction="ltr" horizontalGap="5" verticalGap="5" fontSize="12">
+			<s:Button id="btnCamera" label="视频" width="100" toolTip="实时视频" 
+					  visible="false" includeInLayout="false"
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnQbb" label="诱导板" width="100" 
+					  visible="false" includeInLayout="false"
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnDzjc" label="电子警察" width="100" 
+					  visible="false" includeInLayout="false"
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnVdt" label="车检器" width="100" 
+					  visible="false" includeInLayout="false"
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnXhj" label="信号机" width="100" 
+					  visible="false" includeInLayout="false"
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnCallPerson" label="单呼" width="80" toolTip="呼叫警员" 
+					  visible="false" includeInLayout="false" 
+					  click="btnCallPerson_clickHandler(event)"/>
+			<s:Button id="btnRefreshPerson" label="单刷" width="80" toolTip="刷新警员" 
+					  visible="false" includeInLayout="false" 
+					  click="btnRefreshPerson_clickHandler(event)"/>
+			<s:Button id="btnCallTeam" label="组呼" width="80" toolTip="呼叫小组" 
+					  visible="false" includeInLayout="false" 
+					  click="btnCallTeam_clickHandler(event)"/>
+			<s:Button id="btnSentryDesc" label="岗点详情" width="80" 
+					  visible="false" includeInLayout="false" 
+					  click="btnSentryDesc_clickHandler(event)"/>
+			<s:Button id="btnDescInfo" label="详细信息" width="80" 
+					  visible="false" includeInLayout="false" 
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnYP" label="查看" width="100" 
+					  visible="false" includeInLayout="false" 
+					  click="openDeviceMouseClick(event)"/>
+			<s:Button id="btnFbdState" label="状态发布" width="80" toolTip="发布段人工状态" 
+					  visible="false" includeInLayout="false" 
+					  click="openDeviceMouseClick(event)"/>
+		</s:TileGroup>
+    </s:Group>
+
+</viewer:BaseWidget>

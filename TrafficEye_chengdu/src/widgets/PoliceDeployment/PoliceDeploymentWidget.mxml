@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   layout="absolute" 
+				   widgetConfigLoaded="configLoad()" 
+				   creationComplete="basewidget1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<mx:DateFormatter id="df" formatString="YYYY-MM-DD"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import widgets.PoliceDeployment.PoliceDeployClass.Assistant;
+			import widgets.PoliceDeployment.PoliceDeployClass.Car;
+			import widgets.PoliceDeployment.PoliceDeployClass.Detachment;
+			import widgets.PoliceDeployment.PoliceDeployClass.Police;
+			import widgets.PoliceDeployment.PoliceDeployClass.SentryPoint;
+			import widgets.PoliceDeployment.PoliceDeployClass.Shift;
+			import widgets.Query.QueryResult;
+			
+			private var _detachmentList:Vector.<Detachment> = new Vector.<Detachment>;
+			private var _shiftList:Vector.<Shift> = new Vector.<Shift>;
+			private var _carList:Vector.<Car> = new Vector.<Car>;
+			private var _policeList:Vector.<Police> = new Vector.<Police>;
+			private var _assistantList:Vector.<Assistant> = new Vector.<Assistant>;
+			private var _sentryList:Vector.<SentryPoint> = new Vector.<SentryPoint>;
+			
+			private var _refreshRate:uint;
+			
+			private var _enableRemote:Boolean;
+			private var _dest:String;
+			private var _endpoint:String;
+			
+			private var _sentryLayer:GraphicsLayer;
+			
+			//当前查询的日期
+			private var _queryDate:String = "";
+			
+			private function getSentry( sentryId:String ):SentryPoint {
+				var sentry:SentryPoint = null;
+				for each ( var obj:SentryPoint in _sentryList ) {
+					if ( obj.sentryId == sentryId ) {
+						sentry = obj;
+						break;
+					}
+				}
+				return sentry;
+			}
+			
+			private function getPolice( policeNum:String ):Police {
+				var police:Police = null;
+				for each ( var obj:Police in _policeList ) {
+					if ( obj.policeNum == policeNum ) {
+						police = obj;
+						break;
+					}
+				}
+				return police;
+			}
+			
+			private function getAssistant( policeNum:String ):Assistant {
+				var assistant:Assistant = null;
+				for each ( var obj:Assistant in _assistantList ) {
+					if ( obj.policeNum == policeNum ) {
+						assistant = obj;
+						break;
+					}
+				}
+				return assistant;
+			}
+			
+			private function configLoad():void {
+				_sentryLayer = new GraphicsLayer();
+//				_sentryLayer.alpha = 0;
+				map.addLayer( _sentryLayer );
+				
+				if ( configXML ) {
+					var infoUrl:String =  configXML.info; 
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};				
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					_enableRemote = configXML.remoteobj.enable == "true" ? true : false ;
+					if ( _enableRemote ) {
+						_dest = configXML.remoteobj.destination;
+						_endpoint = configXML.remoteobj.endpoint;
+						loadBaseInfo();
+						ExternalInterface.addCallback( "refreshSentry", loadSentryInfo );
+					}
+					
+					//查询今日的部署
+					_queryDate = df.format( new Date );
+					getDeployment( _queryDate );
+				}
+			}
+			
+			//载入人员信息
+			private function loadBaseInfo():void {
+				//载入岗点信息
+				loadSentryInfo();
+				
+				//载入中队信息
+				var detachmentRemote:RemoteObject = new RemoteObject( _dest );
+				detachmentRemote.endpoint = _endpoint;
+				detachmentRemote.requestTimeout = 0;
+				detachmentRemote.addEventListener( ResultEvent.RESULT, loadDetachment );
+				detachmentRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				detachmentRemote.getDetachmentList();
+				
+				function loadDetachment( event:ResultEvent ):void {
+					_detachmentList.length = 0;
+					
+					var detachmentAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < detachmentAC.length; i++ ) {
+						var detachment:Detachment = new Detachment();
+						detachment.detachmentName = detachmentAC[i].detachmentName;
+						detachment.detachmentId = detachmentAC[i].detachmentId;
+						
+						_detachmentList.push( detachment );
+					}
+				}
+				
+				//载入排班信息
+				var shiftRemote:RemoteObject = new RemoteObject( _dest );
+				shiftRemote.endpoint = _endpoint;
+				shiftRemote.requestTimeout = 0;
+				shiftRemote.addEventListener( ResultEvent.RESULT, loadShift );
+				shiftRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				shiftRemote.getShiftList();
+				
+				function loadShift( event:ResultEvent ):void {
+					_shiftList.length = 0;
+					
+					var shiftAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < shiftAC.length; i++ ) {
+						var shift:Shift = new Shift();
+						shift.shiftName = shiftAC[i].shiftName;
+						shift.shiftId = shiftAC[i].shiftId;
+						shift.detachmentId = shiftAC[i].detachmentId
+							
+							_shiftList.push( shift );
+					}
+				}
+				
+				//载入警员信息
+				var policeRemote:RemoteObject = new RemoteObject( _dest );
+				policeRemote.endpoint = _endpoint;
+				policeRemote.requestTimeout = 0;
+				policeRemote.addEventListener( ResultEvent.RESULT, loadPolice );
+				policeRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				policeRemote.getPoliceList();
+				
+				function loadPolice( event:ResultEvent ):void {
+					_policeList.length = 0;
+					
+					var policeAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < policeAC.length; i++ ) {
+						var police:Police = new Police();
+						police.name = policeAC[i].name;
+						police.policeNum = policeAC[i].policeNum;
+						police.callNum = policeAC[i].callNum;
+						police.virtualNum = policeAC[i].virtualNum;
+						police.homeNum = policeAC[i].homeNum;
+						police.internalNum = policeAC[i].internalNum;
+						police.carLicense = policeAC[i].carLicense;
+						police.shiftId = policeAC[i].shiftId;
+						police.duty = policeAC[i].duty;
+						
+						_policeList.push( police );
+					}
+				}
+				
+				//载入协警信息
+				var assistantRemote:RemoteObject = new RemoteObject( _dest );
+				assistantRemote.endpoint = _endpoint;
+				assistantRemote.requestTimeout = 0;
+				assistantRemote.addEventListener( ResultEvent.RESULT, loadAssistant );
+				assistantRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				assistantRemote.getAssistantList();
+				
+				function loadAssistant( event:ResultEvent ):void {
+					_assistantList.length = 0;
+					
+					var assistantAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < assistantAC.length; i++ ) {
+						var assistant:Assistant = new Assistant();
+						assistant.name = assistantAC[i].name;
+						assistant.policeNum = assistantAC[i].policeNum;
+						assistant.callNum = assistantAC[i].callNum;
+						assistant.virtualNum = assistantAC[i].virtualNum;
+						assistant.homeNum = assistantAC[i].homeNum;
+						assistant.carLicense = assistantAC[i].carLicense;
+						assistant.shiftId = assistantAC[i].shiftId;
+						assistant.duty = assistantAC[i].duty;
+						
+						_assistantList.push( assistant );
+					}
+				}
+			}
+			
+			//请求某天的警力部署
+			private function getDeployment( date:String ):void {
+				var policeRemote:RemoteObject = new RemoteObject( _dest );
+				policeRemote.endpoint = _endpoint;
+				policeRemote.requestTimeout = 0;
+				policeRemote.addEventListener( ResultEvent.RESULT, setPolice );
+				policeRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				policeRemote.getPoliceDeployment( date );
+				
+				var assistantRemote:RemoteObject = new RemoteObject( _dest );
+				assistantRemote.endpoint = _endpoint;
+				assistantRemote.addEventListener( ResultEvent.RESULT, setAssistant );
+				assistantRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				assistantRemote.getAssistantDeployment( date );
+				
+				function setPolice( event:ResultEvent ):void {
+					var policeDeployAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < policeDeployAC.length; i++ ) {
+						var sentryId:String = policeDeployAC[i].sentryId;
+						var policeList:ArrayCollection = policeDeployAC[i].policeList;
+						
+						var sentry:SentryPoint = getSentry( sentryId );
+						if ( !sentry )
+							continue;
+						
+						sentry.policeList.length = 0;
+						
+						for ( var j:uint = 0; j < policeList.length; j++ ) {
+							var policeNum:String = policeList[j] as String;
+							var police:Police = getPolice( policeNum );
+							if ( police )
+								sentry.policeList.push( police );
+						}
+					}
+					
+					updateContent();
+				}
+				
+				function setAssistant( event:ResultEvent ):void {
+					var assistantDeployAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < assistantDeployAC.length; i++ ) {
+						var sentryId:String = assistantDeployAC[i].sentryId;
+						var assistantList:ArrayCollection = assistantDeployAC[i].policeList;
+						
+						var sentry:SentryPoint = getSentry( sentryId );
+						if ( !sentry )
+							continue;
+						
+						sentry.assistantList.length = 0;
+						
+						for ( var j:uint = 0; j < assistantList.length; j++ ) {
+							var policeNum:String = assistantList[j] as String;
+							var assistant:Assistant = getAssistant( policeNum );
+							if ( assistant )
+								sentry.assistantList.push( assistant );
+						}
+					}
+					
+					updateContent();
+				}
+			}
+			
+			private function remoteFaultHandler( event:FaultEvent ):void {
+				var strInfo: String = "Error: "
+				strInfo += "Event Target: " + event.target + "\n\n";
+				strInfo += "Event Type: " + event.type + "\n\n";
+				strInfo += "Fault Code: " + event.fault.faultCode + "\n\n";
+				strInfo += "Fault Info: " + event.fault.faultString;
+//				showError( strInfo );
+			}
+			
+			//从RemoteObject载入岗点信息
+			private var sentrySymbol:PictureMarkerSymbol = new PictureMarkerSymbol( "assets/images/i_policestation.png" );
+			private function loadSentryInfo():void {
+				_sentryLayer.clear();
+				_sentryList.length = 0;
+				
+				var sentryRemote:RemoteObject = new RemoteObject( _dest );
+				sentryRemote.endpoint = _endpoint;
+				sentryRemote.requestTimeout = 0;
+				sentryRemote.addEventListener( ResultEvent.RESULT, setSentry );
+				sentryRemote.addEventListener( FaultEvent.FAULT, remoteFaultHandler );
+				sentryRemote.getSentry();
+				
+				function setSentry( event:ResultEvent ):void {
+					
+					
+					var sentryAC:ArrayCollection = event.result as ArrayCollection;
+					for ( var i:uint = 0; i < sentryAC.length; i++ ) {
+						var sentryId:String = sentryAC[i].sentryId;
+						var sentryName:String = sentryAC[i].name;
+						var x:Number = sentryAC[i].x;
+						var y:Number = sentryAC[i].y;
+						var sentryPoint:MapPoint = new MapPoint( x, y );
+						var gra:Graphic = new Graphic( sentryPoint, sentrySymbol );
+						var button:Object = {
+							label:"岗点详情"
+						}
+						var buttons:Array = [];
+						buttons.push( button );
+						
+						var queryResult:QueryResult = new QueryResult();
+						queryResult.title = sentryName;
+						queryResult.id = sentryId;
+						queryResult.point = sentryPoint;
+						queryResult.geometry = gra.geometry;
+						queryResult.buttons = buttons;
+						gra.attributes = queryResult;
+						
+						gra.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+						gra.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+						if ( queryResult.point && !isNaN( queryResult.point.x ) && !isNaN( queryResult.point.y ) ) {
+							_sentryLayer.add( gra );
+						}
+						
+						var sentry:SentryPoint = new SentryPoint();
+						sentry.sentryId = sentryId;
+						sentry.sentryName = sentryName;
+						_sentryList.push( sentry );
+					}
+				}
+			}
+			
+			//从图层中载入岗点图层信息
+			/* private function loadSentryPointInfo():void {
+				var sentryLayerUrl:String = configXML.layer.url;
+				sentryLayerUrl= sentryLayerUrl.replace( "[serverip]", configData.serverIp );
+				var nameField:String = configXML.layer.namefield;
+				var idField:String = configXML.layer.idfield;
+				
+				var queryTask:QueryTask = new QueryTask( sentryLayerUrl );
+				queryTask.useAMF = false;
+				var query:Query = new Query();
+				query.outFields = [ "*" ];
+				query.returnGeometry = true;
+				query.where = "1=1";
+				queryTask.execute( query, new AsyncResponder( onResult, onFault ) );
+				
+				function onResult( featureSet:FeatureSet, token:Object = null ):void {
+					var name:String = "";
+					var id:String = "";
+					var content:String = "";
+					_sentryPointList.length = 0;
+					
+					for each ( var gra:Graphic in featureSet.features ) {
+						for ( var fieldName:String in gra.attributes ) {
+							var value:String = gra.attributes[ fieldName ] ? String( gra.attributes[ fieldName ] ) : "";
+							
+							if ( fieldName.toUpperCase() == idField.toUpperCase() )
+								id = value;
+							if ( fieldName.toUpperCase() == nameField.toUpperCase() ) 
+								name = value;
+						}
+						
+						
+						var queryResult:QueryResult = new QueryResult();
+						queryResult.title = name;
+						queryResult.id = id;
+						queryResult.content = content;
+						queryResult.point = gra.geometry as MapPoint;
+						queryResult.geometry = gra.geometry;
+						gra.attributes = queryResult;			
+						gra.addEventListener( MouseEvent.ROLL_OVER, mouseClickGraphic );
+						
+						if ( queryResult.point && !isNaN( queryResult.point.x ) && !isNaN( queryResult.point.y ) ) {
+							_sentryLayer.add( gra );
+						}
+						
+						var sentry:SentryPoint = new SentryPoint();
+						sentry.sentryId = id;
+						sentry.sentryName = name;
+						_sentryPointList.push( sentry );
+					}
+				}
+				
+				function onFault( info:Object, token:Object = null ):void {
+					Alert.show( info.toString() );
+				}
+			} */
+			
+			//更新岗点的警力信息
+			private function updateContent():void {
+				for each ( var gra:Graphic in _sentryLayer.graphicProvider ) {
+					var queryResult:QueryResult = gra.attributes as QueryResult;
+					var id:String = queryResult.id;
+					var sentry:SentryPoint = getSentry( id );
+					if ( !sentry )
+						continue;
+					
+					var content:String = "<b>日期：</b>" + _queryDate + "\n<b>民警：</b>\n";
+					for each ( var police:Police in sentry.policeList ) {
+						content += police.name + "\t" + police.callNum + "\t" + police.internalNum + "\n";
+					}
+					
+					
+					queryResult.content = content;
+				}
+			}
+			
+			//mouse over graphic
+			private function mouseOverGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				showInfoWindow( gra.attributes );
+			}
+			
+			//mouse click graphic
+			private function mouseClickGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				var result:QueryResult = gra.attributes as QueryResult;
+				var id:String = result.id;
+				ExternalInterface.call( "viewSentry", id );
+			}
+			
+			override public function showInfoWindow( infoData:Object ):void {
+				if ( infoData ) {
+					map.infoWindow.data = infoData;
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private var timer:Timer;
+			
+			private function createAndStartWidgetTimer():void {
+				if ( _refreshRate && _refreshRate > 0 && !timer ) {
+					if ( !timer ) {
+						timer = new Timer( _refreshRate * 1000 );
+						timer.addEventListener( TimerEvent.TIMER, timerTick );
+					}
+					timer.start();
+				}
+			}
+			
+			//stop widget timer
+			private function stopWidgetTimer():void {
+				if ( timer && timer.running ) {
+					timer.stop();
+				}
+			}
+			
+			//start widget timer
+			private function startWidgetTimer():void {
+				if ( timer && !timer.running ) {
+					timer.start();
+				}
+			}
+			
+			//定时刷新
+			private function timerTick( event:TimerEvent ):void {
+				
+			}
+			
+			private function mapClickHandler( event:MapMouseEvent ):void {
+				var pt:MapPoint = event.mapPoint;
+				ExternalInterface.call( "addSentry", pt.x, pt.y );
+			}
+
+			protected function basewidget1_creationCompleteHandler(event:FlexEvent):void {
+				var today:Date = new Date();
+				var tomorrow:Date = new Date( today.fullYear, today.month, today.date + 1 );
+				dateChooser.selectedDate = today;
+				dateChooser.disabledRanges = [ { rangeStart: tomorrow } ];
+			}
+
+			protected function btnQuery_clickHandler(event:MouseEvent):void {
+				_queryDate = df.format( dateChooser.selectedDate );
+				getDeployment( _queryDate );
+			}
+
+
+			protected function btnReload_clickHandler(event:MouseEvent):void {
+				loadBaseInfo();
+			}
+
+			[Bindable][Embed(source="assets/images/cross_cursor.png")] 
+			private var crossCursor:Class;
+			private var cursorID:int;
+			private var isAdd:Boolean = false;
+			
+			protected function btnAddSentry_clickHandler(event:MouseEvent):void {
+				if ( !isAdd ) {
+					cursorID = CursorManager.setCursor( crossCursor, 2, -5, -5 );
+					map.addEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+					btnAddSentry.label = "完成新增";
+					isAdd = true;
+				}
+				else {
+					CursorManager.removeCursor( cursorID );
+					map.removeEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+					btnAddSentry.label = "新增岗点";
+					isAdd = false;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<viewer:WidgetTemplate  id="wTemplate" height="300" width="250" 
+							enableCloseButton="false" enableMinimizeButton="false" enableIcon="false">
+		<s:VGroup height="100%" width="100%" gap="5">
+			<mx:DateChooser id="dateChooser" width="100%"/>
+			<s:HGroup height="30" width="100%" verticalAlign="middle" horizontalAlign="center">
+				<s:Button id="btnQuery" label="查询" toolTip="查询当日警力部署" 
+						  click="btnQuery_clickHandler(event)"/>
+				<s:Button id="btnReload" label="重载配置" toolTip="重新读取人员和岗点信息" 
+						  click="btnReload_clickHandler(event)"/>
+				<s:Button id="btnAddSentry" label="新增岗点" 
+						  click="btnAddSentry_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

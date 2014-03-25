@@ -1,0 +1,1621 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   xmlns:treePolice="com.esri.viewer.components.treePolice.*"
+				   xmlns:PoliceManageNew="widgets.PoliceManageNew.*" 
+				   xmlns:AdvancedDataGrid="com.esri.viewer.components.AdvancedDataGrid.*"
+				   widgetConfigLoaded="configLoad()" 
+				   creationComplete="init()"  >
+	
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.GeometryServiceEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tasks.supportClasses.RelationParameters;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.tools.NavigationTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.WidgetStates;
+			import com.esri.viewer.components.treePolice.treePoliceClasses.TreePoliceDeptItem;
+			import com.esri.viewer.components.treePolice.treePoliceClasses.TreePoliceItem;
+			import com.esri.viewer.components.treePolice.treePoliceClasses.TreePolicePersonItem;
+			import com.esri.viewer.components.treePolice.treePoliceClasses.TreePoliceTeamItem;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import flash.utils.Timer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.controls.AdvancedDataGrid;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import widgets.Query.QueryResultSymbol;
+			
+			private var _policeList:ArrayCollection;
+			
+			
+			private var _deptprevHash:Hashtable;
+			private var _deptprevHashIn:Hashtable;
+			
+			private var _teamPrevHash:Hashtable;
+			private var _teamPrevHashIn:Hashtable;
+			
+			private var _policePrevHash:Hashtable;
+
+			
+			[Bindable] private var _deptList:Vector.<PoliceDept>;
+				
+			[Bindable] private var _policeGraphicList:ArrayCollection;
+			[Bindable] private var _policeTextList:ArrayCollection;
+			//combobox的dataprovider
+			[Bindable] private var _deptAC:ArrayCollection = new ArrayCollection( [ { label: "所有" } ] );
+			[Bindable] private var _teamAC:ArrayCollection = new ArrayCollection( [ { label: "所有" } ] );
+			
+			private  var tmpcount:Number=0;
+
+			//警员总数
+			[Bindable] private var _policecount:String;
+			
+			//警员实时信息刷新周期
+			private var _refreshRate:uint;
+			
+			private var _zoomScale:Number = 32000;
+			
+			private var _drawLayer:GraphicsLayer;
+			
+			private var _relateWidgetTitleList:Array = [];
+			private var _relateWidgetIdList:Array = [];
+			private var _buttonArray:Array = [];
+			
+			private var _dataType:String;
+			
+			private var _teamLayer:GraphicsLayer;
+			
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+			private var _defaultFillSymbol:SimpleFillSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, 
+				0xFF0000, 0.5, 
+				new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0xFF0000, 0.8, 2 ) );
+			
+			private var _teamVisibleTable:Hashtable = new Hashtable();
+			
+			private var _geometryService:GeometryService;
+			
+			private function init():void {
+//				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				wTemplate.addTitlebarButton( "assets/images/tree.png", "警员列表", toggleViewSearchCollapsed, true );
+				wTemplate.addTitlebarButton( "assets/images/i_searchgraphical.png", "图形搜索", toggleViewGraphicSearch, true );
+				wTemplate.addTitlebarButton( "assets/images/i_searchtext.png", "文本搜索", toggleViewTextSearch, true );
+				
+				_deptList = new Vector.<PoliceDept>;
+				_deptprevHash =new Hashtable();
+				_deptprevHashIn = new Hashtable();
+				
+				
+				_teamPrevHash = new Hashtable();
+				_teamPrevHashIn = new Hashtable();
+				
+				_policePrevHash = new Hashtable();
+				
+				
+				_policeList = new ArrayCollection();
+				_policeGraphicList = new ArrayCollection();
+				_policeTextList = new ArrayCollection();
+				
+				_drawLayer = new GraphicsLayer();
+				map.addLayer( _drawLayer );
+				
+				_teamLayer = new GraphicsLayer();
+				_teamLayer.visible = chkShowTeam.selected;
+				map.addLayer(  _teamLayer );
+				
+				if ( wTemplate.widgetState != WidgetStates.WIDGET_MINIMIZED )
+					wTemplate.widgetState = WidgetStates.WIDGET_MINIMIZED;  
+			}
+			
+			private var _bufferDistance:Number;
+			
+			private function configLoad():void {
+				if ( configXML ) {
+					var gsUrl:String = configXML.geometryservice;
+					gsUrl = gsUrl.replace( "[serverip]", configData.serverIp );
+					_geometryService = new GeometryService();
+					_geometryService.url = gsUrl;
+					_geometryService.addEventListener( GeometryServiceEvent.BUFFER_COMPLETE, 
+						geometryService_bufferCompleteHandler );
+					_geometryService.addEventListener( GeometryServiceEvent.RELATION_COMPLETE, 
+						geometryService_relationCompleteHandler );
+					_geometryService.addEventListener( FaultEvent.FAULT, geometryService_faultHandler );
+					
+					_bufferDistance = configXML.bufferdistance || 0.002;
+					
+					_zoomScale = configXML.zoomscale;
+					_refreshRate = configXML.refreshrate;
+					_dataType = configXML.datatype || "PoliceManagerRTInfo";
+					_queryTeamUrl = configXML.teamlayer.url;
+					_queryTeamUrl = _queryTeamUrl.replace( "[serverip]", configData.serverIp );
+					
+					//buttons设置
+					var buttonList:XMLList = configXML..button;
+					for ( var i:uint = 0; i < buttonList.length(); i++ ) {
+						var buttonLabel:String = buttonList[i];
+						var button:Object = {
+							label:buttonLabel
+						}
+						_buttonArray.push( button );
+					}
+					
+					var symbolList:XMLList = configXML..symbol;
+					for ( i = 0; i < symbolList.length(); i++ ) {
+						var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+						rankSymbol.keyValue = symbolList[i].@keyvalue;
+						
+						var resultFillSymbolColor:uint =  symbolList[i].simplefillsymbol.@color || 0xFF0000;
+						var resultFillSymbolAlpha:Number = ( symbolList[i].simplefillsymbol.@alpha[0] != null) ?  
+							symbolList[i].simplefillsymbol.@alpha : 0.5;
+						var resultFillSymbolOutlineColor:uint =  symbolList[i].simplefillsymbol.outline.@color || 
+							resultFillSymbolColor;
+						var resultFillSymbolOutlineAlpha:Number = ( symbolList[i].simplefillsymbol.outline.@alpha[0] != null) ?  
+							symbolList[i].simplefillsymbol.outline.@alpha : 1;
+						var resultFillSymbolOutlineWidth:Number = ( symbolList[i].simplefillsymbol.outline.@width[0] != null) ?  
+							symbolList[i].simplefillsymbol.outline.@width : 3;
+						rankSymbol.resultFillSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, 
+							resultFillSymbolColor, 
+							resultFillSymbolAlpha, 
+							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 
+								resultFillSymbolOutlineColor, 
+								resultFillSymbolOutlineAlpha, 
+								resultFillSymbolOutlineWidth ) );
+						_rankSymbols.push( rankSymbol );
+					}
+					
+					queryTeamPolygon();
+					
+					var relateWidgetTitles:String = configXML.relatewidgets;
+					_relateWidgetTitleList = relateWidgetTitles.split( "," );
+					
+					//启动关联widget
+					for each ( var title:String in _relateWidgetTitleList ) {
+						var id:Number = getWidgetId( title );						
+						if ( id > -1 ) {
+							_relateWidgetIdList.push( id );
+							openWidget( title );
+						}
+					} 
+					var infoUrl:String =  configXML.info; 
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};				
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+				}
+				
+				CursorManager.removeAllCursors();
+				generateTestData();
+			}
+			
+			private function widgetCreated( event:AppEvent ):void {
+				var id:Number = event.data as Number;
+				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
+					//最小化图例widget
+					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+					//请求数据
+					fetchSharedData();
+				}
+			}
+			
+			private function dataSentHandler( event:AppEvent ):void {
+				var dataTable:Hashtable = event.data as Hashtable;
+				_policeAC = dataTable.find( _dataType ); 
+				if ( _policeAC ) 
+					setRTInfo();
+				else
+					refreshData();
+			}
+			
+			private function refreshData():void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: _dataType } );
+			}
+			
+			private var _policeAC:ArrayCollection;
+			
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key == _dataType ) {
+					_policeAC = event.data.data;
+					setRTInfo();
+				}		
+				
+			}
+			
+			private function getDeptFromDeptList( policeObj:Object ):PoliceDept {
+				if ( !policeObj.deptCode )
+					return null;
+				
+				var dept:PoliceDept;
+				for each ( dept in _deptList ) {
+					if ( dept.deptCode == policeObj.deptCode ) 
+						return dept;
+				}
+				dept = new PoliceDept();
+				dept.deptCode = policeObj.deptCode;
+				dept.deptName = policeObj.deptName;
+				dept.deptGpsCode = policeObj.deptGpsCode;
+				_deptList.push( dept );
+				_deptAC.addItem( { label: policeObj.deptName } );
+				return dept;
+			}
+			
+			private function getTeamFromDeptList( policeObj:Object ):PoliceTeam {
+				if ( !policeObj.teamCode )
+					return null;
+				
+				var team:PoliceTeam;
+				var dept:PoliceDept = getDeptFromDeptList( policeObj );
+				if ( !dept )
+					return null;
+				for each ( team in dept.teamList ) {
+					if ( team.teamCode == policeObj.teamCode )
+						return team;
+				}			
+				
+				team = new PoliceTeam();
+				team.teamCode = policeObj.teamCode;
+				team.teamGpsCode = policeObj.teamGpsCode;
+				team.teamName = policeObj.teamName;
+				
+				
+				if ( _teamVisibleTable.containsKey( policeObj.teamCode ) )
+					team.teamVisible = _teamVisibleTable.find( policeObj.teamCode );
+				dept.teamList.push( team );
+				return team;
+			}
+			
+			private function getPoliceFromDeptList( policeObj:Object ):Police {
+				if ( !policeObj.policeCode || policeObj.policeCode == "" ) 
+					return null;
+				
+				var type:String = policeObj.type || "police";
+				type = type.toLowerCase();
+				if ( ( type == "未匹配" )&& !chkPolice.selected  || 
+					( type == "police" && !chkPolice.selected ) || 
+					( type == "deptleader" && !chkDeptLeader.selected ) || 
+					( type == "groupleader" && !chkTeamLeader.selected ) ||
+					( type == "assistant" && !chkAssistant.selected ) )
+					return null;
+				
+				var team:PoliceTeam = getTeamFromDeptList( policeObj );
+				if ( !team )
+					return null;
+				
+				for each ( var obj:Police in team.policeList ) {
+					if ( obj.policeCode == policeObj.policeCode ) {
+						return obj;
+					}
+				}
+				
+				var police:Police = new Police();
+				police.policeType = policeObj.type;
+				police.policeDuty = policeObj.duty;
+				police.policeCode = policeObj.policeCode;
+				police.policeGpsCode = policeObj.policeGpsCode;
+				police.policeName = policeObj.policeName;
+				police.deptCode = policeObj.deptCode;
+				police.deptGpsCode = policeObj.deptGpsCode;
+				police.deptName = policeObj.deptName;
+				police.teamCode = policeObj.teamCode;
+				police.teamGpsCode = policeObj.teamGpsCode;
+				police.teamName = policeObj.teamName;
+				team.policeList.push( police );
+				//trace(team.teamCode+"  "+team.teamVisible);
+  		    	//_policeGraphicList.addItem( police );
+    			//_policeTextList.addItem( police );
+				addTeamPolygon( policeObj.teamCode );
+				_policeList.addItem( police );
+				return police;
+			}
+			
+			private function generateTestData():void
+			{
+				_policeAC = new ArrayCollection();
+				_policeAC.addItem( 
+					{ 
+						type: "police", 
+						duty: "民警",
+						policeCode: "071333",
+						policeGpsCode: "8008429",
+						policeName: "阮  闽",
+						deptCode: "00",
+						deptGpsCode: "00",
+						deptName: "交通管理局",
+						teamCode: "DPT00-02",
+						teamGpsCode: "DPT00-02",
+						teamName: "勤务处",
+						longitude: 103.95958,
+						latitude: 30.58108,
+						x: 18399995.92,
+						y: 3385296.84,
+						elevation: 0,
+						status: 0,
+						fdtTimeStr: "2014-02-20 17:02:35"
+					} 
+				);
+				
+				_policeAC.addItem( 
+					{ 
+						type: "police", 
+						duty: "民警",
+						policeCode: "004789",
+						policeGpsCode: "8011139",
+						policeName: "刘洪明",
+						deptCode: "01",
+						deptGpsCode: "01",
+						deptName: "一分局",
+						teamCode: "DPT01-01",
+						teamGpsCode: "DPT01-01",
+						teamName: "一大队",
+						longitude: 104.03952,
+						latitude: 30.59808,
+						status: 0,
+						fdtTimeStr: "2014-02-20 17:25:42"
+					} 
+				);
+				
+				_policeAC.addItem( 
+					{ 
+						type: "police", 
+						duty: "民警",
+						policeCode: "071198",
+						policeGpsCode: "8011122",
+						policeName: "凤凌翔",
+						deptCode: "01",
+						deptGpsCode: "01",
+						deptName: "一分局",
+						teamCode: "DPT01-01",
+						teamGpsCode: "DPT01-01",
+						teamName: "一大队",
+						longitude: 104.06652,
+						latitude: 30.63142,
+						status: 0,
+						fdtTimeStr: "2014-02-20 17:23:15"
+					} 
+				);
+				
+				_policeAC.addItem( 
+					{ 
+						type: "groupLeader", 
+						duty: "教导员",
+						policeCode: "071387",
+						policeGpsCode: "8011103",
+						policeName: "李普伟",
+						deptCode: "01",
+						deptGpsCode: "01",
+						deptName: "一分局",
+						teamCode: "DPT01-01",
+						teamGpsCode: "DPT01-01",
+						teamName: "一大队",
+						longitude: 103.97569,
+						latitude: 30.57097,
+						status: 0,
+						fdtTimeStr: "2014-02-20 17:16:02"
+					} 
+				);
+				
+				setRTInfo();
+			}
+			
+			private function getpolicecount():void{
+				
+				tmpcount=_policeList.length;
+				_policecount="    警员总数： "+tmpcount.toString()+" 人";
+				
+				
+			}	
+			
+			private function setRTInfo():void {
+				
+				
+				//树结构部门复选同步列表清空
+
+				_deptprevHash.clear();
+				_deptprevHashIn.clear();
+				_deptprevHash = new Hashtable();
+				_deptprevHashIn = new Hashtable();
+				
+				/*_teamPrevHash.clear();
+				_teamPrevHashIn.clear();
+				
+				_teamPrevHash = new Hashtable();
+				_teamPrevHashIn = new Hashtable();
+				*/
+				//树结构警员选择同步列表清空
+				_policePrevHash.clear();
+				_policePrevHash= new Hashtable();
+
+				
+				//每次更新警员列表时从policeTree保存部门和警员的选择状态
+				for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) {
+					
+					var _deptCode:String = deptItem.dept.deptCode||null;
+					var _deptvisible:Boolean = deptItem.visible;
+					
+					if(_deptCode&&_deptCode!=null)
+					_deptprevHash.add(deptItem.dept.deptCode,deptItem.visible);
+					_deptprevHashIn.add( deptItem.dept.deptCode, deptItem.indeterminate );
+					for each (var teamItem:TreePoliceTeamItem in  deptItem.children)
+					{
+						/*var _teamCode:String = teamItem.team.teamCode||null;
+						var _teamVisible:Boolean = teamItem.visible;
+						if (_teamCode&&_teamCode!=null) 
+							_teamPrevHash.add(_teamCode,_teamVisible);
+							_teamPrevHashIn.add( _teamCode,teamItem.indeterminate );*/
+						for each ( var po:TreePolicePersonItem in teamItem.children )
+						{
+							if( po.person.policeCode&& po.person.policeCode!=null )
+							_policePrevHash.add(  po.person.policeCode,po.visible );
+						}
+							
+					}
+					
+				}
+				
+				
+				_deptList.length = 0;
+				_policeList.removeAll();
+				
+				for ( var i:uint = 0; i < _policeAC.length; i++ ) {
+					//加入_deptList
+					var police:Police = getPoliceFromDeptList( _policeAC[i] );
+					//警员已存在，刷新坐标信息
+					if ( police ) {
+						police.elevation = _policeAC[i].elevation;
+						police.Longitude = _policeAC[i].longitude;
+						police.Latitude = _policeAC[i].latitude;
+						police.x = _policeAC[i].x;
+						police.y = _policeAC[i].y;
+						police.timeStr = _policeAC[i].fdtTimeStr;
+						police.status = _policeAC[i].status;
+					} 
+				}
+			//removeUnexistPolice( _policeAC );
+				//if ( !policeTree.depList )
+					policeTree.depList = _deptList;
+					
+					
+					
+					//生成policeTree树之后从hashtable中更新tree节点状态
+					for each ( var _deptItem:TreePoliceDeptItem in policeTree.rootNode ) {
+						if (_deptprevHash.containsKey(_deptItem.dept.deptCode) )
+						{
+							_deptItem.visible = _deptprevHash.find( _deptItem.dept.deptCode );
+						}
+						
+						/*if (_deptprevHashIn.containsKey(_deptItem.dept.deptCode) )
+						{
+							_deptItem.indeterminate = _deptprevHashIn.find( _deptItem.dept.deptCode );
+						}*/
+						
+						
+						
+						for each ( var _teamItem:TreePoliceTeamItem  in _deptItem.children )
+						{
+							
+						/*	if(_teamPrevHash.containsKey( _teamItem.team.teamCode ) )
+								_teamItem.visible = _teamPrevHash.find( _teamItem.team.teamCode );
+							
+							if(_teamPrevHashIn.containsKey( _teamItem.team.teamCode ) )
+								_teamItem.indeterminate = _teamPrevHashIn.find( _teamItem.team.teamCode );
+							*/
+							
+							for each (var p:TreePolicePersonItem in _teamItem.children) 
+							{
+								if (_policePrevHash.containsKey( p.person.policeCode ) ) 
+								{
+									p.visible = _policePrevHash.find( p.person.policeCode );
+								}
+								else
+								{
+									p.visible = true;
+								}
+								/*else
+								{
+									trace( _teamItem.team.teamCode+"  "+_teamItem.visible + "<--v  in-->"+_teamItem.indeterminate)
+									p.visible = _teamItem.visible || _teamItem.indeterminate;
+								}*/
+							}
+							
+							
+							
+						}
+					}
+					//统计警员状态
+					getpolicecount();
+					
+					//如果policeTree为空，情况同步hashtable
+					if (policeTree.rootNode.length<1) 
+					{
+						_deptprevHash.clear();
+						_deptprevHashIn.clear();
+						/*_teamPrevHash.clear();
+						_teamPrevHashIn.clear();*/
+						_policePrevHash.clear();
+					}
+
+			}
+			
+			//去掉deptLIst中这个周期没有数据的警员
+			private function removeUnexistPolice( policeAC:ArrayCollection ):void {
+				for each ( var dept:PoliceDept in _deptList ) {
+					for each ( var team:PoliceTeam in dept.teamList ) {
+						for ( var i:uint = 0; i < team.policeList.length; i++ ) {
+							var police:Police = team.policeList[i];
+							var policeCode:String = police.policeCode;
+							if ( !policeExist( policeCode ) ) {
+								team.policeList.splice( i, 1 );
+								i--;
+							}
+						}
+					}
+				}
+				
+				function policeExist( policeCode:String ):Boolean {
+					for each ( var policeObj:Object in policeAC ) {
+						if ( policeObj.policeCode == policeCode )
+							return true;
+					}
+					return false;
+				}
+			}
+			
+			private function toggleViewTextSearch():void {
+				vsContainer.selectedIndex = 2;
+				if ( _drawStatus == 0 ) {
+					setMapNavigation( NavigationTool.PAN, "漫游" );
+				}
+			}
+			
+			private function toggleViewGraphicSearch():void {
+				vsContainer.selectedIndex = 1;
+				activateSearchTool( DrawTool.EXTENT );
+			}
+			
+			private function toggleViewSearchCollapsed():void {
+				vsContainer.selectedIndex = 0;
+				if ( _drawStatus == 0 ) {
+					setMapNavigation( NavigationTool.PAN, "漫游" );
+				}
+			}
+			private function callFromDataGrid( callType:String, dataProvider:IList ):void {
+				var policeParam:String = "";
+				for each ( var police:Police in dataProvider ) {
+					var policeCode:String = police.policeCode;
+					var policeName:String = police.policeName;
+					var deptCode:String = police.deptCode;
+					var deptName:String = police.deptName;
+					if ( policeParam.indexOf( policeName ) == -1 ) {
+						if ( callType != "viewPerson" ) {
+							policeParam += policeCode + "," + deptCode + "," + deptName + "," + policeName + ";"; 
+						}
+						else {
+							policeParam += "'" + policeCode + "',"; 
+						}
+					}
+					
+				}
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", 
+						params: [ callType, policeParam ] } );
+				/* AppEvent.dispatch( new AppEvent( AppEvent.OPEN_DEVICE, 
+				{ type: callType, param: policeParam } ) ); */
+			}
+			
+			
+			
+			private var infoTemplate:IInfowindowTemplate;
+			/* 
+			private function mouseOverPolice( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				showInfoWindow( gra.attributes );
+			}
+			
+			private function mouseOutPolice( event:MouseEvent ):void {
+				showInfoWindow( null );
+			} */
+			
+			private function mouseClickPolice( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				var attr:PolicePoint = gra.attributes as PolicePoint;
+				var policeInfo:Police = attr.policeInfo;
+				var param:String = policeInfo.policeCode + "," + policeInfo.deptCode + "," + policeInfo.deptName + "," + policeInfo.policeName + ";";
+				AppEvent.dispatch( AppEvent.OPEN_DEVICE, { type: "callPerson", param:param } );
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.data = infoData;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				} else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			private var timer:Timer;
+			
+			private function createAndStartWidgetTimer():void {
+				if ( _refreshRate && _refreshRate > 0 && !timer ) {
+					if ( !timer ) {
+						timer = new Timer( _refreshRate * 1000 );
+						timer.addEventListener( TimerEvent.TIMER, timerTick );
+					}
+					timer.start();
+				}
+			}
+			
+			//stop widget timer
+			private function stopWidgetTimer():void {
+				if ( timer && timer.running ) {
+					timer.stop();
+				}
+			}
+			
+			//start widget timer
+			private function startWidgetTimer():void {
+				if ( timer && !timer.running ) {
+					timer.start();
+				}
+			}
+			
+			//定时刷新
+			private function timerTick( event:TimerEvent = null ):void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: "PoliceManagerRTInfo" } );
+			}
+			
+			private var _drawSymbol:Symbol;
+			//搜索状态
+			//	0:	搜索
+			//	1: 取消搜索
+			private var _drawStatus:uint = 0;
+			
+			private function activateSearchTool( value:String ):void {
+				var status: String;
+				_drawStatus = 0;
+				
+				switch (value) {
+					case DrawTool.CIRCLE:
+						status = "圆形区域";
+						_drawSymbol = new SimpleFillSymbol( 
+							SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, 
+							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1 ) );
+						break;
+					
+					case DrawTool.EXTENT:
+						status = "矩形区域";
+						_drawSymbol = new SimpleFillSymbol( 
+							SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, 
+							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1 ) );
+						break;
+					
+					case DrawTool.POLYGON:
+						status = "多边形区域";
+						_drawSymbol = new SimpleFillSymbol( 
+							SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, 
+							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1 ) );
+						break;	
+					
+					case DrawTool.POLYLINE:
+						status = "折线";
+						_drawSymbol = new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1 );
+						break;
+				}
+				
+				setMapAction(value, status, _drawSymbol, searchDrawEnd);
+			}
+			
+			private var _drawGeo:Geometry;
+			
+			private function searchDrawEnd( event:DrawEvent ):void {
+				event.target.deactivate();
+				_drawLayer.clear();
+				
+				_drawGeo = event.graphic.geometry;
+				var drawGraphic:Graphic = new Graphic( _drawGeo, _drawSymbol );
+				_drawLayer.add( drawGraphic ); 
+				_policeGraphicList.removeAll();
+				
+				if ( _drawGeo.type == "esriGeometryPolyline" )
+				{
+					var bufferParam:BufferParameters = new BufferParameters();
+					bufferParam.geometries = [ _drawGeo ];
+					bufferParam.distances = [ _bufferDistance ];
+					bufferParam.unit = GeometryService.UNIT_METER;
+					bufferParam.bufferSpatialReference = map.spatialReference;
+					_geometryService.buffer( bufferParam );
+				}
+				else
+				{
+					searchInGeometry( _drawGeo );
+				}
+			}
+			
+			private function geometryService_bufferCompleteHandler( event:GeometryServiceEvent ):void
+			{
+				for each ( var geom:Polygon in event.result )
+				{
+					var graphic:Graphic = new Graphic( geom );
+					graphic.symbol = new SimpleFillSymbol( 
+						SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0, 
+						new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0xFF0000, 1, 3 ) );
+					_drawLayer.add( graphic );
+					searchInGeometry( graphic.geometry );
+				}
+			}
+			
+			private function searchInGeometry( geom:Geometry ):void
+			{
+				var visiblePoliceArray:Array = [];
+				
+				for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) 
+				{
+					var deptItemVisible:Boolean = deptItem.indeterminate || deptItem.visible;
+					for each( var teamItem:TreePoliceTeamItem  in deptItem.children)
+					{
+						var teamItemVisible:Boolean =  teamItem.team.teamVisible || teamItem.indeterminate;
+						for each( var police:Police in teamItem.team.policeList)
+						{
+							var policeVisible:Boolean = police.treeVisible;
+							if ( deptItemVisible && teamItemVisible && police.treeVisible )
+							{
+								var policePoint:MapPoint = new MapPoint( police.Longitude, police.Latitude, 
+									map.spatialReference );
+								visiblePoliceArray.push( policePoint );
+							}
+						}
+					}
+				}
+				var relationParam:RelationParameters = new RelationParameters();
+				relationParam.geometries1 = visiblePoliceArray;
+				relationParam.geometries2 = [ geom ];
+				relationParam.spatialRelationship = RelationParameters.SPATIAL_REL_WITHIN;
+				_geometryService.relation( relationParam );
+				//根据hashtable中policeTree节点visible 判断是否在地图上显示
+				/*for each ( var _deptItem:TreePoliceDeptItem in policeTree.rootNode ) 
+				{
+					var _deptItemVisible:Boolean = _deptItem.indeterminate||_deptItem.visible;
+					for each( var _teamItem:TreePoliceTeamItem  in _deptItem.children)
+					{
+						var _teamVisible:Boolean =  _teamItem.team.teamVisible||_teamItem.indeterminate;
+						for each( var _police:Police in _teamItem.team.policeList)
+						{
+							var _policeVisible:Boolean = _police.treeVisible;
+							var _pt:MapPoint = new MapPoint (_police.Longitude,_police.Latitude );
+							if ( geom.extent.contains( _pt ) && _teamVisible&&_deptItemVisible&&_police.treeVisible) 
+							{
+								var policeCode:String = _police.policeCode;
+								var found:Boolean = false;
+								for each ( var p:Police in _policeGraphicList ) 
+								{
+									if ( policeCode == p.policeCode ) 
+									{
+										found = true;
+										break;
+									}
+								}
+								
+								if ( !found )
+								{
+									if(_police.legendVisible&&_police.treeVisible)
+										_policeGraphicList.addItem( _police );
+								}
+								
+							}
+						}
+					}
+				}*/	
+			}
+			
+			private function geometryService_relationCompleteHandler( event:GeometryServiceEvent ):void
+			{
+				var result:Array = event.result as Array;
+				for each ( var resultObj:Object in result )
+				{
+					var resultPoint:MapPoint = MapPoint( resultObj.geometry1 );
+					
+					for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) 
+					{
+						for each( var teamItem:TreePoliceTeamItem  in deptItem.children)
+						{
+							for each( var police:Police in teamItem.team.policeList)
+							{
+								if ( police.Longitude == resultPoint.x && police.Latitude == resultPoint.y )
+								{
+									_policeGraphicList.addItem( police );
+								}
+							}
+						}
+					}
+				}
+				countSearchResult();
+			}
+			
+			private function geometryService_faultHandler( event:FaultEvent ):void
+			{
+				showError( event.fault.faultDetail );
+			}
+			
+			private function countSearchResult():void
+			{
+				if ( _policeGraphicList.length == 0 )
+					return;
+				
+				var countText:String = "共" + _policeGraphicList.length + "人";
+				
+				var deptCountArray:Array = [];
+				var found:Boolean;
+				for each ( var police:Police in _policeGraphicList )
+				{
+					found = false;
+					var deptName:String = police.deptName;
+					var deptCode:String = police.deptCode;
+					for each ( var deptCountObj:Object in deptCountArray )
+					{
+						if ( deptCountObj.code == deptCode )
+						{
+							var count:int = deptCountObj.count;
+							count++;
+							deptCountObj.count = count;
+							found = true;
+							break;
+						}
+					}
+					if ( !found )
+					{
+						deptCountArray.push( 
+							{ 
+								code: deptCode,
+								name: deptName,
+								count: 1
+							} 
+						);
+					}
+				}
+				
+				for each ( deptCountObj in deptCountArray )
+				{
+					countText += ", " + deptCountObj.name + deptCountObj.count + "人";
+				}
+				lblSearchCount.visible = lblSearchCount.includeInLayout = true;
+				lblSearchCount.text = countText;
+			}
+			
+			private function datatipForPoliceTree( item:Object ):String {
+				if ( item is TreePoliceDeptItem || item is TreePoliceTeamItem )
+					return ( item as TreePoliceItem ).label;
+				else
+					return "";
+			}
+			
+			protected function imgClear_clickHandler(event:MouseEvent):void {
+				_drawStatus = 1;
+				
+				_drawLayer.clear();
+				_policeGraphicList.removeAll();
+				lblSearchCount.text = "";
+				lblSearchCount.visible = lblSearchCount.includeInLayout = false;
+			}
+			
+			//图形搜索过滤列表
+			private function filterDataListByDraw( item:Object ):Boolean {
+				if ( _drawStatus == 1 )
+					return false;
+				
+				var police:Police = item as Police;
+				var pt:MapPoint = new MapPoint( police.Longitude, police.Latitude );
+				return ( _drawGeo && _drawGeo.extent.contains( pt ) );
+			}
+			
+			protected function btnSearchText_clickHandler(event:MouseEvent):void {
+				/* if ( _policeTextList ) {
+					ArrayCollection( _policeTextList ).filterFunction = filterDataListByText;
+					ArrayCollection( _policeTextList ).refresh();
+				} */
+				
+				_policeTextList.removeAll();
+				var inputDept:String = cmbDept.textInput.text;
+				var inputTeam:String = cmbTeam.textInput.text;
+				var inputPerson:String = txtPolice.text;
+				
+				var deptReg:RegExp = new RegExp( cmbDept.textInput.text, "i" );
+				var teamReg:RegExp = new RegExp( cmbTeam.textInput.text, "i" );
+				var policeReg:RegExp = new RegExp( txtPolice.text, "i" );
+				
+				for each ( var police:Police in _policeList ) {
+					var matchDept:Boolean = cmbDept.selectedIndex == 0 ? true : 
+						police.deptName.match( deptReg ) || 
+						police.deptCode.match( deptReg ) || 
+						police.deptGpsCode.match( deptReg );
+					var matchTeam:Boolean = cmbTeam.selectedIndex == 0 ? true : 
+						police.teamName.match( teamReg ) || 
+						police.teamCode.match( teamReg ) || 
+						police.teamGpsCode.match( teamReg );
+					var matchPolice:Boolean = txtPolice.text == "" ? true : 
+						police.policeName.match( policeReg ) || 
+						police.policeCode.match( policeReg ) || 
+						police.policeGpsCode.match( policeReg );
+					
+					if ( matchDept && matchPolice && matchTeam ) {
+						var found:Boolean = false;
+						for each ( var p:Police in _policeTextList ) {
+							if ( police.policeCode == p.policeCode ) {
+								found = true;
+								break;
+							}
+						}
+						if ( !found )
+							_policeTextList.addItem( police );
+					}
+						
+				}
+			}
+			
+			//关键字搜索过滤列表
+			private function filterDataListByText( item:Object ):Boolean {
+				//				var policePoint:PolicePoint = item as PolicePoint;
+				var police:Police = item as Police;
+				
+				var deptReg:RegExp = new RegExp( cmbDept.textInput.text, "i" );
+				var teamReg:RegExp = new RegExp( cmbTeam.textInput.text, "i" );
+				var policeReg:RegExp = new RegExp( txtPolice.text, "i" );
+				
+				var matchDept:Boolean = cmbDept.selectedIndex == 0 ? true : 
+					police.deptName.match( deptReg ) || police.deptCode.match( deptReg ) || police.deptGpsCode.match( deptReg );
+				var matchTeam:Boolean = cmbTeam.selectedIndex == 0 ? true :
+					police.teamName.match( teamReg ) || police.teamCode.match( teamReg ) || police.teamGpsCode.match( teamReg );
+				var matchPolice:Boolean = txtPolice.text == "" ? true :
+					police.policeName.match( policeReg ) || police.policeCode.match( policeReg ) || police.policeGpsCode.match( policeReg );
+				
+				return matchDept && matchTeam && matchPolice;
+			}
+			
+			private var hitimer:uint;
+			
+			/* private function showHighlight( params:Array ):void {
+				var infoData:Object = params[0];
+				showInfoWindow( infoData );
+			} */
+			
+			private function policeTree_person_checkClickHandler( event:AppEvent ):void {
+				var policeCode:String = event.data.item;
+				var visible:Boolean = event.data.visible;
+				loop: for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) {
+					for each( var teamItem:TreePoliceTeamItem  in deptItem.children)
+					{
+						for each(var police:Police in teamItem.team.policeList )
+						{
+							if (police.policeCode == policeCode) 
+							{
+								police.treeVisible = visible ;
+								break loop;
+							}
+						}
+					}
+				}
+			}
+			
+			
+			private function policeTree_team_checkClickHandler( event:AppEvent ):void {
+				var teamCode:String = event.data.id;
+				var visible:Boolean = event.data.visible;
+				//trace( teamCode, visible );
+				
+				if ( _teamVisibleTable.containsKey( teamCode ) )
+					_teamVisibleTable.remove( teamCode );
+				_teamVisibleTable.add( teamCode, visible );
+				
+				
+				
+				if ( visible )
+					addTeamPolygon( teamCode );
+				else
+					removeTeamPolygon( teamCode );
+			}
+			
+			private var _queryTeamUrl:String;
+			
+			private function queryTeamPolygon():void {
+				if ( _queryTeamUrl ) {
+					var queryTask:QueryTask = new QueryTask( _queryTeamUrl );
+					queryTask.disableClientCaching = false;
+					queryTask.useAMF = false;
+					
+					var query:Query = new Query();
+					query.outFields = ["DeptId", "TeamId", "Name"];
+					query.returnGeometry = true;
+					query.where = "1=1";
+					queryTask.execute( query, new AsyncResponder( onResult, onFault ) );
+				}
+				
+				function onResult(featureSet:FeatureSet, token:Object = null):void {
+					for each (var graphic:Graphic in featureSet.features) {
+						var deptId:String = graphic.attributes["DeptId"];
+						var teamId:String = graphic.attributes["TeamId"];
+						var name:String = graphic.attributes["Name"];
+						if ( !deptId || !teamId )
+							continue;
+						
+						var teamSymbol:Graphic = new Graphic( graphic.geometry, 
+							getTeamFillSymbol( deptId ), 
+							{ id: teamId } );
+						teamSymbol.visible = false;
+						_teamLayer.add( teamSymbol );
+					}
+					
+					AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+					AppEvent.addListener( AppEvent.DATA_SENT, dataSentHandler );
+					AppEvent.addListener( AppEvent.POLICETREE_TEAM_CHECKBOX_CLICKED, 
+						policeTree_team_checkClickHandler );
+					AppEvent.addListener( AppEvent.POLICETREE_PERSON_CHECKBOX_CLICKED, 
+						policeTree_person_checkClickHandler );
+					fetchSharedData();
+				}
+				
+				function onFault(info:Object, token:Object = null):void {
+					showError( info.toString() );
+				}
+			}
+			
+			private function getTeamFillSymbol( keyValue:String ):SimpleFillSymbol {
+				for each ( var rankSymbol:QueryResultSymbol in _rankSymbols ) {
+					if ( rankSymbol.keyValue == keyValue )
+						return rankSymbol.resultFillSymbol;
+				}
+				return _defaultFillSymbol;
+			}
+			
+			private function addTeamPolygon( teamCode:String ):void {
+				for each ( var teamGra:Graphic in _teamLayer.graphicProvider ) {
+					if ( teamGra.attributes.id == teamCode ) {
+						teamGra.visible = true;
+						return;
+					}
+				}
+			}
+			
+			private function removeTeamPolygon( teamCode:String ):void {
+				for each ( var teamGra:Graphic in _teamLayer.graphicProvider ) {
+					if ( teamGra.attributes.id == teamCode ) {
+						teamGra.visible = false;
+						return;
+					}
+						
+				}
+			}
+			
+			/* protected function policeDG_queryResultMouseOverHandler(event:Event):void {
+				clearTimeout( hitimer );
+				hitimer = setTimeout( showHighlight, 800, [ ItemRenderer( event.target ).data as PolicePoint ] );
+			}
+			
+			
+			protected function policeDG_queryResultMouseOutHandler(event:Event):void {
+				clearTimeout( hitimer );
+			}
+			
+			protected function policeDG_queryResultClickHandler(event:Event):void {
+				var policePoint:PolicePoint = ItemRenderer( event.target ).data as PolicePoint;
+				if (map.scale > _zoomScale) {
+					map.scale = _zoomScale;
+				}
+				map.centerAt( policePoint.point as MapPoint );
+			} */
+			
+			protected function btnCallPoliceGraphic_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "callPerson", adgGraphicSearchResult.dataProvider as IList );
+			}
+			
+			protected function btnSendMessageGraphic_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "sendMessage", adgGraphicSearchResult.dataProvider as IList );
+			}
+			
+			protected function btnViewPoliceGraphic_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "viewPerson", adgGraphicSearchResult.dataProvider as IList );
+			}
+			
+			protected function btnCallPoliceText_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "callPerson", adgTextSearchResult.dataProvider as IList );
+			}
+			
+			protected function btnSendMessageText_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "sendMessage", adgTextSearchResult.dataProvider as IList );
+			}
+			
+			protected function btnViewPoliceText_clickHandler(event:MouseEvent):void {
+				callFromDataGrid( "viewPerson", adgTextSearchResult.dataProvider as IList );
+			}
+			
+			
+			protected function btnRefresh_clickHandler(event:MouseEvent):void {
+				fetchSharedData();
+			}
+			
+			
+			protected function policeTree_itemClickHandler(event:ListEvent):void {
+				//点击警员则在地图上定位
+				if ( policeTree.selectedItem is TreePolicePersonItem ) {
+					var personItem:TreePolicePersonItem = policeTree.selectedItem as TreePolicePersonItem;
+					var wName:String;
+					if (personItem.person.policeType!=null)
+					{
+						switch ( personItem.person.policeType.toLowerCase() ) {
+							case "police":
+								wName = "警员管理图层";
+								break;
+							case "assistant":
+								wName = "协警管理图层";
+								break;
+							case "deptleader":
+								wName = "分局领导管理图层";
+								break;
+							case "groupleader":
+								wName = "大队领导管理图层";
+								break;
+							case "未匹配":
+								wName = "警员管理图层";
+								break;
+							default:
+								return;
+						}
+					}else
+					{
+						wName = "警员管理图层";
+					}
+//					showInfoWindow( null );
+					AppEvent.dispatch( AppEvent.FIND_DEVICE, 
+						{ name: wName, id: personItem.person.policeCode } );
+				}				
+			}
+			
+			protected function wTemplate_minimizedHandler(event:Event):void {
+				
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void {		
+				startWidgetTimer();
+				
+				/* if ( wTemplate.widgetState == WidgetStates.WIDGET_OPENED )
+					wTemplate.widgetState = WidgetStates.WIDGET_MINIMIZED;   */
+				
+				if ( chkAssistant.selected )
+					openWidget( "协警管理图层" );
+				if ( chkDeptLeader.selected )
+					openWidget( "分局领导管理图层" );
+				if ( chkTeamLeader.selected )
+					openWidget( "大队领导管理图层" ); 
+				if ( chkPolice.selected )
+					openWidget( "警员管理图层" );
+				
+				if ( _teamLayer )
+					_teamLayer.visible = chkShowTeam.selected;
+				for each ( var title:String in _relateWidgetTitleList ) {
+					openWidget( title );
+				}
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void {
+				for each ( var title:String in _relateWidgetTitleList ) {
+					closeWidget( title );
+				}	
+				_teamLayer.visible = false;
+				closeWidget( "警员管理图层" );
+				closeWidget( "协警管理图层" );
+				closeWidget( "分局领导管理图层" );
+				closeWidget( "大队领导管理图层" );
+				
+				stopWidgetTimer();
+				
+				imgClear_clickHandler( null );
+			}
+			
+			
+			protected function cmbDept_creationCompleteHandler(event:FlexEvent):void {
+				cmbDept.textInput.editable = false;
+			}
+			
+			
+			protected function cmbTeam_creationCompleteHandler(event:FlexEvent):void {
+				
+			}
+			
+			
+			protected function cmbDept_changeHandler(event:IndexChangeEvent):void {
+				_teamAC = new ArrayCollection( [ { label: "所有" } ] );
+				if ( cmbDept.selectedIndex == 0 ) {
+					return;
+				}
+				else {
+					var deptName:String = cmbDept.selectedItem.label;
+					for each ( var dept:PoliceDept in _deptList ) {
+						if ( dept.deptName == deptName ) {
+							for each ( var team:PoliceTeam in dept.teamList ) {
+								var teamName:String = team.teamName;
+								_teamAC.addItem( { label: teamName } );
+							}
+							cmbTeam.selectedIndex = 0;
+							break;
+						}
+					}
+				}
+			}
+			
+			protected function adgTextSearchResult_itemClickHandler(event:ListEvent):void {
+				var adg:AdvancedDataGrid = event.currentTarget as AdvancedDataGrid;
+				var idx:int = adg.selectedIndex;
+				var police:Police = ( adg.dataProvider as ArrayCollection )[idx];
+				var policeType:String = police.policeType;
+				var wName:String;
+				if (policeType!=null)
+				{
+					switch ( policeType ) {
+						case "police":
+							wName = "警员管理图层";
+							break;
+						case "assistant":
+							wName = "协警管理图层";
+							break;
+						case "deptleader":
+							wName = "分局领导管理图层";
+							break;
+						case "groupleader":
+							wName = "大队领导管理图层";
+							break;
+						case "未匹配":
+							wName = "警员管理图层";
+							break;
+						default:
+							return;
+					}
+				}else
+				{
+					wName = "警员管理图层";
+				}
+				
+				
+				
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: wName, id: police.policeCode } );
+			}
+			
+			
+			protected function cmbTeam_changeHandler(event:IndexChangeEvent):void {
+				btnSearchText_clickHandler(null);
+			}
+			
+			protected function btnViewPoliceInTree_clickHandler(event:MouseEvent):void {
+				var param:String = "";
+				for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) {
+					for each ( var teamItem:TreePoliceTeamItem in deptItem.children ) {
+						for each ( var policeItem:TreePolicePersonItem in teamItem.children ) {
+							if ( policeItem.visible ) {
+								var policeCode:String = policeItem.person.policeCode;
+								if ( StringUtil.trim( policeCode ) != "" )
+									param += "'" + policeItem.person.policeCode + "',";
+							}
+						}
+					}
+				}
+				
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", 
+						params: [ "viewPerson", param ] } );
+			}
+			
+			protected function chkPolice_clickHandler(event:MouseEvent):void {
+				if ( chkPolice.selected ) {
+					openWidget( "警员管理图层" );
+				}
+				else {
+					closeWidget( "警员管理图层" );
+				}
+				setRTInfo();
+			}
+			
+			protected function chkAssistant_clickHandler(event:MouseEvent):void {
+				if ( chkAssistant.selected ) {
+					openWidget( "协警管理图层" );
+				}
+				else {
+					closeWidget( "协警管理图层" );
+				}
+				setRTInfo();
+			}
+			
+			protected function chkUnknown_clickHandler(event:MouseEvent):void {
+				if ( chkPolice.selected ) {
+					openWidget( "警员管理图层" );
+				}
+				else {
+					closeWidget( "警员管理图层" );
+				}
+				setRTInfo();
+			}
+			
+			
+			
+			protected function chkDeptLeader_clickHandler(event:MouseEvent):void {
+				if ( chkDeptLeader.selected ) {
+					openWidget( "分局领导管理图层" );
+				}
+				else {
+					closeWidget( "分局领导管理图层" );
+				}
+				setRTInfo();
+			}
+			
+			protected function chkTeamLeader_clickHandler(event:MouseEvent):void {
+				if ( chkTeamLeader.selected ) {
+					openWidget( "大队领导管理图层" );
+				}
+				else {
+					closeWidget( "大队领导管理图层" );
+				}
+				setRTInfo();
+				
+			}
+			
+			protected function chkAll_clickHandler(event:MouseEvent):void {
+				for each ( var deptItem:TreePoliceDeptItem in policeTree.rootNode ) {
+					deptItem.visible = chkAll.selected;
+					}
+			}
+			
+			protected function chkShowTeam_clickHandler(event:MouseEvent):void {
+				_teamLayer.visible = chkShowTeam.selected;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<viewer:WidgetTemplate id="wTemplate" height="400" width="300" fontFamily="微软雅黑"
+						   minimized="wTemplate_minimizedHandler(event)"
+						   open="wTemplate_openHandler(event)" 
+						   closed="wTemplate_closedHandler(event)">
+		<mx:ViewStack id="vsContainer" width="100%" height="100%">
+			<!--警员面板-->
+			<s:NavigatorContent>
+				<s:VGroup height="100%" width="100%">
+					<s:HGroup width="100%" gap="10" horizontalAlign="center" verticalAlign="middle"
+							  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" >
+						<s:CheckBox id="chkDeptLeader" label="分局领导" selected="true" 
+									click="chkDeptLeader_clickHandler(event)"/>
+						<s:CheckBox id="chkTeamLeader" label="大队领导" selected="true" 
+									click="chkTeamLeader_clickHandler(event)"/>
+						<s:CheckBox id="chkPolice" label="警员" selected="true" 
+									click="chkPolice_clickHandler(event)"/>
+						<s:CheckBox id="chkAssistant" label="协警" 
+									click="chkAssistant_clickHandler(event)"/>
+					</s:HGroup>
+					<s:HGroup>
+						<s:Label width="183" height="26" paddingRight="0" text="{_policecount}"/>
+					</s:HGroup>
+					<s:Line width="100%">
+						<s:stroke>
+							<s:SolidColorStroke color="0"/>
+						</s:stroke>
+					</s:Line>
+					
+					<treePolice:TreePolice id="policeTree" height="100%" width="100%" showDataTips="true"
+										   itemClick="policeTree_itemClickHandler(event)" 
+										   dataTipFunction="{datatipForPoliceTree}"/>
+					
+					<s:Line width="100%">
+						<s:stroke>
+							<s:SolidColorStroke color="0"/>
+						</s:stroke>
+					</s:Line>
+					
+					<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle" height="30">
+						<s:CheckBox id="chkAll" label="全选" selected="true" 
+									click="chkAll_clickHandler(event)"/>
+						<s:CheckBox id="chkShowTeam" label="显示大队"
+									click="chkShowTeam_clickHandler(event)"/>
+						<s:Button id="btnRefresh" label="刷新" toolTip="刷新警员信息"
+								  click="btnRefresh_clickHandler(event)"/>
+						<s:Button id="btnViewPoliceInTree" label="查看" toolTip="查看警员信息" 
+								  click="btnViewPoliceInTree_clickHandler(event)"/>
+					</s:HGroup>
+					<!--<s:SkinnableContainer id="treeContainer"
+										  skinClass="com.esri.viewer.skins.SkinnableContainerWithBorder"
+										  height="100%" width="100%" >
+						<s:layout>
+							<s:VerticalLayout gap="5" horizontalAlign="center"
+											  paddingTop="5"  paddingBottom="5" paddingLeft="5" paddingRight="5" />
+						</s:layout>
+						
+						
+					</s:SkinnableContainer>-->
+				</s:VGroup>
+			</s:NavigatorContent>
+			
+			
+			<!--图形搜索-->
+			<s:NavigatorContent>
+				<s:VGroup height="100%" width="100%">
+					<s:SkinnableContainer id="graphicSearchContainer" 
+										  skinClass="com.esri.viewer.skins.SkinnableContainerWithBorder"
+										  height="100%" width="100%" >
+						<s:layout>
+							<s:VerticalLayout gap="5" 
+											  paddingTop="5"  paddingBottom="5" paddingLeft="5" paddingRight="5"/>
+						</s:layout>
+						<s:HGroup width="100%"
+							gap="5"
+							horizontalAlign="center">
+						<!--<mx:Image width="40" height="40"
+							buttonMode="true"
+							source="assets/images/i_draw_circle.png" 
+							toolTip="圆形区域"
+							useHandCursor="true" 
+							click="{activateSearchTool(DrawTool.CIRCLE)}"/>	-->			
+						<mx:Image width="40" height="40"
+							buttonMode="true"
+							source="assets/images/i_draw_rect.png" 
+							toolTip="矩形区域"
+							useHandCursor="true"
+							click="{activateSearchTool(DrawTool.EXTENT)}"/>
+						<s:Image buttonMode="true" useHandCursor="true"
+								 source="assets/images/i_draw_line.png" 
+								 toolTip="折线" 
+								 click="{activateSearchTool(DrawTool.POLYLINE)}"/>
+						<!--<mx:Image width="40" height="40"
+							buttonMode="true"
+							source="assets/images/i_draw_poly.png" 
+							toolTip="多边形区域"
+							useHandCursor="true"
+							click="{activateSearchTool(DrawTool.POLYGON)}"/>-->
+						<mx:Image id="imgClear" width="40" height="40"
+							buttonMode="true"
+							source="assets/images/i_clear.png"
+							toolTip="清除搜索结果"
+							useHandCursor="true"
+							click="imgClear_clickHandler(event)"/>
+						</s:HGroup>
+						<s:Label id="lblSearchCount" text="" width="100%" visible="false" includeInLayout="false"/>
+						<mx:AdvancedDataGrid id="adgGraphicSearchResult" height="100%" width="100%"
+											 alternatingItemColors="[0xdae7f5, 0xc7d5e4]" selectionMode="multipleCells" 
+											 headerHeight="25" 
+											 dataProvider="{_policeGraphicList}"  
+											 itemClick="adgTextSearchResult_itemClickHandler(event)">
+							<mx:columns>
+								<mx:AdvancedDataGridColumn dataField="deptName" headerText="分局"/>
+								<mx:AdvancedDataGridColumn dataField="teamName" headerText="小组"/>
+								<mx:AdvancedDataGridColumn dataField="policeName" headerText="警员"/>
+							</mx:columns>
+						</mx:AdvancedDataGrid>
+						<s:HGroup height="30" width="100%" horizontalAlign="center" verticalAlign="middle" gap="5" >
+							<s:Button id="btnCallPoliceGraphic" label="呼叫警员" toolTip="呼叫选择的警员" 
+									  click="btnCallPoliceGraphic_clickHandler(event)"/>		
+							<s:Button id="btnSendMessageGraphic" label="发送短信" toolTip="发送短信" 
+									  click="btnSendMessageGraphic_clickHandler(event)"/>
+							<s:Button id="btnViewPoliceGraphic" label="查看" toolTip="查看警员信息" 
+									  click="btnViewPoliceGraphic_clickHandler(event)"/>
+						</s:HGroup>
+					</s:SkinnableContainer>
+				</s:VGroup>	
+			</s:NavigatorContent>
+			
+			
+			<!--文本搜索-->
+			<s:NavigatorContent>
+				<s:VGroup height="100%" width="100%" >
+					<s:SkinnableContainer id="textSearchContainer"
+										  skinClass="com.esri.viewer.skins.SkinnableContainerWithBorder"
+										  height="100%" width="100%" >
+						<s:layout>
+							<s:VerticalLayout gap="5" 
+											  paddingTop="5"  paddingBottom="5" paddingLeft="5" paddingRight="5"/>
+						</s:layout>
+						
+						<s:HGroup width="100%" >
+							<mx:Form width="100%" 
+									 paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+								<mx:FormItem label="分局: " width="100%">
+									<s:ComboBox id="cmbDept" width="100%" dataProvider="{_deptAC}" 
+												requireSelection="true" 
+												creationComplete="cmbDept_creationCompleteHandler(event)" 
+												change="cmbDept_changeHandler(event)"/>
+								</mx:FormItem>
+								
+								<mx:FormItem label="小组: " width="100%">
+									<s:ComboBox id="cmbTeam" width="100%" dataProvider="{_teamAC}" 
+												requireSelection="true" 
+												change="cmbTeam_changeHandler(event)"
+												creationComplete="cmbTeam_creationCompleteHandler(event)"/>
+								</mx:FormItem>
+								
+								<mx:FormItem label="警员: " width="100%">
+									<s:TextInput id="txtPolice" width="100%"/>
+								</mx:FormItem>
+							</mx:Form>
+							
+							<mx:Button id="btnSearchText" height="100%" width="60"
+									   labelPlacement="bottom" label="搜索" 
+									   icon="@Embed(source='assets/images/i_search.png')"
+									   click="btnSearchText_clickHandler(event)"/>
+						</s:HGroup>
+						
+						<mx:AdvancedDataGrid id="adgTextSearchResult" height="100%" width="100%"
+											 alternatingItemColors="[0xdae7f5, 0xc7d5e4]" selectionMode="multipleCells" 
+											 headerHeight="25" dataProvider="{_policeTextList}"  
+											 itemClick="adgTextSearchResult_itemClickHandler(event)">
+							<mx:columns>
+								<mx:AdvancedDataGridColumn dataField="deptName" headerText="分局"/>
+								<mx:AdvancedDataGridColumn dataField="teamName" headerText="小组"/>
+								<mx:AdvancedDataGridColumn dataField="policeName" headerText="警员"/>
+							</mx:columns>
+						</mx:AdvancedDataGrid>
+						
+						<!--<s:Scroller height="100%" width="100%" visible="false" includeInLayout="false">
+							<PoliceManageNew:PoliceItemDataGroup id="policeTextSearchDG" 
+																 dataProvider="{_policeTextList}" 
+																 queryResultMouseOver="policeDG_queryResultMouseOverHandler(event)" 
+																 queryResultMouseOut="policeDG_queryResultMouseOutHandler(event)" 
+																 queryResultClick="policeDG_queryResultClickHandler(event)">
+								<PoliceManageNew:layout>
+									<s:VerticalLayout gap="2" paddingLeft="5" paddingRight="5" 
+													  paddingTop="5" paddingBottom="5"
+													  horizontalAlign="justify"
+													  useVirtualLayout="true"/>
+								</PoliceManageNew:layout>
+							</PoliceManageNew:PoliceItemDataGroup>
+						</s:Scroller>-->
+						
+						<s:HGroup height="30" width="100%" horizontalAlign="center" verticalAlign="middle" gap="5" >
+							<s:Button id="btnCallPoliceText" label="呼叫警员" toolTip="呼叫选择的警员" 
+									  click="btnCallPoliceText_clickHandler(event)"/>		
+							<s:Button id="btnSendMessageText" label="发送短信" toolTip="发送短信" 
+									  click="btnSendMessageText_clickHandler(event)"/>
+							<s:Button id="btnViewPoliceText" label="查看" toolTip="查看警员信息" 
+									  click="btnViewPoliceText_clickHandler(event)"/>
+						</s:HGroup>
+					</s:SkinnableContainer>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

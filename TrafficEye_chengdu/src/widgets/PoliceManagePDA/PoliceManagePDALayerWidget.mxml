@@ -1,0 +1,651 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   widgetConfigLoaded="configLoad()"  >
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.ZoomEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.WidgetStates;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import flash.utils.clearTimeout;
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.utils.StringUtil;
+			
+			import widgets.Query.QueryResultSymbol;
+			
+			[Bindable] private var _deptList:Vector.<PoliceDept>;
+			private var _prevDeptList:Vector.<PoliceDept>;
+			
+			//symbol			
+			//不同比例尺下的图标
+			private var _scaleSymbols:Vector.<Object> = new Vector.<Object>();
+			//用于发布给RankSymbolWidget的数据
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+			
+			//警员实时信息刷新周期
+			private var _refreshRate:uint;
+			
+			private var _zoomScale:Number = 32000;
+			
+			private var _policeLayer:GraphicsLayer;
+			private var _drawLayer:GraphicsLayer;
+			
+			private var _relateWidgetTitleList:Array = [];
+			private var _relateWidgetIdList:Array = [];
+			private var _buttonArray:Array = [];
+			
+			private var _dataType:String;
+			
+			private function configLoad():void {		
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				AppEvent.addListener( AppEvent.WIDGET_STATE_CHANGED, widgetStateChangedHandler );
+				AppEvent.addListener( AppEvent.POLICETREE_PDA_PERSON_CHECKBOX_CLICKED, 
+					policeTree_person_checkClickHandler );	
+				AppEvent.addListener( AppEvent.FIND_DEVICE, findDeviceHandler );
+				AppEvent.addListener( AppEvent.SEND_POLICE, sendPoliceHandler );
+				map.addEventListener(ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
+				AppEvent.addListener( AppEvent.DATA_SENT, dataSentHandler );
+				
+				_deptList = new Vector.<PoliceDept>;
+				_prevDeptList = new Vector.<PoliceDept>;
+				
+				_drawLayer = new GraphicsLayer();
+				map.addLayer( _drawLayer );
+				
+				_policeLayer = new GraphicsLayer();
+				map.addLayer( _policeLayer );
+				
+				if ( configXML ) {
+					_zoomScale = configXML.zoomscale;
+					_refreshRate = configXML.refreshrate;
+					_dataType = configXML.datatype || "police";
+					_hintTimeout = configXML.hinttimeout;
+					
+					var infoUrl:String =  configXML.info; 
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};				
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					//buttons设置
+					var buttonList:XMLList = configXML..button;
+					for ( var i:uint = 0; i < buttonList.length(); i++ ) {
+						var buttonLabel:String = buttonList[i];
+						var button:Object = {
+							label:buttonLabel
+						}
+						_buttonArray.push( button );
+					}
+					
+					//symbol设置			
+					var scaleSymbolList:XMLList = configXML..symbols;
+					for ( i = 0; i < scaleSymbolList.length(); i++ ) {
+						var maxScale:Number = scaleSymbolList[i].@maxscale || 3072000;
+						var minScale:Number = scaleSymbolList[i].@minscale || 6000;
+						var useInRankSymbolWidget:Boolean = scaleSymbolList[i].@useinranksymbolwidget == "true" ? true : false;
+						var rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							var keyValueAlias:String = symbolList[j].@alias;
+							rankSymbol.keyValue = keyValue;
+							rankSymbol.keyValueAlias = keyValueAlias || keyValue;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, 
+								resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							rankSymbols.push( rankSymbol );
+							if ( useInRankSymbolWidget )
+								_rankSymbols.push( rankSymbol );
+						}
+						var scaleSymbol:Object = {
+							maxScale: maxScale,
+							minScale: minScale,
+							rankSymbols: rankSymbols
+						}
+						_scaleSymbols.push( scaleSymbol );
+					}
+					
+					var relateWidgetTitles:String = configXML.relatewidgets;
+					_relateWidgetTitleList = relateWidgetTitles.split( "," );
+					
+					//若没有关联的widget则立即请求数据，若有关联widget则等关联widget创建完成后再请求数据
+					if ( relateWidgetTitles && relateWidgetTitles != "" ) {
+						AppEvent.addListener( AppEvent.WIDGET_CREATED, widgetCreated );
+						AppEvent.addListener( AppEvent.LEGEND_CHECKBOX_CLICKED, 
+							legendItemVisibleChanged );
+					}						
+					else {
+						fetchSharedData();
+					} 
+					
+					//启动关联widget
+					for each ( var title:String in _relateWidgetTitleList ) {
+						var id:Number = getWidgetId( title );						
+						if ( id > -1 ) {
+							_relateWidgetIdList.push( id );
+							AppEvent.dispatch( AppEvent.WIDGET_RUN, id );
+						}
+					}
+				}
+			}
+			
+			private function widgetCreated( event:AppEvent ):void {
+				var id:Number = event.data as Number;
+				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
+					//最小化图例widget
+					//					ViewerContainer.dispatchEvent( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+					//请求数据
+					fetchSharedData();
+				}
+			}
+			
+			private function dataSentHandler( event:AppEvent ):void {
+				var dataTable:Hashtable = event.data as Hashtable;
+				var policeAC:ArrayCollection = dataTable.find( _dataType ); 
+				if ( policeAC ) 
+					setRTInfo( policeAC );
+				else
+					refreshData();
+			}
+			
+			private function legendItemVisibleChanged( event:AppEvent ):void {
+				var widgetTitle:String = event.data.widgetTitle;
+				if ( _relateWidgetTitleList.indexOf( widgetTitle ) == -1 )
+					return;
+				
+				var rankValue:String = event.data.rankValue;
+				var visible:Boolean = event.data.visible;
+				var symbol:QueryResultSymbol = getRankSymbol( rankValue );
+				symbol.visible = visible;
+				
+				for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+					var attr:PolicePoint = gra.attributes as PolicePoint;
+					var status:String = attr.policeInfo.status;
+					if ( status == rankValue ) {
+						gra.visible = visible;
+					}
+				}
+			} 
+			
+			private function widgetStateChangedHandler( event:AppEvent ):void {
+				var id:Number = event.data.id;
+				var state:String = event.data.state;
+				if ( id == widgetId ) {
+					if (state == WidgetStates.WIDGET_CLOSED ) {
+						_policeLayer.visible = false;
+						map.removeEventListener( ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
+						showInfoWindow( null );
+						for each ( wid in _relateWidgetIdList ) {
+							AppEvent.dispatch( AppEvent.WIDGET_CHANGE_STATE, 
+								{ id: wid, state: WidgetStates.WIDGET_CLOSED } );
+						}
+					}
+					else  {
+						_policeLayer.visible = true;
+						for each ( var wid:Number in _relateWidgetIdList ) {
+							AppEvent.dispatch( AppEvent.WIDGET_RUN, wid );
+						}
+					}
+					
+				}
+			}
+			
+			private var _drawSymbol:Symbol = new SimpleFillSymbol( 
+				SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, 
+				new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 1 ) );
+			
+			private var _caseId:String;
+			private function sendPoliceHandler( event:AppEvent ):void {
+				showInfoWindow( null );
+				_caseId = event.data as String;
+				setMapAction( DrawTool.EXTENT, "矩形区域", _drawSymbol, searchDrawEnd);
+			}
+			
+			private function searchDrawEnd( event:DrawEvent ):void {
+				event.target.deactivate();
+				var drawGeo:Geometry = event.graphic.geometry;
+				var codes:String = "";
+				for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+					if ( drawGeo.extent.contains( gra.geometry ) ) {
+						var police:PolicePoint = gra.attributes as PolicePoint;
+						var policeCode:String = police.policeInfo.policeCode;
+						codes += policeCode + ",";
+					}
+				}
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", 
+						params: [ "SendPolice", _caseId, codes ] } );
+				/* ViewerContainer.dispatchEvent( new AppEvent( AppEvent.OPEN_DEVICE, 
+				{ type: "SendPolice", id: _caseId, desc: codes } ) ); */
+			}
+			
+			private function refreshData():void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+					{ type: "PoliceManagerPDARTInfo" } ); 
+			}
+			
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key == "PoliceManagerPDARTInfo" ) {
+					setRTInfo( event.data.data );
+				}		
+			}
+			
+			private function zoomEndHandler( event:ZoomEvent ):void {
+				if ( mapScaleValid( map.scale ) ) {
+					for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+						var keyValue:String = gra.attributes.policeInfo.status;
+						gra.symbol = getSymbol( map.scale, keyValue ).resultMarkerSymbol;
+					}
+					_policeLayer.refresh();
+					_policeLayer.visible = true;
+				}
+				else {
+					_policeLayer.visible = false;
+				}
+				
+				function mapScaleValid( scale:Number ):Boolean {
+					for each ( var scaleSymbol:Object in _scaleSymbols ) {
+						var maxScale:Number = scaleSymbol.maxScale;
+						var minScale:Number = scaleSymbol.minScale;
+						if ( minScale <= scale && scale <= maxScale ) {
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+			
+			private function getDeptFromDeptList( policeObj:Object ):PoliceDept {
+				if ( !policeObj.deptCode )
+					return null;
+				
+				var dept:PoliceDept;
+				for each ( dept in _deptList ) {
+					if ( dept.deptCode == policeObj.deptCode ) 
+						return dept;
+				}
+				dept = new PoliceDept();
+				dept.deptCode = policeObj.deptCode;
+				dept.deptName = policeObj.deptName;
+				dept.deptGpsCode = policeObj.deptGpsCode;
+				_deptList.push( dept );
+				return dept;
+			}
+			
+			private function getTeamFromDeptList( policeObj:Object ):PoliceTeam {
+				if ( !policeObj.teamCode )
+					return null;
+				
+				var team:PoliceTeam;
+				var dept:PoliceDept = getDeptFromDeptList( policeObj );
+				if ( !dept )
+					return null;
+				for each ( team in dept.teamList ) {
+					if ( team.teamCode == policeObj.teamCode )
+						return team;
+				}			
+				
+				team = new PoliceTeam();
+				team.teamCode = policeObj.teamCode;
+				team.teamGpsCode = policeObj.teamGpsCode;
+				team.teamName = policeObj.teamName;
+				dept.teamList.push( team );
+				return team;
+			}
+			
+			private function getPoliceFromDeptList( policeObj:Object ):Police {
+				if ( !policeObj.policeCode || policeObj.policeCode == "" ) 
+					return null;
+				
+				var type:String = policeObj.type || "police";
+				if ( type.toLowerCase() != _dataType.toLowerCase() )
+					return null; 
+				
+				var police:Police;
+				var team:PoliceTeam = getTeamFromDeptList( policeObj );
+				if ( !team )
+					return null;
+				for each ( police in team.policeList ) {
+					if ( police.policeCode == policeObj.policeCode )
+						return police;
+				}
+				
+				police = new Police();
+				police.policeType = policeObj.type;
+				police.policeDuty = policeObj.duty;
+				police.policeCode = policeObj.policeCode;
+				police.policeGpsCode = policeObj.policeGpsCode;
+				police.policeName = policeObj.policeName;
+				police.deptCode = policeObj.deptCode;
+				police.deptGpsCode = policeObj.deptGpsCode;
+				police.deptName = policeObj.deptName;
+				police.teamCode = policeObj.teamCode;
+				police.teamGpsCode = policeObj.teamGpsCode;
+				police.teamName = policeObj.teamName;
+				team.policeList.push( police );
+				return police;
+			}
+			
+			
+			private function setRTInfo( policeAC:ArrayCollection ):void {
+				//复制deptList，用于保留police.treeVisible
+				_prevDeptList = _deptList.concat();
+				_deptList.length = 0;
+				
+				for ( var i:uint = 0; i < policeAC.length; i++ ) {
+					var police:Police = getPoliceFromDeptList( policeAC[i] );
+					if ( police ) {
+						police.Longitude = policeAC[i].longitude;
+						police.Latitude = policeAC[i].latitude;
+						police.timeStr = policeAC[i].fdtTimeStr || "";
+						police.status = policeAC[i].status || "";
+						police.postName = policeAC[i].postName || "";
+						police.timePeriod = policeAC[i].timePeriod || "";
+						police.timePeriod = StringUtil.trim( police.timePeriod );
+						police.treeVisible = getPoliceVisible( police.policeCode );
+					}
+				}	
+				
+				//				removeUnexistPolice( policeAC );
+				drawPolice();
+			}
+			
+			private function getPoliceVisible( policeCode:String ):Boolean {
+				for each ( var dept:PoliceDept in _deptList ) {
+					for each ( var team:PoliceTeam in dept.teamList ) {
+						for each ( var police:Police in team.policeList ) {
+							if ( police.policeCode == policeCode ) {
+								return police.treeVisible;
+							}
+						}
+					}
+				}
+				return true;
+			}
+			
+			//去掉deptLIst中这个周期没有数据的警员
+			private function removeUnexistPolice( policeAC:ArrayCollection ):void {
+				for each ( var dept:PoliceDept in _deptList ) {
+					for each ( var team:PoliceTeam in dept.teamList ) {
+						for ( var i:uint = 0; i < team.policeList.length; i++ ) {
+							var police:Police = team.policeList[i];
+							var policeCode:String = police.policeCode;
+							if ( !policeExist( policeCode ) ) {
+								team.policeList.splice( i, 1 );
+								i--;
+							}
+						}
+					}
+				}
+				function policeExist( policeCode:String ):Boolean {
+					for each ( var policeObj:Object in policeAC ) {
+						if ( policeObj.policeCode == policeCode )
+							return true;
+					}
+					return false;
+				}
+			}
+			
+			private function drawPolice():void {
+				_policeLayer.clear();
+				for each ( var sym:QueryResultSymbol in _rankSymbols )
+				sym.count = 0;
+				
+				for each ( var dept:PoliceDept in _deptList ) {
+					for each ( var team:PoliceTeam in dept.teamList ) {
+						for each ( var police:Police in team.policeList ) {
+							if ( !isNaN( police.Latitude ) && !isNaN(police.Longitude ) ) {
+								var pt:MapPoint = new MapPoint( police.Longitude, police.Latitude );
+								var content:String = 
+									"警号：" + police.policeCode + 
+									"\n所属单位：" + police.deptName +
+									"\n所属部门：" + police.teamName + 
+									"\n手台号：" + police.policeGpsCode;
+								if ( police.policeDuty ) {
+									content += "\n职务：" + police.policeDuty;
+								}
+								content += "\n当前状态：" + police.status + 
+									"\n岗点：" + police.postName;
+								var timeArr:Array = police.timePeriod.split( " " );
+								for ( var i:uint = 0; i < timeArr.length; i++ ) {
+									if ( i == 0 ) {
+										content += "\n时间段：" + timeArr[0];
+									}
+									else {
+										content += "\n：" + timeArr[i];
+									}
+								}
+								var policePoint:PolicePoint = new PolicePoint();
+								//类似居中效果
+								policePoint.title = "                " + police.policeName;
+								policePoint.id = police.policeCode;
+								policePoint.content = content;
+								policePoint.point = pt;
+								policePoint.geometry = pt;
+								policePoint.policeInfo = police;
+								policePoint.buttons = _buttonArray;
+								
+								var policeGra:Graphic = new Graphic( pt );
+								var symbol:QueryResultSymbol = getSymbol( map.scale,  police.status );								
+								var rankSymbol:QueryResultSymbol = getRankSymbol( police.status );
+								if ( symbol ) {
+									policeGra.symbol = symbol.resultMarkerSymbol;
+									policeGra.visible = police.treeVisible && rankSymbol.visible;
+									rankSymbol.count++;
+								}
+								else {
+									var defaultSymbol:QueryResultSymbol = getSymbol( map.scale, "default" );
+									var defaultRankSymbol:QueryResultSymbol = getRankSymbol( "default" );
+									policeGra.symbol = defaultSymbol.resultMarkerSymbol;
+									policeGra.visible = police.treeVisible && defaultRankSymbol.visible;
+									police.status = "default";
+									defaultRankSymbol.count++;
+								}
+								
+								policePoint.symbol = policeGra.symbol;
+								
+								policeGra.attributes = policePoint;
+								policeGra.addEventListener( MouseEvent.ROLL_OVER, mouseOverPolice );
+								policeGra.addEventListener( MouseEvent.CLICK, mouseClickPolice );
+								policeGra.addEventListener( MouseEvent.ROLL_OUT, mouseOutPolice );
+								_policeLayer.add( policeGra );
+							}
+							
+						}
+					}
+				}				
+				for each ( var wTitle:String in _relateWidgetTitleList ) {
+					AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
+						{ key: wTitle, data: _rankSymbols } );
+				}
+				_policeLayer.refresh();				
+			}
+			
+			private function getSymbol( scale:Number, keyValue:String ):QueryResultSymbol {
+				for each ( var scaleSymbol:Object in _scaleSymbols ) {
+					var maxScale:Number = scaleSymbol.maxScale;
+					var minScale:Number = scaleSymbol.minScale;
+					if ( minScale <= scale && scale <= maxScale ) {
+						for each ( var symbol:QueryResultSymbol in scaleSymbol.rankSymbols ) {
+							if ( symbol.keyValue == keyValue ) {
+								return symbol;
+							}
+						}
+					}
+				}
+				return null;
+			}
+			
+			private function getRankSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			/* private function legendItemVisibleChanged( event:AppEvent ):void {
+			var widgetTitle:String = event.data.widgetTitle;
+			if ( _relateWidgetTitleList.indexOf( widgetTitle ) == -1 )
+			return;
+			
+			var rankValue:String = event.data.rankValue;
+			var visible:Boolean = event.data.visible;
+			var symbol:QueryResultSymbol = getSymbol( rankValue );
+			symbol.visible = visible;
+			for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+			var attr:PolicePoint = gra.attributes as PolicePoint;
+			var status:String = attr.policeInfo.status;
+			if ( status == rankValue ) {
+			//						attr.policeInfo.legendVisible = visible;
+			gra.visible = attr.policeInfo.treeVisible && visible;
+			}
+			}
+			} */
+			
+			private function toggleView():void {
+				currentState = currentState == "searchCollapsed" ? "searchExpanded" : "searchCollapsed";
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private var infoTimer:uint;
+			private var _hintTimeout:uint;
+			private function mouseOverPolice( event:MouseEvent ):void {
+				if ( infoTimer != 0 )
+					clearTimeout( infoTimer );
+				var gra:Graphic = event.currentTarget as Graphic;
+				if ( _hintTimeout > 0 )
+					infoTimer = setTimeout( showInfoWindow, _hintTimeout, gra.attributes );
+				else
+					showInfoWindow(gra.attributes); 
+			}
+			
+			private function mouseOutPolice( event:MouseEvent ):void {
+				if ( infoTimer != 0 )
+					clearTimeout( infoTimer ); 
+			}
+			
+			private function mouseClickPolice( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				var attr:PolicePoint = gra.attributes as PolicePoint;
+				var policeInfo:Police = attr.policeInfo;
+				var param:String = policeInfo.policeCode + "," + policeInfo.deptCode + "," + policeInfo.deptName + "," + policeInfo.policeName + ";";
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", 
+						params:[ "callPerson", param ] } );
+				/* ViewerContainer.dispatchEvent( new AppEvent( AppEvent.OPEN_DEVICE, 
+				{ type: "callPerson", param:param } ) ); */
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					infoTemplate.data = infoData;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				} else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					//					createAndStartWidgetTimer();
+				}
+			}
+			
+			private var timer:Timer;
+			
+			private function createAndStartWidgetTimer():void {
+				if ( _refreshRate && _refreshRate > 0 && !timer ) {
+					if ( !timer ) {
+						timer = new Timer( _refreshRate * 1000 );
+						timer.addEventListener( TimerEvent.TIMER, timerTick );
+					}
+					timer.start();
+				}
+			}
+			
+			//stop widget timer
+			private function stopWidgetTimer():void {
+				if ( timer && timer.running ) {
+					timer.stop();
+				}
+			}
+			
+			//start widget timer
+			private function startWidgetTimer():void {
+				if ( timer && !timer.running ) {
+					timer.start();
+				}
+			}
+			
+			//定时刷新
+			private function timerTick( event:TimerEvent = null ):void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+					{ type: "PoliceManagerPDARTInfo" } );
+			}
+			
+			private function policeTree_person_checkClickHandler( event:AppEvent ):void {
+				var policeCode:String = event.data.item;
+				trace(policeCode);
+				var visible:Boolean = event.data.visible;
+				for each (var gra:Graphic in _policeLayer.graphicProvider  ) {
+					var policePoint:PolicePoint = gra.attributes as PolicePoint;
+					if ( policePoint.policeInfo.policeCode == policeCode ) {
+						policePoint.policeInfo.treeVisible = visible;
+						gra.visible = visible && policePoint.policeInfo.legendVisible;
+						break;
+					}
+				}		
+			}
+			
+			private function findDeviceHandler( event:AppEvent ):void {
+				var type:String = event.data.name;
+				var id:String = event.data.id;
+				if ( type != widgetTitle )
+					return;
+				
+				for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+					if ( id == gra.attributes.id ) {
+						map.centerAt( gra.attributes.point );
+						showInfoWindow( gra.attributes );
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+</viewer:BaseWidget>

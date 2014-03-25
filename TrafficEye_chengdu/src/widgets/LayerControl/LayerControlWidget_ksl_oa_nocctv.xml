@@ -1,0 +1,18 @@
+<configuration>
+	<colnum>2</colnum>
+	<groups>
+		<group title="信息展示">
+
+			<item id="zdd" tooltip="匝道灯" initstate="enable"
+				imageenable="assets/images/icon-zdd.png" imagedisable="assets/images/icon-zdd-b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="匝道灯" />
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+		</group>
+	</groups>
+</configuration>

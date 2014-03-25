@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2010-2011 Esri
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:esri="http://www.esri.com/2008/ags"
+				   xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   x="600" y="300" backgroundColor="#B5B1B1" layout="horizontal"
+				   widgetConfigLoaded="init()">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.IdentifyEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.supportClasses.LayerDetails;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.tasks.IdentifyTask;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.IdentifyParameters;
+			import com.esri.ags.tasks.supportClasses.IdentifyResult;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.components.toc.utils.MapUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.GridItem;
+			import mx.controls.Alert;
+			import mx.rpc.AsyncResponder;
+			
+			
+			import widgets.LayerList.LayerListWidget;
+			
+			
+			
+			[Bindable]
+			private var clearLabel:String;
+			[Bindable]
+			private var layerattributes:String;
+			[Bindable]
+			private var drawFreehandPolygonLabel:String;
+			[Bindable]
+			private var drawRectangleLabel:String;
+			[Bindable]
+			private var drawCircleLabel:String;
+			
+			
+			
+			private var selectedDrawingIcon:Image;
+			private var queryLayer:String;
+			private var queryArray:Array;
+			private var drawMode:String;
+			private var drawType:String;
+			private var drawStatus:String;
+			
+			//graphics layer
+			private var graphicsLayer: GraphicsLayer;
+			private var graphicLineSym: SimpleLineSymbol = new SimpleLineSymbol( "solid", 0xFF0000, 1, 2 );
+			private var graphicPolySym: SimpleFillSymbol = new SimpleFillSymbol( "solid", 0x0099FF, 0.15, graphicLineSym );
+			
+			public function init():void
+			{
+				graphicsLayer = new GraphicsLayer();
+				map.addLayer( graphicsLayer);
+				
+				if ( configXML ) 
+				{
+					clearLabel = configXML.labels.clearlabel || "清除";
+					var layerIds:String =  configXML.layerIds;					
+					
+															
+					queryLayer = configXML.identifyurl;//
+					queryLayer = queryLayer.replace( "[serverIp]", configData.serverIp );
+				}
+				
+			}
+			
+			
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				
+				selectedDrawingIcon = Image(event.currentTarget);
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+				
+				drawType =  selectedDrawingIcon.name;
+				switch( drawType )
+				{
+					case DrawTool.EXTENT: 
+					{
+						drawStatus = drawRectangleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;	
+					}
+						
+					case DrawTool.CIRCLE:
+					{
+						drawStatus = drawCircleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					{
+						drawStatus = drawFreehandPolygonLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+						
+				}
+				
+			}
+			private function map_drawEndHandler(event:DrawEvent):void
+			{
+				graphicsLayer.clear();
+				var geom:Geometry =  event.graphic.geometry;
+				var gra:Graphic = new Graphic( geom );
+				gra.symbol = graphicPolySym;
+				graphicsLayer.add( gra ); 
+				identifyFeatures( event.graphic.geometry );
+			}
+			
+
+			private function identifyFeatures( geo: Geometry ): void {
+				
+				
+				var identifyTask:IdentifyTask = new IdentifyTask( queryLayer );
+				identifyTask.disableClientCaching = true;
+				identifyTask.showBusyCursor = true;
+				
+				var identifyParams: IdentifyParameters = new IdentifyParameters();
+				identifyParams.returnGeometry = true;
+				identifyParams.tolerance = 10;
+				identifyParams.width = map.width;
+				identifyParams.height = map.height;
+				identifyParams.geometry = geo;
+				identifyParams.mapExtent = map.extent;
+				identifyParams.layerIds = [0];
+				identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+				identifyParams.spatialReference = map.spatialReference;
+				
+				
+				identifyTask.execute( identifyParams, new AsyncResponder( onIdentifyResult, onIdentifyFault,null ));
+				
+			}
+			
+			
+			private function onIdentifyResult(results: Array, token:Object = null):void
+			{
+				var result:ArrayCollection = new ArrayCollection;
+				for (var i:int = 0; i < results.length; i++) 
+				{
+					result.addItem(results[i].feature.attributes.编码);					
+				}
+				
+				//AppEvent.dispatch(AppEvent.RETURN_LAYERRESULT,result);		
+			}
+			
+			
+			private function onIdentifyFault( info: Object, token: Object = null):void
+			{
+				Alert.show( info.toString() );
+			}
+			
+			private function clear():void
+			{
+				graphicsLayer.clear();
+
+			}
+
+			
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < drawImageGroup.numChildren; i++)
+				{
+					if (drawImageGroup.getChildAt(i).filters && drawImageGroup.getChildAt(i).filters.length > 0)
+					{
+						if (!(selectedDrawingIcon && drawImageGroup.getChildAt(i) === selectedDrawingIcon))
+						{
+							drawImageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:GlowFilter id="glowFilter" alpha="1" color="{getStyle('focusColor')}" inner="true"
+					  strength="2"/>
+		<esri:SimpleFillSymbol id="fillSymbol" alpha="0.5" color="0xFF0000" style="solid"/>
+		<esri:EditTool id="editTool" map="{map}"/>
+		<esri:Map>
+			<esri:GraphicsLayer id="myGraphicsLayer"/>
+		</esri:Map>
+	</fx:Declarations>
+	<s:Panel width="271" height="260">
+		<s:HGroup id="drawImageGroup" contentBackgroundAlpha="0.2" contentBackgroundColor="#EEAAAA"
+				  gap="0" horizontalAlign="right" verticalAlign="top">		
+		<s:Image x="6" y="7" width="40" height="40" buttonMode="true"
+				 click="activateDrawTool(event)" name="{DrawTool.EXTENT}"
+				 source="assets/images/i_draw_rect.png" toolTip="矩形"/>
+		<s:Image x="54" y="7" width="40" height="40" buttonMode="true"
+				 click="activateDrawTool(event)" name="{DrawTool.FREEHAND_POLYGON}"
+				 source="assets/images/i_draw_freepoly.png" toolTip="多边形"/>
+		<s:Image x="102" y="7" width="40" height="40" buttonMode="true"
+				 click="activateDrawTool(event)" name="{DrawTool.CIRCLE}"
+				 source="assets/images/i_draw_circle.png" toolTip="圆"/>			
+		</s:HGroup>	
+		<s:Button x="203" y="10" width="56" height="24" label="{clearLabel}" click="clear()"/>
+	</s:Panel>
+</viewer:BaseWidget>	

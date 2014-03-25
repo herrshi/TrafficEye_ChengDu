@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2010 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   creationComplete="init()"
+				   implements="com.esri.viewer.IInfowindowTemplate, com.esri.ags.components.supportClasses.IGraphicRenderer">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.StringUtil;
+			
+			import flashx.textLayout.factory.StringTextLineFactory;
+			
+			private var _graphic:Graphic;
+//			private var _layer:GraphicsLayer;
+			
+			//private var _infoData:Object;
+			//set info parameters
+			[Bindable]
+			private var _content:String = "";
+			
+			[Bindable]
+			private var _title:String = "";
+			
+			private var _infoClass:Class;
+			
+			public function set infoClass(value:Class):void
+			{
+				_infoClass = value;
+			}
+			
+			public function get infoClass():Class
+			{
+				return _infoClass;
+			}
+			
+			private function init():void
+			{
+				this.removeEventListener(FlexEvent.CREATION_COMPLETE, init);
+				this.addEventListener(FlexEvent.DATA_CHANGE, setInfoParameters);
+				infoClass = GridInfoPopupWidget;
+				setInfoParameters(null);
+			}
+			
+			public function set graphic(value:Graphic):void
+			{
+				_graphic = value;
+//				_layer = _graphic.graphicsLayer;
+			} 
+			
+			public function set infoConfig(value:XML):void
+			{
+				
+			} 
+			
+			private function setInfoParameters(event:FlexEvent):void
+			{
+				if (data == null)
+				{
+					return;
+				}
+				
+				_title = data.title || "";
+				_content = data.content;
+				
+				if ( _content ) {
+					var contentAC:ArrayCollection = parseContent();
+					if ( contentAC ) {
+						grdContent.dataProvider = parseContent();
+						grdContent.rowCount = contentAC.length;
+						grdContent.visible = true;
+					}
+					
+				}
+				else {
+					grdContent.dataProvider = null;
+					grdContent.visible = false;
+				}
+				
+				//clear picture and link button
+				infoImage.source = "";
+				infoImage.visible = false;
+				infoImage.includeInLayout = false;
+				infoLink.visible = false;
+				infoLink.includeInLayout = false;
+				
+				if (data.link)
+				{
+					var link:String = data.link as String;
+					var pos:Number = link.length - 4;
+					var sfx:String = link.substr(pos, 4).toLowerCase();
+					if ((sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif"))
+					{
+						infoImage.source = link;
+						infoImage.visible = true;
+						infoImage.includeInLayout = true;
+					}
+					else
+					{
+						infoLink.text = link;
+						infoLink.visible = true;
+						infoLink.includeInLayout = true;
+					}
+				}
+				
+				//buttons
+				for ( var i:uint = 0; i < tlButtons.numElements; i++ ) {
+					var btn:Button = tlButtons.getElementAt( i ) as Button;
+					btn.visible = false;
+					btn.includeInLayout = false;
+				}  
+				
+				var buttonArray:Array = data.buttons;
+				if ( buttonArray && buttonArray.length > 0 ) {
+					tlButtons.visible = true;
+					tlButtons.includeInLayout = true;
+					
+					for ( i = 0; i < buttonArray.length; i++ ) {
+						var buttonLabel:String = buttonArray[i].label;
+						for ( var j:uint = 0; j < tlButtons.numElements; j ++ ) {
+							btn = tlButtons.getElementAt( j ) as Button;
+							if ( btn.label == buttonLabel ) {
+								btn.visible = true;
+								btn.includeInLayout = true;
+								btn.enabled = ( data.id && data.id != "" );
+								break;
+							}
+						}
+					}
+				} 
+				else {
+					tlButtons.visible = false;
+					tlButtons.includeInLayout = false;
+				} 
+			}
+			
+			private function parseContent():ArrayCollection {
+				var contentAC:ArrayCollection = new ArrayCollection();
+				var rows:Array = _content.split( "\n" );
+				for each ( var row:String in rows ) {
+					var pos:uint = row.indexOf( "：" ) > -1 ? row.indexOf( "：" ) : row.indexOf( ":" );
+					if ( pos == -1 )
+						continue;
+					var fieldName:String = row.substring( 0, pos );
+					var fieldValue:String = row.substring( pos + 1 );
+					contentAC.addItem( { fieldName:fieldName, fieldValue:fieldValue } );
+				}	
+				
+				return contentAC;
+			}
+			
+			//show link
+			private function showLink():void
+			{
+				navigateToURL(new URLRequest(data.link));
+			}
+			
+
+			protected function btnCall_clickHandler(event:MouseEvent):void {
+				var policeCode:String = this.data.policeInfo.policeCode;
+				var policeName:String = this.data.policeInfo.policeName;
+				var deptCode:String = this.data.policeInfo.deptCode;
+				var deptName:String = this.data.policeInfo.deptName;
+				var param:String = policeCode + "," + deptCode + "," + deptName + "," + policeName + ";";
+				/* AppEvent.dispatch( new AppEvent( AppEvent.OPEN_DEVICE, 
+					{ type: "callPerson", param:param } ) ); */
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", params: [ "callPerson", param ] } );
+			}
+
+
+			protected function btnMessage_clickHandler(event:MouseEvent):void {
+				var policeCode:String = this.data.policeInfo.policeCode;
+				var policeName:String = this.data.policeInfo.policeName;
+				var deptCode:String = this.data.policeInfo.deptCode;
+				var deptName:String = this.data.policeInfo.deptName;
+				var param:String = policeCode + "," + deptCode + "," + deptName + "," + policeName + ";";
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", params: [ "sendMessage", param ] } );
+			}
+
+			protected function btnRefresh_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var policeCode:String = this.data.policeInfo.policeCode;
+				var policeGpsCode:String = this.data.policeInfo.policeGpsCode;
+				var param:String = policeCode + "," + policeGpsCode + ";";
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", params: [ "RefreshPerson", param ] } );
+			}
+			
+			
+			
+			protected function btnDeploymentRefresh_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var plusInfo:String = this.data.plusInfo; //gpscode|gpscode
+				var temparr:Array = plusInfo.split("@");
+				var gpscodes:String = temparr[0];
+				var policeIds:String = temparr[1];
+				var param:String = policeIds + "," + gpscodes ;
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "openDevice", params: [ "RefreshPerson", param ] } );
+			}
+
+			protected function btnCaseDesc_clickHandler(event:MouseEvent):void {
+				var caseId:String = this.data.id;
+				if ( caseId != "" ) {
+					AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+						{ functionName: "openDevice", params: [ "case", caseId ] } );
+				}
+					
+			}
+
+
+			protected function btnSendPolice_clickHandler(event:MouseEvent):void {
+				var caseId:String = this.data.id;
+				if ( caseId != "" )
+					AppEvent.dispatch( AppEvent.SEND_POLICE, caseId );
+			}
+
+			protected function btnDelConstructionPoint_clickHandler(event:MouseEvent):void {
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "deleteConstructionPoint", params: [ this.data.id ] } );
+				var timer:Timer = new Timer( 500, 1 );
+				timer.addEventListener(TimerEvent.TIMER, timer_timerHandler );
+				timer.start();
+				
+				function timer_timerHandler( event:TimerEvent ):void {
+					AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+						{ type: "ConstructionPointInfo" } );
+				}
+			}
+			
+			protected function btnViewConstructionPoint_clickHandler(event:MouseEvent):void {
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "viewConstructionPoint", params: [ this.data.id ] } );
+				
+			}
+			
+			protected function btnEditConstructionPoint_clickHandler(event:MouseEvent):void {
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "editConstructionPoint", params: [ this.data.id ] } );
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group id="infoCanvas"
+			 width="250"
+			 minHeight="30">
+		<s:layout>
+			<s:VerticalLayout gap="5"
+							  horizontalAlign="center"
+							  paddingBottom="4"
+							  paddingLeft="4"
+							  paddingRight="4"
+							  paddingTop="0"
+							  verticalAlign="middle"/>
+		</s:layout>
+		<s:Label id="infoTitle"
+				 width="100%"
+				 text="{_title}"
+				 visible="false"/>
+		<mx:HRule width="100%" strokeWidth="2" strokeColor="0" />
+		<mx:DataGrid id="grdContent" width="100%" height="100%"
+					 fontSize="14" variableRowHeight="true" alternatingItemColors="[ 0xdae7f5, 0xc7d5e4 ]"
+					 visible="false" showHeaders="false">
+			<mx:columns>
+				<mx:DataGridColumn dataField="fieldName" width="70"/>
+				<mx:DataGridColumn dataField="fieldValue" wordWrap="true"/>
+			</mx:columns>
+		</mx:DataGrid>
+		<mx:Image id="infoImage"
+				  height="150"
+				  buttonMode="true"
+				  click="showLink()"
+				  includeInLayout="false"
+				  maxWidth="{infoCanvas.width - 10}"
+				  useHandCursor="true"
+				  visible="false"/>
+		<s:Label id="infoLink"
+				 width="100%"
+				 click="showLink()"
+				 includeInLayout="false"
+				 maxDisplayedLines="1"
+				 showTruncationTip="true"
+				 textDecoration="underline"
+				 visible="false"/>	
+		<s:TileGroup id="tlButtons" width="100%" height="30" horizontalAlign="center" 
+					 direction="ltr" horizontalGap="5" verticalGap="5" fontSize="12">
+			<s:Button id="btnCall" label="呼叫" width="80" toolTip="呼叫警员" 
+					  visible="false" includeInLayout="false" 
+					  click="btnCall_clickHandler(event)" />
+			<s:Button id="btnMessage" label="短信" width="80" toolTip="发送短信" 
+					  visible="false" includeInLayout="false" 
+					  click="btnMessage_clickHandler(event)"/>
+			<s:Button id="btnRefresh" label="刷新" width="80" toolTip="刷新警员" 
+					  visible="false" includeInLayout="false" 
+					  click="btnRefresh_clickHandler(event)"/>
+			<s:Button id="btnDeploymentRefresh" label="刷新警员" width="80" toolTip="岗点刷新警员" 
+					  visible="false" includeInLayout="false" 
+					  click="btnDeploymentRefresh_clickHandler(event)"/>
+			<s:Button id="btnCaseDesc" label="警情详情" width="80" toolTip="查看警情详细信息"
+					  visible="false" includeInLayout="false" 
+					  click="btnCaseDesc_clickHandler(event)"/>
+			<s:Button id="btnSendPolice" label="派警" width="80" toolTip="点击后请选择警员"
+					  visible="false" includeInLayout="false" 
+					  click="btnSendPolice_clickHandler(event)"/>
+			<s:Button id="btnDelConstructionPoint" label="删除施工点" width="80"
+					  visible="false" includeInLayout="false" 
+					  click="btnDelConstructionPoint_clickHandler(event)"/>
+			<s:Button id="btnViewConstructionPoint" label="施工点详情" width="80"
+					  visible="false" includeInLayout="false" 
+					  click="btnViewConstructionPoint_clickHandler(event)"/>
+			<s:Button id="btnEditConstructionPoint" label="编辑施工点" width="80"
+					  visible="false" includeInLayout="false" 
+					  click="btnEditConstructionPoint_clickHandler(event)"/>
+		</s:TileGroup>
+	</s:Group>
+	
+</viewer:BaseWidget>

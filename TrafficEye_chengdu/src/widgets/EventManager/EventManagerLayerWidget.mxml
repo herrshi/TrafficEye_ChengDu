@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark"				   
+	xmlns:viewer="com.esri.viewer.*" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	layout="absolute"
+	visible="false"
+	widgetConfigLoaded="configLoad()" 
+	creationComplete="init()" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.TextSymbol;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.WidgetStates;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.ModuleEvent;
+			
+			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
+			
+			private var _refreshTimer:Timer;
+			private var _debug:Boolean = false;
+			private var _showText:Boolean = false;
+			
+			private var _eventLayer:GraphicsLayer = new GraphicsLayer();
+			
+			[Bindable]private var _unlocateEventAC:ArrayCollection = new ArrayCollection();
+			
+			private var _relateWidgetTitleList:Array = [];
+			private var _relateWidgetIdList:Array = [];
+			private var _buttonArray:Array = [];
+			
+			private var _userId:String;
+			private var _roleId:String;
+			
+			
+			//symbol
+			private var rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+			
+			
+			private function init():void {
+				map.addLayer( _eventLayer );
+				
+				
+				AppEvent.addListener( AppEvent.DISPATCH_IDS ,getIds );
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				AppEvent.addListener( AppEvent.WIDGET_STATE_CHANGED, widgetStateChangedHandler );
+				/* AppEvent.dispatch( new AppEvent( AppEvent.CHANGE_WIDGET_ACTIVITY, 
+					{ name: "警员管理图层", visible: true } ) ); */
+				
+			}
+			
+			private function getIds(event:AppEvent):void{
+				_userId = event.data.userId;
+				_roleId = event.data.roleId;
+				
+			}
+			private function configLoad():void {
+//				_eventLayer.visible = false;
+				
+				
+				if ( configXML ) {					
+					_debug = ( configXML.debug == "true" ? true : false );
+					_showText = ( configXML.showtext == "true" ? true : false );
+					
+					//buttons设置
+					var buttonList:XMLList = configXML..button;
+					for ( var i:uint = 0; i < buttonList.length(); i++ ) {
+						var buttonLabel:String = buttonList[i];
+						var button:Object = {
+							label:buttonLabel
+						}
+						_buttonArray.push( button );
+					}
+					
+					var infoUrl:String = configXML.info;
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};					
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					//symbol设置
+					var symbolList:XMLList = configXML..symbol;
+					for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+						var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+						var keyValue:String = symbolList[j].@keyvalue;
+						var keyValueAlias:String = symbolList[j].@alias;
+						rankSymbol.keyValue = keyValue;
+						rankSymbol.keyValueAlias = keyValueAlias;
+						
+						var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+						var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+						var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+						var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+						var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+						rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+							resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+						
+						rankSymbols.push( rankSymbol );
+					}
+					
+					var relateWidgetTitles:String = configXML.relatewidgets;
+					_relateWidgetTitleList = relateWidgetTitles.split( "," );
+					//若没有关联的widget则立即请求数据，若有关联widget则等关联widget创建完成后再请求数据
+					if ( relateWidgetTitles && relateWidgetTitles != "" ) {
+						AppEvent.addListener( AppEvent.LEGEND_CHECKBOX_CLICKED, legendItemVisibleChanged );
+						AppEvent.addListener( AppEvent.WIDGET_CREATED, widgetCreated );
+					}
+					else {
+						refreshEvent();
+					}
+					
+					for each ( var title:String in _relateWidgetTitleList ) {
+						var id:Number = getWidgetId( title );						
+						if ( id > -1 ) {
+							_relateWidgetIdList.push( id );
+							AppEvent.dispatch( AppEvent.WIDGET_RUN, id );
+						}
+					}
+					
+					var refreshRate:uint = configXML.refreshrate;
+					if ( refreshRate ) {
+						_refreshTimer = new Timer( refreshRate*1000 );
+						_refreshTimer.addEventListener( TimerEvent.TIMER, refreshEvent );
+						_refreshTimer.start();
+					}					
+				}
+			}
+			
+			private function widgetStateChangedHandler( event:AppEvent ):void {
+				var id:Number = event.data.id;
+				var state:String = event.data.state;
+				if ( id == widgetId ) {
+					if (state == WidgetStates.WIDGET_CLOSED ) {
+						_eventLayer.visible = false;
+						showInfoWindow( null );
+						for each ( wid in _relateWidgetIdList ) {
+							AppEvent.dispatch( AppEvent.WIDGET_CHANGE_STATE, 
+								{ id: wid, state: WidgetStates.WIDGET_CLOSED } );
+						}
+					}
+					else {
+						_eventLayer.visible = true;
+						/* AppEvent.dispatch( new AppEvent( AppEvent.CHANGE_WIDGET_ACTIVITY, 
+							{ name: "警员管理图层", visible: true } ) ); */
+						for each ( var wid:Number in _relateWidgetIdList ) {
+							AppEvent.dispatch( AppEvent.WIDGET_RUN, wid );
+						}
+					}
+				}
+			}
+			
+			private function showWidgetLayerHandler( event:AppEvent ):void {
+				var type:String = event.data.type;
+				var visible:Boolean = event.data.visible;
+				if ( type == widgetTitle ) {
+					_eventLayer.visible = visible;
+				}
+			}
+			
+			private function showWidgetPanelHandler( event:AppEvent ):void {
+				var type:String = event.data.type;
+				var visible:Boolean = event.data.visible;
+				if ( type == widgetTitle ) {
+					this.visible = visible;
+				}
+			}
+			
+			private function legendItemVisibleChanged( event:AppEvent ):void {
+				var widgetTitle:String = event.data.widgetTitle;
+				if ( _relateWidgetTitleList.indexOf( widgetTitle ) == -1 )
+					return;
+				
+				var rankValue:String = event.data.rankValue;
+				var visible:Boolean = event.data.visible;
+				var symbol:QueryResultSymbol = getSymbol( rankValue );
+				symbol.visible = visible;
+				
+				for each ( var gra:Graphic in _eventLayer.graphicProvider ) {
+					var attr:QueryResult = gra.attributes as QueryResult;
+					var status:String = attr.status;
+					if ( status == rankValue ) {
+						gra.visible = visible;
+					}
+				}
+			}
+			
+			private function widgetCreated( event:AppEvent ):void {
+				var id:Number = event.data as Number;
+				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
+					//最小化图例widget
+					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+					//请求数据
+					refreshEvent();
+				}
+			}
+			
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key == "EventInfo" ) {
+					var resultAC:ArrayCollection = event.data.data;
+					setEventData( resultAC );
+				}
+				else if ( key == "PoliceManagerRTInfo" ) {
+					
+				}
+			} 
+			
+			private var eventSymbol:PictureMarkerSymbol = 
+				new PictureMarkerSymbol( "assets/flash/Red_glow.swf", 40, 40, -15, 15 );
+			
+			private function setEventData( resultAC:ArrayCollection ):void {				
+				if ( _debug )
+					Alert.show( resultAC.length.toString() );
+				
+				for each ( var rank:QueryResultSymbol in rankSymbols )
+					rank.count = 0;				
+				_eventLayer.clear();
+				_unlocateEventAC.removeAll();
+				AppEvent.dispatch( AppEvent.CLEAR_TEXT );
+				
+				for ( var i:uint = 0; i < resultAC.length; i++ ) {
+					var x:Number = resultAC[i].longitude;
+					var y:Number = resultAC[i].latitude;
+					
+					var eventId:String = resultAC[i].caseId;
+					var eventNo:String = resultAC[i].caseId;
+					var time:String = resultAC[i].callPoliceTime;
+					var desc:String = resultAC[i].content;
+					var location:String = resultAC[i].occurPlace;
+					var reportor:String = resultAC[i].callPolicePersonName;
+					var status:String = resultAC[i].stepID || "default";
+					if ( isNaN(x) || isNaN(y) || x == 0 || y == 0 ) 
+						return;		
+					var symbol:QueryResultSymbol = getSymbol( status );
+					var statusDesc:String = "";
+					if ( symbol )
+						statusDesc = symbol.keyValueAlias || symbol.keyValue;
+					var content:String ="发生时间："  + time + "\n报警人：" + reportor + "\n发生地点：" + location + 
+						"\n警情描述：" + desc + "\n警情状态：" + statusDesc;
+					var pt:MapPoint = new MapPoint( x, y );
+					var queryResult:QueryResult = new QueryResult();
+					queryResult.title = eventNo;
+					queryResult.id = eventId;
+					queryResult.content = content;
+					queryResult.point = pt;
+					queryResult.buttons = _buttonArray;
+					
+					var gra:Graphic = new Graphic( pt );
+					
+					var rankSymbol:QueryResultSymbol = getSymbol( status );
+					var defaultSymbol:QueryResultSymbol = getSymbol( "default" );
+					if ( rankSymbol ) {
+						gra.symbol = rankSymbol.resultMarkerSymbol;
+						gra.visible = rankSymbol.visible;
+						rankSymbol.count++;
+					}
+					else if ( defaultSymbol ) {
+						gra.symbol = defaultSymbol.resultMarkerSymbol;
+						gra.visible = defaultSymbol.visible;
+						queryResult.status = "default";
+						defaultSymbol.count++;
+					}
+					else {
+						gra.symbol = new PictureMarkerSymbol( widgetIcon );
+					}								
+					queryResult.symbol = gra.symbol;
+					
+					gra.attributes = queryResult;					
+					gra.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+					gra.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+					gra.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+					_eventLayer.add( gra );
+					
+					if ( _showText ) {
+						var htmlText:String = "<b><font size='18'>" + eventNo + "\n" + content + "</b></font>";
+						var textData:Object = {
+							x: x,
+							y: y,
+							htmlText: htmlText,
+							alpha: 0.8,
+							color: 0,
+							border: true,
+							borderColor: 0,
+							background: true,
+							backgroundColor: 0xFFFFFF,
+							placement: TextSymbol.PLACEMENT_ABOVE,
+								angle: 0,
+								xoffset: 0,
+								yoffset: 30
+						}
+						AppEvent.dispatch( AppEvent.ADD_TEXT, textData );
+					}					
+				}
+				_eventLayer.refresh();
+			}
+			
+			private function itemExist( item:* ):int {
+				if ( item == undefined )
+					return -1;
+				
+				for ( var i:int = 0; i < _unlocateEventAC.length; i++ ) {
+					var obj:Object = _unlocateEventAC[i];
+					if ( obj.eventId == item.eventId )
+						return i;
+				}
+				return -1;
+			}
+			
+			private function getSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				
+				return null;
+			}
+			
+			private function mouseClickGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				var id:String = gra.attributes.id;
+				AppEvent.dispatch( AppEvent.OPEN_DEVICE, { type:"case", id: id } );
+			}
+			
+			private function mouseOverGraphic(event:MouseEvent):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				showInfoWindow(gra.attributes);
+			}
+			
+			private function mouseOutGraphic( event:MouseEvent ):void {
+				//showInfoWindow( null );
+			}
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private function infoReady(event:AppEvent):void
+			{
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId)
+				{
+					infoTemplate = event.data.infoWidget;
+				}
+			}
+			
+			private function infoError(event:ModuleEvent):void
+			{
+				
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData)
+				{
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					infoTemplate.data = infoData;
+					map.infoWindow.show(infoData.point);
+				}
+				else
+				{
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function refreshEvent( event:TimerEvent = null ):void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: "EventInfo" } );
+				/* var resultString:String = "<SJ_LIST><SJ SJID='123' SJNO='SJ20101118110103' X='104.0628' Y='30.6699' OCCUR_TIME='2010-11-18 11:01:03' SJ_DESC='发生一件事件' SJ_LOCATION='xx路yy路' status=''/></SJ_LIST>";
+				setEventData( resultString );  */  
+			}
+		]]>
+	</fx:Script>	
+</viewer:BaseWidget>

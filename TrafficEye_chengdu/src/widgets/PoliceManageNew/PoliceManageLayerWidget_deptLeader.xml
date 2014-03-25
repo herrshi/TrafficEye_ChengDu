@@ -1,0 +1,94 @@
+<?xml version="1.0" ?>
+<configuration>
+	<!-- <relatewidgets>领导数量</relatewidgets> -->
+	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>
+	<!--数据类型，警员or协警 -->
+	<datatype>deptLeader</datatype>
+	<refreshrate>0</refreshrate>
+	<zoomscale>48000</zoomscale>
+	<hinttimeout>0</hinttimeout>
+	<buttons>
+		<button>呼叫</button>
+		<button>短信</button>
+		<button>刷新</button>		
+	</buttons>
+	<symbols maxscale="3072000" minscale="192000">
+		<symbol keyvalue="在岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="8"
+				width="8" />
+		</symbol>
+		<symbol keyvalue="离岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="8"
+				width="8" />
+		</symbol>
+		<symbol keyvalue="在 岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/police-RedFlag16.png" height="8"
+				width="8" />
+		</symbol>
+		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
+		<!-- <picturemarkersymbol -->
+		<!-- url="assets/images/policeStatus/police-NotMatch8.png" height="8" -->
+		<!-- width="8" /> -->
+		<!-- </symbol> -->
+		<symbol keyvalue="default" alias="其他">
+			<picturemarkersymbol url="assets/images/police.png"
+				height="8" width="8" />
+		</symbol>
+	</symbols>
+	<symbols maxscale="96000" minscale="48000"
+		useinranksymbolwidget="true">
+		<symbol keyvalue="在岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="16"
+				width="16" />
+		</symbol>
+		<symbol keyvalue="离岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="16"
+				width="16" />
+		</symbol>
+		<symbol keyvalue="在 岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/police-RedFlag16.png" height="16"
+				width="16" />
+		</symbol>
+		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
+		<!-- <picturemarkersymbol -->
+		<!-- url="assets/images/policeStatus/police-NotMatch16.png" height="16" -->
+		<!-- width="16" /> -->
+		<!-- </symbol> -->
+		<symbol keyvalue="default" alias="其他">
+			<picturemarkersymbol url="assets/images/police.png"
+				height="16" width="16" />
+		</symbol>
+	</symbols>
+	<symbols maxscale="24000" minscale="6000">
+		<symbol keyvalue="在岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="20"
+				width="20" />
+		</symbol>
+		<symbol keyvalue="离岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="20"
+				width="20" />
+		</symbol>
+		<symbol keyvalue="在 岗">
+			<picturemarkersymbol
+				url="assets/images/policeStatus/police-RedFlag16.png" height="20"
+				width="20" />
+		</symbol>
+		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
+		<!-- <picturemarkersymbol -->
+		<!-- url="assets/images/policeStatus/police-NotMatch20.png" height="20" -->
+		<!-- width="20" /> -->
+		<!-- </symbol> -->
+		<symbol keyvalue="default" alias="其他">
+			<picturemarkersymbol url="assets/images/police.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
+</configuration>

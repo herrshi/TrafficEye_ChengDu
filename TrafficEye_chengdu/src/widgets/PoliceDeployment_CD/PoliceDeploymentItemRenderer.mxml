@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  implements="mx.core.IDataRenderer" 
+		  creationComplete="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.IDataRenderer;
+			import mx.events.FlexEvent;
+			
+			[Bindable] private var _data:Object;
+			
+			
+			[Bindable]
+			// implement IDataRenderer
+			public function get data():Object {
+				return _data;
+			}
+			
+			public function set data(value:Object):void {
+				_data = value;
+				if ( _data.content )
+					parseContent();
+			}
+			
+			private function init():void {			
+			}
+			
+			[Bindable]
+			private var _contentAC:ArrayCollection = new ArrayCollection();
+			
+			private function parseContent():void {
+				_contentAC.removeAll();
+				var rows:Array = ( _data.content as String ).split( "\n" );
+				for each ( var row:String in rows ) {
+					var pos:uint = row.indexOf( "：" ) > -1 ? row.indexOf( "：" ) : row.indexOf( ":" );
+					if ( pos == -1 )
+						continue;
+					var fieldName:String = row.substring( 0, pos );
+					var fieldValue:String = row.substring( pos + 1 );
+					_contentAC.addItem( { fieldName:fieldName, fieldValue:fieldValue } );
+				}		
+			}
+
+			protected function btnExpand_clickHandler(event:MouseEvent):void {
+				currentState = "detailState";
+			}
+
+			protected function btnClose_clickHandler(event:MouseEvent):void {
+				currentState = "titleState";
+			}
+
+
+			protected function lblTitle_clickHandler(event:MouseEvent):void
+			{
+				if ( currentState == "detailState" )
+					currentState = "titleState";
+				else
+					currentState = "detailState";
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="titleState"/>
+		<s:State name="detailState"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition fromState="*" toState="*">
+			<s:Resize duration="250"
+					  target="{this}"/>
+		</s:Transition>
+	</s:transitions>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.InfoCloseButton {
+			disabledSkin: Embed(source="/assets/images/edit_cancel.png");
+			downSkin: Embed(source="/assets/images/edit_cancel.png");
+			overSkin: Embed(source="/assets/images/edit_cancel.png");
+			upSkin: Embed(source="/assets/images/edit_cancel.png");
+		}
+		
+		.InfoExpandButton {
+			disabledSkin: Embed(source="/assets/images/arrow_down.png");
+			downSkin: Embed(source="/assets/images/arrow_down.png");
+			overSkin: Embed(source="/assets/images/arrow_down.png");
+			upSkin: Embed(source="/assets/images/arrow_down.png");
+		}
+	</fx:Style>
+	
+	<s:Rect width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="0xFFFFFF" alpha="0.8"/>
+		</s:fill>
+	</s:Rect>
+	<s:VGroup height="100%" width="100%" 
+			  paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" >
+		<s:HGroup id="titleBar" width="100%" verticalAlign="middle">				
+			<!--<mx:Image width="{(_data.mark as PictureMarkerSymbol).width}" 
+					  height="{(_data.mark as PictureMarkerSymbol).height}" 
+					  source="{(_data.mark as PictureMarkerSymbol).source}"/>-->
+			<s:Label id="lblTitle" fontFamily="微软雅黑" fontSize="14" fontWeight="bold" 
+					 text=""
+					 rollOut="{Label(event.currentTarget).setStyle('textDecoration', 'none');}"
+					 rollOver="{Label(event.currentTarget).setStyle('textDecoration', 'underline');}" 
+					 click="lblTitle_clickHandler(event)"/>
+			<mx:Button id="btnExpand" width="16" height="16" toolTip="查看详细信息"
+					  includeIn="titleState" styleName="InfoExpandButton" 
+					  click="btnExpand_clickHandler(event)"/>
+			<mx:Button id="btnClose" width="16" height="16" toolTip="关闭详细信息"
+					  includeIn="detailState" styleName="InfoCloseButton" 
+					  click="btnClose_clickHandler(event)"/>
+		</s:HGroup>
+		
+		<mx:DataGrid id="grdContent" width="100%" height="100%" includeIn="detailState" 
+					 fontSize="14" variableRowHeight="true" alternatingItemColors="[ 0xdae7f5, 0xc7d5e4 ]"
+					 showHeaders="false" dataProvider="{_contentAC}">
+			<mx:columns>
+				<mx:DataGridColumn dataField="fieldName" width="70"/>
+				<mx:DataGridColumn dataField="fieldValue" wordWrap="true"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</s:VGroup>
+</s:Group>

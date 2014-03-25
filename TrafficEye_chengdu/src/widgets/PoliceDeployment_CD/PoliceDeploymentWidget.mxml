@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   xmlns:esri="http://www.esri.com/2008/ags" 
+				   layout="absolute" 
+				   widgetConfigLoaded="configLoad()" 
+				   creationComplete="init()" >
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="df" formatString="YYYY-MM-DD"/>
+		
+		<esri:InfoSymbol id="sentryInfo" 
+						 infoRenderer="widgets.PoliceDeployment_CD.PoliceDeploymentItemRenderer"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.MarkerSymbol;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.WidgetStates;
+			
+			import flash.utils.clearTimeout;
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.utils.StringUtil;
+			
+			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
+			
+			
+			
+			private var _markLayer:GraphicsLayer = new GraphicsLayer();
+			private var _infoLayer:GraphicsLayer = new GraphicsLayer();
+			
+			private var keyField:String;
+
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+			
+			private var _sentryMark:PictureMarkerSymbol;
+			
+			
+			private var _buttonArray:Array = [];
+
+			
+			//当前查询的日期
+			private var _queryDate:String = "";	
+			
+			private var _refreshRate:int;
+			private var timer:Timer;
+			
+			private var _hintTimeout:int;
+			
+			private function init():void {
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				
+				_infoLayer.symbol = sentryInfo;
+				map.addLayer( _infoLayer );
+				map.addLayer( _markLayer );	
+				
+				var today:Date = new Date();
+				var tomorrow:Date = new Date( today.fullYear, today.month, today.date + 1 );
+				dateChooser.selectedDate = today;
+				dateChooser.disabledRanges = [ { rangeStart: tomorrow } ];
+				
+				if ( wTemplate.widgetState != WidgetStates.WIDGET_MINIMIZED )
+					wTemplate.widgetState = WidgetStates.WIDGET_MINIMIZED; 
+			}
+			
+			private function configLoad():void {			
+				if ( configXML ) {
+					var infoUrl:String =  configXML.info; 
+					if ( infoUrl ) {
+						var data:Object = {
+							id: String(this.widgetId),
+							url: infoUrl,
+							config: null
+						};		
+						AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					}
+					
+					_hintTimeout = configXML.hinttimeout;
+					
+					_refreshRate = configXML.refreshRate;
+					
+				/*	var markUrl:String = configXML.symbols.picturemarkersymbol.@url || widgetIcon;
+					var markHeight:Number = configXML.symbols.picturemarkersymbol.@height || 30;
+					var markWidth:Number = configXML.symbols.picturemarkersymbol.@width || 30;
+					var markXOffset:Number = configXML.symbols.picturemarkersymbol.@xoffset || 0;
+					var markYOffset:Number = configXML.symbols.picturemarkersymbol.@yoffset || 0; 
+					_sentryMark = new PictureMarkerSymbol( markUrl, markWidth, markHeight, markXOffset, markYOffset );
+					*/
+					
+					//buttons设置
+					var buttonList:XMLList = configXML..button;
+					for ( var t:uint = 0; t < buttonList.length(); t++ ) {
+						var buttonLabel:String = buttonList[t];
+						var button:Object = {
+							label:buttonLabel
+						}
+						_buttonArray.push( button );
+					}
+					
+					
+					var scaleSymbolList:XMLList = configXML..symbols;
+					keyField = configXML.keyfield;
+				
+					for (  var i:int= 0; i < scaleSymbolList.length(); i++ ) {
+						var maxScale:Number = scaleSymbolList[i].@maxscale || 3072000;
+						var minScale:Number = scaleSymbolList[i].@minscale || 6000;
+						var useInRankSymbolWidget:Boolean = scaleSymbolList[i].@useinranksymbolwidget == "true" ? true : false;
+						var rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							var keyValueAlias:String = symbolList[j].@alias;
+							rankSymbol.keyValue = keyValue;
+							var obj:Object = {
+								keyValue:keyValue,
+								keyValueAlias:keyValueAlias
+							};
+							
+							rankSymbol.keyValueAlias = keyValueAlias;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							rankSymbols.push( rankSymbol );
+							if ( useInRankSymbolWidget )
+								_rankSymbols.push( rankSymbol );
+						}
+						var scaleSymbol:Object = {
+							maxScale: maxScale,
+							minScale: minScale,
+							rankSymbols: rankSymbols
+						}
+					}
+					
+					
+					
+					var enableSentryLayer:Boolean = configXML.layer.@enable == "true" ? true : false;
+					if ( enableSentryLayer )
+						loadSentryInfoFromLayer();
+					//查询今日的部署
+					 _queryDate = df.format( new Date );
+					 
+					 AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+						 { type: "PoliceDeploymentInfo", date: _queryDate } );
+					 
+				createAndStartRefreshTimer();
+				}
+			}		
+			
+			
+			//create and start widget timer
+			private function createAndStartRefreshTimer():void {
+				if ( _refreshRate && _refreshRate > 0 ) {
+					if (!timer) {
+						var seconds:Number = _refreshRate;
+						var rate:Number = seconds * 1000;
+						timer = new Timer(rate);
+						timer.addEventListener(TimerEvent.TIMER, timerTick);
+					}
+					timer.start();
+				}
+			}
+			
+			//stop widget timer
+			private function stopRefreshTimer():void {
+				if (timer && timer.running) {
+					timer.stop();
+				}
+			}
+			
+			//start widget timer
+			private function startRefreshTimer():void {
+				if (timer && !timer.running) {
+					timer.start();
+				}
+			}
+			
+			
+			private function timerTick(event:TimerEvent):void {			
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+					{ type: "PoliceDeploymentInfo", date: _queryDate } );
+			}
+			
+			
+			//从图层中载入岗点图层信息
+			private function loadSentryInfoFromLayer():void {
+				var sentryLayerUrl:String = configXML.layer.url;
+				sentryLayerUrl= sentryLayerUrl.replace( "[serverip]", configData.serverIp );
+				var nameField:String = configXML.layer.namefield;
+				var idField:String = configXML.layer.idfield;
+				
+				var queryTask:QueryTask = new QueryTask( sentryLayerUrl );
+				queryTask.useAMF = false;
+				var query:Query = new Query();
+				query.outFields = [ "*" ];
+				query.returnGeometry = true;
+				query.where = "1=1";
+				queryTask.execute( query, new AsyncResponder( onResult, onFault ) );
+				
+				function onResult( featureSet:FeatureSet, token:Object = null ):void {
+					var name:String = "";
+					var id:String = "";
+					var content:String = "";
+					
+					for each ( var gra:Graphic in featureSet.features ) {
+						for ( var fieldName:String in gra.attributes ) {
+							var value:String = gra.attributes[ fieldName ] ? String( gra.attributes[ fieldName ] ) : "";
+							
+							if ( fieldName.toUpperCase() == idField.toUpperCase() )
+								id = value;
+							if ( fieldName.toUpperCase() == nameField.toUpperCase() ) 
+								name = value;
+						}
+						
+						addSentry( id, name, gra.geometry as MapPoint );				
+					}
+				}
+				
+				function onFault( info:Object, token:Object = null ):void {
+					showError( info.toString() );
+				}
+			} 
+			
+			private function addSentry( id:String, name:String, pt:MapPoint, content:String = "" ):Graphic {
+				var markGraphic:Graphic = new Graphic( pt );								
+				markGraphic.symbol = _sentryMark;	
+				markGraphic.attributes = { id: id, title: name, point: pt };
+				_markLayer.add( markGraphic ); 
+				
+				var infoGraphic:Graphic = new Graphic( pt );
+				infoGraphic.symbol = sentryInfo;
+				infoGraphic.attributes = { id: id, name: name, mark: _sentryMark, content: content };
+				_infoLayer.add( infoGraphic );	 
+				
+				return infoGraphic;
+			}
+			
+			private var dp:ArrayCollection = new ArrayCollection( [
+				{ postId: "GD101703",
+				   postName: "一环路拘留所路口",
+				   timePeriod: "07:30-09:00 17:00-19:00",
+				   postTypeName: "高峰岗",
+				   lon: "104.06638",
+				   lat: "30.6525",
+				   policeNames: "王宁;王伟;"
+				},
+				{ postId: "GD100201",
+					postName: "红照壁路口",
+					timePeriod: "18:30-21:00 12:00-15:30",
+					postTypeName: "一级岗",
+					lon: "104.07638",
+					lat: "30.6625",
+					policeNames: "邹福生"
+				},
+				{ postId: "GD100301",
+					postName: "南灯巷路口",
+					timePeriod: "12:00-15:30 18:30-21:00",
+					postTypeName: "一级岗",
+					lon: "104.06382",
+					lat: "30.65257",
+					policeNames: "王露"
+				},
+				
+			] ); 
+			
+			private function dataRefreshed( event:AppEvent ):void {				
+				var key:String = event.data.key;
+				if ( key != "PoliceDeploymentInfo" )
+					return;
+				
+				_infoLayer.clear();
+				_markLayer.clear();
+//				var data:ArrayCollection = dp;
+				var data:ArrayCollection = event.data.data;
+				for each ( var sentryObj:Object in data  ) {
+					var id:String = sentryObj.postId;
+					var name:String = sentryObj.postName;
+					var type:String = sentryObj.postTypeName;
+					
+					
+					var gpsCodes:String = sentryObj.gpsCode;
+					
+					var groupName:String = sentryObj.groupName;
+					var departmentName:String = sentryObj.departmentName;
+
+					
+					var timePeriod:String = StringUtil.trim( sentryObj.timePeriod );
+					var timeArr:Array = timePeriod.split( " " );
+					var policeNames:String = sentryObj.policeNames;
+					var policeIds:String = sentryObj.policeIds;
+					var policeArr:Array = [];
+					var gpsCodeArr:Array = [];
+					
+					var poststate:String  = sentryObj.state;
+
+					if ( policeNames )
+						policeArr = policeNames.split( ";" );
+					if( gpsCodes )
+						gpsCodeArr = gpsCodes.split(";");
+					var content:String="";
+					
+					
+					if(departmentName)
+						content += "所属分局:  " + departmentName;
+					
+					if(groupName)
+						content += "\n所属大队:  " + groupName;
+				
+					if (type) 
+					
+					content += "\n岗点类型：" + type;
+
+					
+					for (var i:int = 0; i < timeArr.length; i++)  {
+						if ( StringUtil.trim( timeArr[i] ) == "" )
+							continue;
+						
+						if ( i == 0 )
+							content += "\n时间段：" + timeArr[i];
+						else
+							content += "\n：" + timeArr[i];
+					}
+					
+					for (var j:int = 0; j < policeArr.length; j++)  {
+						if ( StringUtil.trim( policeArr[j] ) == "" )
+							continue;
+						
+						if ( j == 0 )
+							content += "\n执勤警员：" + policeArr[j];
+						else
+							content += "\n：" + policeArr[j];
+					}
+					
+					
+					for (var m:int = 0; m < gpsCodeArr.length; m++)  {
+						if ( StringUtil.trim( policeArr[m] ) == "" )
+							continue;
+						
+						if ( m == 0 )
+							content += "\n手台号：" + gpsCodeArr[m];
+						else
+							content += "\n：" + gpsCodeArr[m];
+					}
+										
+					
+					if ( poststate )
+						content += "\n在岗状态:  " + poststate;
+					
+					
+					var x:Number = sentryObj.lon;
+					var y:Number = sentryObj.lat;
+					
+					
+					var pt:MapPoint = new MapPoint( x, y );
+					
+					var queryResult:QueryResult = new QueryResult;
+					queryResult.title = name;
+					queryResult.id = id;
+					queryResult.content = content;
+					queryResult.point = pt;
+					queryResult.geometry = pt;
+					queryResult.plusInfo = gpsCodeArr+"@"+policeIds;
+					queryResult.buttons = _buttonArray;
+					
+					var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+					var flag:String = poststate+","+type;
+					rankSymbol = getRankSymbol( flag );
+					if (rankSymbol == null) 
+					{
+						rankSymbol = getRankSymbol("default");
+					}
+					_sentryMark = rankSymbol.resultMarkerSymbol;
+					var sentryGra:Graphic = new Graphic( pt, _sentryMark, queryResult );
+					sentryGra.addEventListener( MouseEvent.MOUSE_OVER, mouseOverGraphic );
+					sentryGra.addEventListener( MouseEvent.MOUSE_OUT, mouseOutGraphic );
+//					sentryGra.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+					_markLayer.add( sentryGra );
+					
+					/* var sentryGra:Graphic = getSentryInfoGraphic( id );
+					if ( !sentryGra )
+						sentryGra = addSentry( id, name, pt, content ); */
+//					sentryGra.attributes.content = content;
+					
+					/* var dp:Array = [];
+					for each ( var timeObj:Object in sentryObj.timeList ) {
+						var time:String = timeObj.time;
+						var policeAC:ArrayCollection = timeObj.policeList;
+						for ( var i:uint = 0; i < policeAC.length; i++ ) {
+							var policeName:String = policeAC[i].policeName;
+							if ( i == 0 )
+								dp.push( { time: time, police: policeName } );
+							else
+								dp.push( { time: "", police: policeName } );
+						}
+					} 
+					sentryGra.attributes.dp = dp;*/
+				
+				}
+				
+				function getSentryMarkGraphic( sentryId:String ):Graphic {
+					for each ( var gra:Graphic in _markLayer.graphicProvider ) {
+						if ( gra.attributes.id == sentryId )
+							return gra;
+					}
+					return null;
+				}
+				
+				function getSentryInfoGraphic( sentryId:String ):Graphic {
+					for each ( var gra:Graphic in _infoLayer.graphicProvider ) {
+						if ( gra.attributes.id == sentryId )
+							return gra;
+					}
+					return null;
+				}
+			}
+			
+			//mouse over graphic
+			private var _hitTimer:uint;
+			
+			private function mouseOverGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				if ( _hintTimeout && _hintTimeout > 0 ) {
+					_hitTimer = setTimeout( showInfoWindow, _hintTimeout, gra.attributes );
+				}
+				else {
+					showInfoWindow( gra.attributes );
+				}
+				
+			}
+			
+			private function mouseOutGraphic( event:MouseEvent ):void {
+				if ( _hitTimer ) {
+					clearTimeout( _hitTimer );
+				}
+			}
+			
+			private function mouseClickGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				showInfoWindow( gra.attributes ); 
+			}
+						
+			override public function showInfoWindow( infoData:Object ):void {
+				if ( infoData ) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					infoTemplate.data = infoData;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}			
+			
+			private function getRankSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			
+			private var infoTemplate:IInfowindowTemplate;
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+				}
+			}
+
+			
+
+			protected function btnQuery_clickHandler(event:MouseEvent):void {
+				_queryDate = df.format( dateChooser.selectedDate );
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, 
+					{ type: "PoliceDeploymentInfo", date: _queryDate } );
+				
+			}
+
+			protected function wTemplate_openHandler(event:Event):void {
+				_infoLayer.visible = true;
+				_markLayer.visible = true;
+				
+				//createAndStartRefreshTimer();
+
+				
+			}
+
+			protected function wTemplate_closedHandler(event:Event):void {
+				_infoLayer.visible = false;
+				_markLayer.visible = false;
+				
+				stopRefreshTimer();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<viewer:WidgetTemplate  id="wTemplate" height="300" width="250"  
+							open="wTemplate_openHandler(event)" 
+							closed="wTemplate_closedHandler(event)"
+							visible="false">
+		<s:VGroup height="100%" width="100%" gap="5" >
+			<mx:DateChooser id="dateChooser" width="100%"/>
+			<s:HGroup height="30" width="100%" verticalAlign="middle" horizontalAlign="center">
+				<s:Button id="btnQuery" label="查询" toolTip="查询当日警力部署" 
+						  click="btnQuery_clickHandler(event)"/>
+			</s:HGroup>			
+		</s:VGroup>		
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

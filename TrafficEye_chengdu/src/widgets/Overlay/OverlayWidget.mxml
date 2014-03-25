@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:Query="widgets.Query.*"
+				   xmlns:viewer="com.esri.viewer.*"
+				   widgetConfigLoaded="configLoad()" creationComplete="init()" >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.core.UIComponent;
+			
+
+			
+			private var timer:Timer;
+			private var infoUrl:String;
+			private var queryRefreshRate:Number;
+			private var graphicsLayer:GraphicsLayer;
+			private var hitimer:uint;
+			private var infoTemplate:IInfowindowTemplate;
+			//默认的symbol为不可见的点、线、面
+			
+			private function init():void {
+				AppEvent.addListener(AppEvent.ADDPOINTS,addPointsHandle);
+				AppEvent.addListener(AppEvent.DELETEPOINTS,deletePointsHandle);
+				AppEvent.addListener(AppEvent.DELETEALLPOINTS,deleteAllPointsHandle);
+				AppEvent.addListener(AppEvent.REMOVEOVERLAY,removeOverlay);
+				AppEvent.addListener(AppEvent.ADDOVERLAY,addOverlay);
+				
+				graphicsLayer = new GraphicsLayer();
+				graphicsLayer.name = "OverlayWidget Results";
+				map.addLayer(graphicsLayer);
+			}
+			
+			private function configLoad():void{
+				if ( configXML ) {
+					infoUrl = configXML.info;
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+				}
+			}
+			
+			//解析XML，并绘制描点
+			private function addPoints(str:String):void{
+				var xmlFile:XML = XML( str );
+				if (xmlFile){
+					var defaultSource:String = xmlFile.defaultvalue.symbol.@source;
+					var defaultWidth:uint = xmlFile.defaultvalue.symbol.@width || 30;
+					var defaultHeight:uint = xmlFile.defaultvalue.symbol.@height || 30;
+					var defaultXoffset:Number = xmlFile.defaultvalue.symbol.@xoffset || 0;
+					var defaultYoffset:Number = xmlFile.defaultvalue.symbol.@yoffset || 0;
+					var defaultUrl:String = xmlFile.defaultvalue.clickurl || "";
+					
+					var pointNode:XMLList = xmlFile..point;
+					for (var a:int=0;a<pointNode.length();a++){
+						var xPoint:Number = pointNode[a].x || 0;
+						var yPoint:Number = pointNode[a].y || 0;
+						var mapPoint:MapPoint = new MapPoint(xPoint,yPoint);
+						
+						var source:String = pointNode[a].symbol.@source || defaultSource;
+						source = source.replace("[SourceName]", pointNode[a].SourceName);
+						var width:uint = pointNode[a].symbol.@width || defaultWidth;
+						var height:uint = pointNode[a].symbol.@height || defaultHeight;
+						var xoffset:Number = pointNode[a].symbol.@xoffset || defaultXoffset;
+						var yoffset:Number = pointNode[a].symbol.@yoffset || defaultYoffset;
+						var symbol:PictureMarkerSymbol = new PictureMarkerSymbol( source, width, height, xoffset, yoffset );
+						
+						
+						var overlayResult:OverlayResult = new OverlayResult();
+						overlayResult.id = pointNode[a].id;
+						overlayResult.title = pointNode[a].title;
+						overlayResult.content = pointNode[a].content;
+						overlayResult.point = mapPoint;
+						
+						var graphic:Graphic = new Graphic();
+						graphic.symbol = symbol;
+						graphic.geometry = mapPoint;
+						graphic.attributes = overlayResult;
+						
+						
+						var url:String = pointNode[a].clickurl || defaultUrl;
+						url = url.replace( "[id]", pointNode[a].id );
+						overlayResult.url = url ;
+						if ( url != "" )
+						graphic.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+						graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+						graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+						graphicsLayer.add(graphic);
+					}
+				}
+			}
+		
+			
+			private function addPointsHandle(event:AppEvent):void{
+				deletePoints(event.data as String);
+				addPoints(event.data as String);
+			}
+			
+			private function deletePointsHandle(event:AppEvent):void{
+				deletePoints(event.data as String);
+			}
+			
+			//对于每个point.id，检查graphicsLayer中是否已存在此id，若存在则先删除此point
+			private function deletePoints(str:String):void{
+				var tempXml:XML = XML( str );
+				var tempNode:XMLList = tempXml..point;
+				for (var j:int=0; j<tempNode.length(); j++){
+					var tempId:String = tempNode[j].id;
+					for each ( var gra:Graphic in graphicsLayer.graphicProvider ){
+						var result:OverlayResult = gra.attributes as OverlayResult;
+						if ( tempId == result.id ) {
+							gra.removeEventListener(MouseEvent.CLICK, mouseClickGraphic);
+							gra.removeEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+							gra.removeEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+							graphicsLayer.remove( gra );
+							break;
+						}
+					}
+				}
+			}
+			
+			private function deleteAllPointsHandle( event:AppEvent ):void{
+				graphicsLayer.clear();
+				
+			}
+			
+			private function mouseClickGraphic(event:MouseEvent):void{
+				var gra:Graphic = event.currentTarget as Graphic;
+				var result:OverlayResult = gra.attributes as OverlayResult;
+//				AppEvent.dispatch( AppEvent.REPORT_DEVICE, result.link );
+				var urlReq:URLRequest = new URLRequest( result.url );
+				trace( urlReq.url );
+				navigateToURL( urlReq );
+			}
+			
+			private function mouseOverGraphic(event:MouseEvent):void{
+				var gra:Graphic = event.currentTarget as Graphic;
+				if ( gra.geometry.type == Geometry.POLYGON || gra.geometry.type == Geometry.POLYLINE ) {
+					var localPt:Point = new Point( event.stageX, event.stageY );
+					var mapPt:MapPoint = map.toMap( localPt );
+					gra.attributes.point = mapPt;
+				}
+				//				
+				showInfoWindow(gra.attributes);
+			}
+			
+			private function mouseOutGraphic(event:MouseEvent):void{
+				if ( hitimer != 0 )
+					clearTimeout( hitimer );
+			}
+			
+			private function removeOverlay():void{
+				map.removeLayer(graphicsLayer);
+			}
+			private function addOverlay():void{
+				map.addLayer( graphicsLayer);
+			}
+			
+			
+			private function infoReady(event:AppEvent):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			//create and start widget timer
+			private function createAndStartWidgetTimer():void {
+				if ( queryRefreshRate && queryRefreshRate > 0 ) {
+					if (!timer) {
+						var seconds:Number = 1;
+						var rate:Number = seconds * 1000;
+						timer = new Timer(rate);
+					}
+					timer.start();
+				}
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					infoTemplate.data = infoData;
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+		]]>
+	</fx:Script>
+	
+<viewer:WidgetTemplate visible="false" includeInLayout="false">
+</viewer:WidgetTemplate>	
+</viewer:BaseWidget>

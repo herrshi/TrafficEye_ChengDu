@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*"  
+				   xmlns:checkTree="com.esri.viewer.components.checkTree.*"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   layout="absolute" 
+				   creationComplete="this_creationCompleteHandler(event)" 
+				   widgetConfigLoaded="this_widgetConfigLoadedHandler(event)" >
+				
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.IdentifyEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.portal.PopUpRenderer;
+			import com.esri.ags.renderers.Renderer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.GeometryServiceSingleton;
+			import com.esri.ags.tasks.supportClasses.IdentifyResult;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.components.PopUpInfoWithButtons;
+			import com.esri.viewer.components.checkTree.CheckTreeItemRenderer;
+			import com.esri.viewer.utils.Hashtable;
+			import com.esri.viewer.utils.PopUpInfoParser;
+			import com.esri.viewer.utils.RendererParser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			
+			import spark.components.Image;
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			private var _selectedDrawingIcon:Image;
+			
+			[Bindable] 
+			private var _searchUrl:String;
+			[Bindable]
+			private var _searchFieldArray:Array;
+			[Bindable]
+			private var _searchLayerIdArray:Array;
+			
+			private var _selectionColor:Number;
+			
+			private var _drawLayer:GraphicsLayer;
+			private var _searchResultLayer:GraphicsLayer;
+			
+			private var _popUpRendererTable:Hashtable;
+			
+			[Bindable]
+			private var _treeDataSource:ArrayCollection = new ArrayCollection();
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				_popUpRendererTable = new Hashtable();
+				
+//				_selectionColor = getStyle( "selectionColor" );
+				_selectionColor = 0x3E6FBC;
+				
+				_drawLayer = new GraphicsLayer();
+				map.addLayer( _drawLayer );
+				
+				_searchResultLayer = new GraphicsLayer();
+				map.addLayer( _searchResultLayer );
+				
+				geometryService.url = GeometryServiceSingleton.instance.url;
+				geometryService.token = GeometryServiceSingleton.instance.token;
+				geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+			}
+			
+			protected function this_widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_searchUrl = configXML.layerinfo.url;
+					if ( configData.serverIp )
+					{
+						_searchUrl = _searchUrl.replace( "[serverip]", configData.serverIp );
+					}
+					var searchFields:String = configXML.layerinfo.fields;
+					_searchFieldArray = searchFields.split( "," );
+					var searchLayerIds:String = configXML.layerinfo.layerids;
+					_searchLayerIdArray = searchLayerIds.split( "," );
+					
+					//renderer
+					var rendererParser:RendererParser = new RendererParser();
+					var renderer:Renderer = rendererParser.parseRenderer( configXML.layerinfo[0] );
+					_searchResultLayer.renderer = renderer;
+					
+					//popup
+					for each ( var popUpXML:XML in configXML.layerinfo.popups.popup )
+					{
+						var layerName:String = popUpXML.@layername;
+						var popUpInfo:PopUpInfoWithButtons = PopUpInfoParser.parsePopUpInfo( popUpXML );
+						
+						var popUpRenderer:ClassFactory = new ClassFactory( PopUpRenderer );
+						popUpRenderer.properties = 
+							{ 
+								popUpInfo: popUpInfo
+							};
+						_popUpRendererTable.add( layerName, popUpRenderer );
+					}
+				}
+			}
+			
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				_selectedDrawingIcon = Image( event.currentTarget );
+				clearSelectionFilter();
+				_selectedDrawingIcon.filters = [ glowFilter ];
+				
+				var drawName:String = _selectedDrawingIcon.name;
+				var drawSymbol:Symbol;
+				switch( drawName )
+				{
+					case DrawTool.MAPPOINT:
+						drawSymbol = new SimpleMarkerSymbol( SimpleMarkerSymbol.STYLE_CIRCLE, 10, _selectionColor );
+						break;
+						
+					case DrawTool.POLYLINE:
+						drawSymbol = new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 );
+						break;
+					
+					case DrawTool.EXTENT:
+					case DrawTool.POLYGON:
+						drawSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, _selectionColor, 0.2, 
+							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 ) );
+						break;
+				}
+				setMapAction( drawName, "", drawSymbol, searchDrawEnd );
+			}
+			
+			private function searchDrawEnd( event:DrawEvent ):void
+			{
+				_selectedDrawingIcon = null;
+				clearSelectionFilter();
+				
+				var drawGraphic:Graphic = event.graphic;
+				_drawLayer.add( drawGraphic );
+				
+				var distance:Number = Number( rdgrpBufferDistance.selectedValue );
+				if ( distance == 0 )
+				{
+					executeIdentify( drawGraphic.geometry );
+				}
+				else
+				{
+					bufferParam.geometries = [ drawGraphic.geometry ];
+					bufferParam.distances = [ distance ];
+//					geometryService.buffer( bufferParam );
+					geometryService.buffer( bufferParam, 
+						new AsyncResponder( geometryService_bufferCompleteHandler, faultHandler, null ) );
+				}
+			}
+			
+			private function executeIdentify( geometry:Geometry ):void
+			{
+				identifyParam.geometry = geometry;
+				identifyTask.execute( identifyParam );
+			}
+			
+			private function iconRollOverHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+				event.target.filters = [ glowFilter ];
+			}
+			
+			private function iconRollOutHandler(event:MouseEvent):void
+			{
+				clearSelectionFilter();
+			}
+			
+			private function clearSelectionFilter():void
+			{
+				for ( var i:int = 0; i < imageGroup.numChildren; i++ )
+				{
+					if ( imageGroup.getChildAt(i).filters && imageGroup.getChildAt(i).filters.length > 0 )
+					{
+						if ( !( _selectedDrawingIcon && imageGroup.getChildAt(i) == _selectedDrawingIcon ) )
+						{
+							imageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			
+			private var _popUpRenderer:PopUpRenderer = new PopUpRenderer();
+			
+			protected function trResult_changeHandler(event:ListEvent):void
+			{
+				var selectedItem:Object = trResult.selectedItem;
+				if ( selectedItem )
+				{
+					var graphic:Graphic = selectedItem.graphic;
+					if ( graphic )
+					{
+						var centerPoint:MapPoint = getGeomCenter( graphic );
+						map.centerAt( centerPoint );
+						
+						var popUpRendererClassFactory:ClassFactory = graphic.infoWindowRenderer as ClassFactory;
+						_popUpRenderer.popUpInfo = popUpRendererClassFactory.properties.popUpInfo;
+						_popUpRenderer.graphic = graphic;
+						
+						map.infoWindow.content = _popUpRenderer;
+						map.infoWindow.contentOwner = graphic;
+						map.infoWindow.show( centerPoint );
+					}
+				}
+				
+			}
+			
+			private function getGeomCenter(graphic:Graphic):MapPoint
+			{
+				var point:MapPoint;
+				var geometry:Geometry = graphic.geometry;
+				
+				if (geometry)
+				{
+					switch (geometry.type)
+					{
+						case Geometry.MAPPOINT:
+						{
+							point = geometry as MapPoint;
+							break;
+						}
+						case Geometry.POLYLINE:
+						{
+							const pl:Polyline = geometry as Polyline;
+							const pathCount:Number = pl.paths.length;
+							const pathIndex:int = int((pathCount / 2) - 1);
+							const midPath:Array = pl.paths[pathIndex];
+							const ptCount:Number = midPath.length;
+							const ptIndex:int = int((ptCount / 2) - 1);
+							point = pl.getPoint(pathIndex, ptIndex);
+							break;
+						}
+						case Geometry.POLYGON:
+						{
+							const poly:Polygon = geometry as Polygon;
+							point = poly.extent.center;
+							break;
+						}
+					}
+				}
+				
+				return point;
+			}
+			
+			protected function trResult_doubleClickHandler(event:MouseEvent):void
+			{
+				var selectedItem:Object = trResult.selectedItem;
+				var isOpen:Boolean = trResult.isItemOpen( selectedItem );
+				trResult.expandItem( selectedItem, !isOpen );
+			}
+			
+			protected function identifyTask_executeCompleteHandler(event:IdentifyEvent):void
+			{
+				var results:Array = event.identifyResults;
+				if ( results && results.length > 0 )
+				{
+					for each ( var identifyResult:IdentifyResult in results )
+					{
+						var displayFieldName:String = identifyResult.displayFieldName;
+						var layerName:String = identifyResult.layerName;
+						var graphic:Graphic = identifyResult.feature;
+						var label:String = graphic.attributes[displayFieldName];
+						
+						var popUpRenderer:ClassFactory = _popUpRendererTable.find( layerName );
+						if ( !popUpRenderer )
+						{
+							popUpRenderer = _popUpRendererTable.find( "default" );
+						}
+						var popUpInfo:PopUpInfoWithButtons = popUpRenderer.properties.popUpInfo;
+						var idFieldName:String = popUpInfo.idFieldName;
+						graphic.attributes.layerName = layerName;
+						graphic.id = graphic.attributes[idFieldName];
+						
+						var layerNode:Object = getLayerNode( layerName );
+						var children:ArrayCollection = layerNode.children;
+						children.addItem( 
+							{ 
+								label:label, 
+								graphic:graphic, 
+								state: CheckTreeItemRenderer.STATE_CHECKED 
+							} 
+						);
+						
+						graphic.infoWindowRenderer = popUpRenderer;
+						_searchResultLayer.add( graphic );
+					}
+				}
+			}
+			
+			private function getLayerNode( layerName:String ):Object
+			{
+				var layerNode:Object;
+				for each ( layerNode in _treeDataSource )
+				{
+					if ( layerNode.label == layerName )
+					{
+						return layerNode;
+					}
+				}
+				
+				layerNode = { label: layerName, children: new ArrayCollection(), state: 1 };
+				_treeDataSource.addItem( layerNode );
+				return layerNode;
+			}
+			
+			protected function geometryService_bufferCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var bufferResultArray:Array = item as Array;
+				for ( var i:uint = 0; i < bufferResultArray.length; i++ )
+				{
+					var bufferPolygon:Polygon = bufferResultArray[i] as Polygon;
+					trace( bufferPolygon.extent.xmin, bufferPolygon.extent.xmax, bufferPolygon.extent.ymin, bufferPolygon.extent.ymax )
+					bufferPolygon.spatialReference = map.spatialReference;
+					_drawLayer.add( new Graphic( bufferPolygon ) );
+				}
+			}
+			
+			private function faultEventHandler( event:FaultEvent ):void
+			{
+				CursorManager.removeBusyCursor();
+				var strInfo: String = "Error: ";
+				strInfo += "Event Headers: " + event.headers + "\n";
+				strInfo += "Event Target: " + event.target + "\n";
+				strInfo += "Event Type: " + event.type + "\n";
+				strInfo += "Fault Code: " + event.fault.faultCode + "\n";
+				strInfo += "Fault Info: " + event.fault.faultString + "\n";
+				strInfo += "Fault Detail: " + event.fault.faultDetail;
+				showError( strInfo );
+			}
+			
+			private function faultHandler( fault:Fault, token:Object ):void
+			{
+				var strInfo: String = "Error: ";
+				strInfo += "Fault Code: " + fault.faultCode + "\n";
+				strInfo += "Fault Info: " + fault.faultString + "\n";
+				strInfo += "Fault Detail: " + fault.faultDetail;
+				showError( strInfo );
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:GlowFilter id="glowFilter"
+					  alpha="1"
+					  color="{getStyle('focusColor')}"
+					  inner="true"
+					  strength="2"/>
+		
+		<s:RadioButtonGroup id="rdgrpBufferDistance"/>
+		
+		<esri:GeometryService id="geometryService"/>
+		
+		<esri:BufferParameters id="bufferParam"
+							   unit="{GeometryService.UNIT_METER}" 
+							   geodesic="true"
+							   bufferSpatialReference="{map.spatialReference}"
+							   outSpatialReference="{map.spatialReference}"/>
+		
+		<esri:IdentifyTask id="identifyTask" url="{_searchUrl}" 
+						   executeComplete="identifyTask_executeCompleteHandler(event)" 
+						   fault="faultEventHandler(event)"/>
+		
+		<esri:IdentifyParameters id="identifyParam" 
+								 returnGeometry="true" 
+								 tolerance="3" 
+								 layerOption="all"
+								 layerIds="{_searchLayerIdArray}"
+								 width="{map.width}" height="{map.height}" 
+								 mapExtent="{map.extent}" spatialReference="{map.spatialReference}"/>
+	</fx:Declarations>
+	
+		<fx:Style>
+		@namespace ns "http://www.esri.com/2008/ags";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace TGISViewer "cn.seisys.TGISViewer.*";
+		@namespace esri "http://www.esri.com/2008/ags";
+		mx|Tree {
+			folderClosedIcon: ClassReference(null);
+			folderOpenIcon: ClassReference(null);
+			defaultLeafIcon: ClassReference(null);
+		}
+	</fx:Style>
+	
+	<viewer:states>
+		<s:State name="graphicalInput"/>
+		<s:State name="textInput"/>
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade id="fade"/>
+		</s:Transition>
+	</viewer:transitions>
+	
+	<viewer:WidgetTemplate id="wTemplate" 
+						   width="300" height="400">
+		<viewer:layout>
+			<s:VerticalLayout gap="0"/>
+		</viewer:layout>
+		
+		<s:Group id="grpInput" width="100%">
+			<s:Group id="graphicInput" width="100%" height="80" 
+					 visible="true" visible.graphicalInput="true">
+				<s:layout>
+					<s:VerticalLayout gap="0" 
+									  paddingTop="5" paddingBottom="5" 
+									  paddingLeft="5" paddingRight="5"/>
+				</s:layout>
+				
+				<s:HGroup id="imageGroup" width="100%" height="50" gap="10" 
+						  horizontalAlign="center" verticalAlign="middle">
+					<s:Image name="{DrawTool.MAPPOINT}" 
+							 source="assets/images/i_draw_point.png"
+							 useHandCursor="true"
+							 rollOut="iconRollOutHandler(event)"
+							 rollOver="iconRollOverHandler(event)"
+							 click="activateDrawTool(event)"/>
+					<s:Image name="{DrawTool.POLYLINE}" 
+							 source="assets/images/i_draw_line.png"
+							 useHandCursor="true"
+							 rollOut="iconRollOutHandler(event)"
+							 rollOver="iconRollOverHandler(event)"
+							 click="activateDrawTool(event)"/>
+					<s:Image name="{DrawTool.EXTENT}" 
+							 source="assets/images/i_draw_rect.png" 
+							 useHandCursor="true"
+							 rollOut="iconRollOutHandler(event)"
+							 rollOver="iconRollOverHandler(event)"
+							 click="activateDrawTool(event)"/>
+					<s:Image name="{DrawTool.POLYGON}" 
+							 source="assets/images/i_draw_poly.png" 
+							 useHandCursor="true"
+							 rollOut="iconRollOutHandler(event)"
+							 rollOver="iconRollOverHandler(event)"
+							 click="activateDrawTool(event)"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" height="30" 
+						  horizontalAlign="center" verticalAlign="middle">
+					<s:Label text="缓冲距离: "/>
+					<s:RadioButton id="rdbtnBufferDistance0" label="无" 
+								   selected="true"
+								   group="{rdgrpBufferDistance}" 
+								   value="0"/>
+					<s:RadioButton id="rdbtnBufferDistance50" label="50米" 
+								   group="{rdgrpBufferDistance}" 
+								   value="50"/>
+					<s:RadioButton id="rdbtnBufferDistance500" label="500米"
+								   group="{rdgrpBufferDistance}" 
+								   value="500"/>
+					<s:RadioButton id="rdbtnBufferDistance1000" label="1000米"
+								   group="{rdgrpBufferDistance}" 
+								   value="1000"/>
+				</s:HGroup>
+			</s:Group>
+		</s:Group>
+		
+		<s:Group id="resultList" width="100%" height="100%">
+			<!--<s:layout>
+				<s:VerticalLayout gap="2" 
+								  paddingTop="10" paddingBottom="5" 
+								  paddingLeft="10" paddingRight="10"/>
+			</s:layout>-->
+			
+			<checkTree:CheckTree id="trResult" width="100%" height="100%" 
+								 borderAlpha="0" 
+								 labelField="label" checkBoxStateField="state" 
+								 checkBoxEnableState="true" 
+								 dataProvider="{_treeDataSource}"
+								 change="trResult_changeHandler(event)" 
+								 doubleClick="trResult_doubleClickHandler(event)"/>
+		</s:Group>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

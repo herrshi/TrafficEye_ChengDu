@@ -1,0 +1,1619 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:controls="com.esri.viewer.components.toc.controls.*"
+				   width="335" layout="absolute"
+				   widgetConfigLoaded="configLoad()" 
+				   xmlns:esri="http://www.esri.com/2008/ags" 
+				   creationComplete="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.IdentifyTask;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.IdentifyParameters;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.components.CheckLabelBox;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.Fault;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			
+			import spark.components.CheckBox;
+			import spark.components.Label;
+			
+			import org.hamcrest.mxml.collection.Array;
+			
+			
+			private var selectedDrawingIcon:Image;
+			private var drawType:String;
+			private var drawStatus:String;
+			
+			
+			
+			private var graphicsLayer: GraphicsLayer;
+			private var graphicLineSym: SimpleLineSymbol = new SimpleLineSymbol( "solid", 0xFF0000, 1, 2 );
+			private var graphicPolySym: SimpleFillSymbol = new SimpleFillSymbol( "solid", 0x0099FF, 0.15, graphicLineSym );
+			
+			
+			[Bindable]
+			private var drawRectangleLabel:String;
+			[Bindable]
+			private var drawCircleLabel:String;
+			[Bindable]
+			private var drawFreehandPolygonLabel:String;
+			[Bindable]
+			private var drawPolylineLabel:String;
+			[Bindable]
+			private var Devcount:Number;
+			
+			
+			private var _findResult:ArrayCollection = new ArrayCollection();
+			private var _findUrl:String;
+			private var _findField:Array;
+			private var _findLayerIds:Array;
+			private var _deviceGroupList:Vector.<DeviceGroup>;
+			
+			private var _geometryService:GeometryService;
+			
+			private var _graphicsLayer:GraphicsLayer;
+			private var _lineLayer:GraphicsLayer;
+			private var _lineGraphic:Graphic;
+			private var _graphic:Graphic;
+			
+			
+			private var _pointGroupList:ArrayCollection = new ArrayCollection();
+			private var _pointArrayList:Vector.<MapPoint>;
+			private var _LineList:Vector.<MapPoint>;
+			private var _fbdList:ArrayCollection = new ArrayCollection();
+			private var _fbdHashmap:Hashtable = new Hashtable();
+			private var _deviceHashmap:Hashtable = new Hashtable();
+			
+			private var _areaid:Number = 0;
+			private var _lineid:Number = 0;
+			
+			private var planid:String=null;
+			
+			
+			private var _rankSymbols:Vector.<PlanRankSymbol> = new Vector.<PlanRankSymbol>;
+			
+			
+			private var infoTemplate:IInfowindowTemplate;
+			private var placeInfo:String;
+			private var placeAc:XMLList;
+			private var placeImage:String;
+			[Bindable]
+			private var placeflag:Boolean = false;
+			private var _placeGraphicLayer:GraphicsLayer;
+			private var _placeGraphic:Graphic;
+			
+			[Bindable] 
+			private var _groupAC:ArrayCollection = new ArrayCollection( [ { label: "所有" } ] );
+			
+			private var _addtype:String;
+			
+			protected function init():void
+			{
+				// TODO Auto-generated method stub
+				_deviceGroupList = new Vector.<DeviceGroup>;
+				_pointArrayList = new Vector.<MapPoint>;
+				_LineList = new Vector.<MapPoint>;
+				_graphicsLayer = new GraphicsLayer();
+				_lineLayer = new GraphicsLayer();
+				_lineLayer.name ="ReservePlanLineLayer";
+				_placeGraphicLayer = new GraphicsLayer();
+				
+				map.addLayer( _graphicsLayer );
+				map.addLayer( _lineLayer );
+				map.addLayer( _placeGraphicLayer );
+				
+				
+			}
+			
+			protected function configLoad():void
+			{
+				// TODO Auto-generated method stub
+				
+				if (configXML) 
+				{
+					
+					var scaleSymbolList:XMLList = configXML..symbols;
+					
+					for (var i:int = 0; i < scaleSymbolList.length(); i++) 
+					{
+						
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:PlanRankSymbol = new PlanRankSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							rankSymbol.keyValue = keyValue;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							_rankSymbols.push( rankSymbol );
+						}
+					}
+					
+					_findUrl = configXML.find.url;
+					_findUrl = _findUrl.replace( "[serverip]", configData.serverIp );
+					var fields:String = configXML.find.fields;
+					_findField = fields.split( "," );
+					var layerid:String = configXML.find.layerIds;
+					_findLayerIds = layerid.split(",") ;
+					
+					var geoserverUrl:String = configXML.geoserver;
+					geoserverUrl = geoserverUrl.replace( "[serverip]", configData.serverIp );
+					_geometryService = new GeometryService( geoserverUrl );
+					_geometryService.showBusyCursor = true;
+					
+					var pflag:String = configXML.isShowFlag||"true";
+					placeAc = configXML.placeInfo..info;
+					if (pflag=="true") 
+					{
+						placeflag = true;
+					}
+					
+					var jsonService:HTTPService = new HTTPService();
+					jsonService.resultFormat = "text";
+					jsonService.url = _findUrl + "/?f=json";
+					jsonService.addEventListener( ResultEvent.RESULT, onJSONLoad );
+					jsonService.send();
+					
+					
+					var infoUrl:String = configXML.info; 
+					
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					graphicsLayer = new GraphicsLayer();
+					graphicsLayer.name = "DeviceLayer";
+					map.addLayer( graphicsLayer);
+					if (placeflag) 
+					{
+						addPlaceToMap();
+					}
+				}
+				
+			}
+			
+			
+			
+			
+			private function onJSONLoad( event:ResultEvent ):void {
+				var rawData:String = event.result as String;
+				var jsonObj:Object = JSON.parse( rawData );
+				var layers:Array = jsonObj.layers;
+				for each ( var layerObj:Object in layers ) {
+					var checkBox:CheckBox = new CheckBox();
+					checkBox.label = layerObj.name;
+					checkBox.id = layerObj.id;
+					checkBox.selected = true;
+					checkBox.addEventListener( MouseEvent.CLICK, checkBox_clickHandler ); 
+					
+					
+					if (_findLayerIds[0]=="all") 
+					{
+						tlCheckGroup.addElement( checkBox );
+					}else 
+					{
+						for each (var i:int in _findLayerIds) 
+						{
+							if (i==layerObj.id) 
+							{
+								tlCheckGroup.addElement( checkBox );
+								
+							}
+						}
+						
+					}
+					
+					
+				}
+			}
+			
+			
+			protected function checkBox_clickHandler(event:MouseEvent):void {
+				var bolAllSelected:Boolean = true;
+				var bolNoneSelected:Boolean = true;
+				
+				for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) {
+					var checkBox:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+					bolAllSelected = bolAllSelected && checkBox.selected;
+					bolNoneSelected = bolNoneSelected && ( !checkBox.selected );
+				}
+				if ( bolAllSelected ) {
+					chkAll.indeterminate = false;
+					chkAll.selected = true;
+				}
+				else if ( bolNoneSelected ) {
+					chkAll.indeterminate = false;
+					chkAll.selected = false;
+				}
+				else {
+					chkAll.indeterminate = true;
+					chkAll.selected = false;
+				}
+			}
+			
+			private function getSelectedLayer():Array {
+				var result:Array = [];
+				
+				
+				for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) {
+					var checkBox:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+					if ( checkBox.selected ) {
+						result.push( checkBox.id );
+					}
+				}
+				
+				return result;
+			}
+			
+			private function wTemplate_closedHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				setMapAction(null,null,null,null);
+				clear_gra();
+				AppEvent.removeListener( AppEvent.SET_PLAN_INFO , getPlanInfo );
+				
+			}
+			
+			private function wTemplate_openHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				AppEvent.addListener( AppEvent.SET_PLAN_INFO , getPlanInfo );
+				AppEvent.dispatch( AppEvent.GET_PLAN_ID,{type:"initplan"} );
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED,dataRefresh);
+				
+			}
+			
+			protected function btnShowDetail_clickHandler(event:MouseEvent):void {
+				if ( scrlCheckGroup.visible ) {
+					scrlCheckGroup.visible = scrlCheckGroup.includeInLayout = false;
+					btnShowDetail.source = "assets/images/w_collapse_down.png";
+				}
+				else {
+					scrlCheckGroup.visible = scrlCheckGroup.includeInLayout = true;
+					btnShowDetail.source = "assets/images/w_collapse_up.png";
+				}
+				
+			}
+			
+			private function chkAll_clickHandler(event:MouseEvent,type:String):void
+			{
+				// TODO Auto-generated method stub
+				chkAll.indeterminate = false;
+				
+				for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) {
+					var checkBoxtl:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+					checkBoxtl.selected = chkAll.selected;
+				}
+			}
+			
+			protected function activateDrawTool(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if (planid==null&&planid=="") 
+				{
+					Alert.show( "预案编号为空!" ); 
+				}else
+				{
+					
+					selectedDrawingIcon = Image(event.currentTarget);
+					clearSelectionFilter();
+					selectedDrawingIcon.filters = [ glowFilter ];
+					
+					drawType =  selectedDrawingIcon.name;
+					switch( drawType )
+					{
+						case DrawTool.EXTENT: 
+						{
+							drawStatus = drawRectangleLabel;
+							setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+							break;	
+						}
+							
+						case DrawTool.CIRCLE:
+						{
+							drawStatus = drawCircleLabel;
+							setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+							break;
+						}
+						case DrawTool.FREEHAND_POLYGON:
+						{
+							drawStatus = drawFreehandPolygonLabel;
+							setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+							break;
+						}
+						case DrawTool.POLYLINE:
+						{
+							drawStatus = drawPolylineLabel;
+							setMapAction( drawType, drawStatus, lineSymbol, map_drawEndHandler );
+						}
+							
+					}
+				}
+				
+				
+			}
+			
+			
+			
+			
+			
+			private function map_drawEndHandler(event:DrawEvent):void
+			{
+				//_lineLayer.clear();
+				_pointArrayList.length = 0;
+				_pointGroupList.removeAll();
+				var geom:Geometry =  event.graphic.geometry;
+				var gra:Graphic = new Graphic( geom );
+				var mp:MapPoint;
+				var i:uint;
+				var pointinfo:PointInfo;
+				
+				switch( geom.type )
+				{
+					case Geometry.POLYGON:
+					case "esriGeometryEnvelope":
+					{
+						gra.symbol = graphicPolySym;
+						var po:Polygon = ( geom.type == "esriGeometryEnvelope" ? geom.extent.toPolygon() : geom as Polygon );
+						
+						if (po.rings.length==1) 
+						{
+							_areaid+=1;
+							i = 1;
+							
+							for each (mp in po.rings[0]) 
+							{
+								pointinfo = new PointInfo();
+								pointinfo.areaid = planid.concat('-area-',_areaid);
+								pointinfo.sortid = i;
+								i++;
+								pointinfo.planid = planid;
+								pointinfo.latitude = mp.y;
+								pointinfo.longitude = mp.x;
+								_pointGroupList.addItem( pointinfo );
+								_pointArrayList.push( mp  );
+							}
+						}
+						graphicsLayer.add( gra ); 
+						identifyFeatures( geom );
+						break;
+					}
+						
+					case Geometry.POLYLINE:
+					{
+						var pol:Object = geom as Object;
+						
+						if (pol.paths.length==1) 
+						{
+							_lineid+=1;
+							i = 1;
+							
+							for each (mp in pol.paths[0]) 
+							{
+								pointinfo = new PointInfo();
+								pointinfo.areaid = planid.concat('-line-',_lineid);
+								pointinfo.sortid = i;
+								i++;
+								pointinfo.planid = planid;
+								pointinfo.latitude = mp.y;
+								pointinfo.longitude = mp.x;
+								_LineList.push( mp  );
+							}
+						}
+						gra.symbol = graphicLineSym;
+						graphicsLayer.add( gra );
+						//buffer
+						var bufferParam:BufferParameters = new BufferParameters();
+						bufferParam.geometries = [ geom ];
+						bufferParam.distances = [0.001];
+						bufferParam.unit = GeometryService.UNIT_METER;
+						bufferParam.bufferSpatialReference = map.spatialReference;
+						bufferParam.outSpatialReference = map.spatialReference;
+						bufferParam.unionResults = true;
+						_geometryService.buffer( bufferParam, new AsyncResponder( bufferCompleteHandler, bufferFaultHandler ) );
+						break;
+					}
+				}
+			}
+			
+			private function bufferCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var bufferResultsArray:Array = item as Array;
+				for ( var i:uint = 0; i < bufferResultsArray.length; i++ )
+				{
+					var bufferGraphic:Graphic = new Graphic( bufferResultsArray[i] as Polygon, fillSymbol );
+					graphicsLayer.add( bufferGraphic );
+					
+					var po:Polygon = bufferResultsArray[i] as Polygon;
+					if (po.rings.length==1) 
+					{
+						_areaid+=1;
+						i = 1;
+						
+						for each ( var mp:MapPoint in po.rings[0]) 
+						{
+							var pointinfo:PointInfo = new PointInfo();
+							pointinfo.areaid = planid.concat('-area-',_areaid);
+							pointinfo.sortid = i;
+							i++;
+							pointinfo.planid = planid;
+							pointinfo.latitude = mp.y;
+							pointinfo.longitude = mp.x;
+							_pointGroupList.addItem( pointinfo );
+							_pointArrayList.push( mp  );
+						}
+					}
+					identifyFeatures( bufferGraphic.geometry );
+				}
+			}
+			
+			private function bufferFaultHandler( fault:Fault, asyncToken:AsyncToken ):void
+			{
+				showError( fault.faultString );
+			}
+			
+			private function identifyFeatures( geo: Geometry ): void {
+				
+				var po:Polygon = geo as Polygon;
+				
+				var identifyTask:IdentifyTask = new IdentifyTask( _findUrl );
+				identifyTask.disableClientCaching = true;
+				identifyTask.showBusyCursor = true;
+				
+				var identifyParams: IdentifyParameters = new IdentifyParameters();
+				identifyParams.returnGeometry = true;
+				identifyParams.tolerance = 10;
+				identifyParams.width = map.width;
+				identifyParams.height = map.height;
+				identifyParams.geometry = geo;
+				identifyParams.mapExtent = map.extent;
+				identifyParams.layerIds = getSelectedLayer();
+				identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+				identifyParams.spatialReference = map.spatialReference;
+				//identifyParams.layerDefinitions ="deviceid" ;
+				
+				if (identifyParams.layerIds.length>0) 
+				{
+					identifyTask.execute( identifyParams, new AsyncResponder ( onIdentifyResult, onIdentifyFault,null ));
+					
+				}else{
+					Alert.show("没有选择图层!!!");
+				}
+				
+			}
+			
+			/**
+			 * 成功获取信息
+			 * 分拣
+			 */ 
+			private function onIdentifyResult(results: Array, token:Object = null):void
+			{
+				//_findResult.removeAll();
+				setMapAction(null,null,null,null);
+				_findResult.removeAll();
+				_fbdList.removeAll();
+				
+				for each (var result:Object in results) 
+				{
+					var pt:MapPoint = getGeomCenter( result.feature );
+					var _resultfeature:Object = result.feature.attributes ;
+					if (result.layerName=="发布段" || result.layerName=="主要道路" || result.layerName=="次要道路") 
+					{
+						if (!_fbdHashmap.containsKey(_resultfeature.FBD_CODE)) 
+						{
+							var obj:Object={
+								fbd_code : _resultfeature.FBD_CODE,
+									fbd_name : _resultfeature.FBD_NAME
+							};
+							_fbdList.addItem(obj);
+							_fbdHashmap.add(_resultfeature.FBD_CODE,obj);
+						}
+						
+					}else
+					{
+						var typeId:String = _resultfeature.deviceid as String;
+						typeId = typeId.substring(0,4);
+						var type:String;
+						if (typeId.indexOf("302")>-1) 
+						{
+							if (typeId=="3022") 
+							{
+								type = "光带板";
+							}else if(typeId=="3021"){
+								type = "全彩板"
+							}
+						}else
+						{
+							type = result.layerName;
+						}
+						var location:String =_resultfeature.location;
+						var tempInfo:DeviceInfo = new DeviceInfo();
+						tempInfo.desc =  _resultfeature.name;
+						tempInfo.id = _resultfeature.deviceid;
+						tempInfo.title = _resultfeature.deviceid+"("+_resultfeature.name+")";
+						tempInfo.selected = true;
+						tempInfo.typeName = type;
+						tempInfo.typeId = typeId;
+						tempInfo.location = _resultfeature.location;
+						tempInfo.latitude = pt.y;
+						tempInfo.longitude = pt.x;
+						_findResult.addItem( tempInfo );
+					}
+				}
+				
+				if (_pointArrayList.length>0) 
+				{
+					//graphicsLayer.clear();
+					
+					drawPolygon(_pointArrayList);
+					//drawPolygon(_LineList);
+					
+				}
+				
+				if (_findResult.length>0) 
+					GetItemInfo("falshadd", _findResult );
+			}
+			
+			private function onIdentifyFault( info: Object, token: Object = null):void
+			{
+				showError( info.toString() );
+			}
+			
+			
+			/**
+			 *获取图形的点 
+			 * 
+			 */ 
+			private function getGeomCenter(gra:Graphic):MapPoint {
+				var pt:MapPoint;
+				switch (gra.geometry.type) {
+					case Geometry.MAPPOINT:
+						pt = gra.geometry as MapPoint;
+						break;
+					case Geometry.MULTIPOINT:
+						const multipoint:Multipoint = gra.geometry as Multipoint;
+						pt = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
+						break;
+					case Geometry.POLYLINE:
+						const pl:Polyline = gra.geometry as Polyline;
+						const pathCount:Number = pl.paths.length;
+						const pathIndex:int = pathCount % 2 == 0 || pathCount == 1 ? pathCount / 2 : pathCount / 2 + 1;
+						const midPath:Array = pl.paths[pathIndex];
+						const ptCount:Number = midPath.length;
+						const ptIndex:int = ptCount % 2 == 0 || ptCount == 1 ? ptCount / 2 : ptCount / 2 + 1;
+						pt = pl.getPoint(pathIndex, ptIndex);
+						break;
+					case Geometry.POLYGON:
+						const poly:Polygon = gra.geometry as Polygon;
+						pt = poly.extent.center;
+						break;
+				}
+				return pt;
+			}
+			
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < drawImageGroup.numChildren; i++)
+				{
+					if (drawImageGroup.getChildAt(i).filters && drawImageGroup.getChildAt(i).filters.length > 0)
+					{
+						if (!(selectedDrawingIcon && drawImageGroup.getChildAt(i) === selectedDrawingIcon))
+						{
+							drawImageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			/**
+			 * 把获取的设备信息加入到_deviceGroupList中
+			 * 
+			 */ 
+			
+			private function GetItemInfo(type:String,_findResult:ArrayCollection):void
+			{
+				_addtype = type;
+				
+				for (var i:int = 0; i < _findResult.length; i++) 
+				{
+					var tmpInfo:DeviceInfo = _findResult[i] as DeviceInfo;
+					addItemToMap( tmpInfo );
+					_deviceHashmap.add(tmpInfo.id,tmpInfo.id);
+					if (_deviceGroupList.length==0) 
+					{
+						var devicegp:DeviceGroup = new DeviceGroup();
+						devicegp.deviceType = tmpInfo.typeName;
+						devicegp.deviceTypeId = tmpInfo.typeId;
+						devicegp.deviceList.push( tmpInfo );
+						_deviceGroupList.push( devicegp );
+					}else
+					{
+						var gpflag:Boolean =false;
+						for (var j:int = 0; j < _deviceGroupList.length; j++) 
+						{	
+							var deviceGroup:DeviceGroup = _deviceGroupList[j];
+							if (tmpInfo.typeId ==deviceGroup.deviceTypeId) 
+							{
+								gpflag =true;
+								
+								var devflag:Boolean = false;
+								for (var k:int = 0; k < deviceGroup.deviceList.length; k++) 
+								{
+									var tmpdev:DeviceInfo = deviceGroup.deviceList[k];
+									if (tmpInfo.id == tmpdev.id) 
+									{
+										devflag=true;
+									}	
+								}
+								
+								if (!devflag) 
+								{
+									deviceGroup.deviceList.push( tmpInfo );
+									break;
+								}
+							}
+						}
+						if (!gpflag) 
+						{
+							var degp:DeviceGroup = new DeviceGroup();
+							degp.deviceType = tmpInfo.typeName;
+							degp.deviceTypeId = tmpInfo.typeId;
+							degp.deviceList.push( tmpInfo );
+							_deviceGroupList.push( degp );
+						}
+					}
+				}
+				if (_deviceGroupList.length!=0) 
+				{
+					getLabel(_deviceGroupList);
+				}
+				if (_pointArrayList.length>0) 
+				{
+					var type2:String = "area";
+					AppEvent.dispatch(AppEvent.SEND_RESERVEPLAN_DATA_NEW,{planid:planid,type:type2,data:_pointGroupList});					//drawPolygon(_LineList);
+				}
+				if (_fbdList.length>0) 
+				{
+					//发布段按照每组15个传送到web
+					var type3:String = "addfbd";
+					var leg:int = Math.ceil(_fbdList.length/15);
+					for (var n:int = 0; n <leg; n++) 
+					{
+						var tmparraycol:ArrayCollection = new ArrayCollection();
+						var nowleg:int = (n+1)*15<_fbdList.length?(n+1)*15:_fbdList.length;
+						for (var m:int = 15*n; m < nowleg; m++) 
+						{
+							tmparraycol.addItem(_fbdList.getItemAt(m));
+						}
+						var jsondevice:String = JSON.stringify(tmparraycol.toArray());
+						sendDeviceInfo(type3,jsondevice);
+					}
+					_fbdList.removeAll();
+				}
+				if (_findResult.length>0) 
+				{
+					if (_addtype=="falshadd") 
+					{
+						getDeviceData("adddevice",_findResult);
+					}
+				}
+				
+				
+			}		
+			/**
+			 * 获取所有linkButton的label
+			 * 
+			 */ 
+			private function getLabel(_deviceGroupList:Vector.<DeviceGroup>):void
+			{
+				
+				listGroup.visible = true;
+				if (tlLabelGroup) 
+				{
+					tlLabelGroup.removeAllElements();
+				}
+				if (tldeviceGroup) 
+				{
+					tldeviceGroup.removeAllElements();
+				}
+				//var color:uint=0xadbacf;
+				deviceLabelGroup.visible = deviceLabelGroup.includeInLayout = listGroup.visible = true;
+				// TODO Auto Generated method stub
+				for each (var deviceGroup:DeviceGroup in _deviceGroupList) 
+				{
+					var checkLabelBox:CheckLabelBox = new CheckLabelBox();
+					checkLabelBox.id = deviceGroup.deviceTypeId;
+					checkLabelBox.label = deviceGroup.deviceType;
+					checkLabelBox.addEventListener( "labelClick", labelClickFunciton );
+					tlLabelGroup.addElement( checkLabelBox );
+					if ( checkLabelBox.label == "视频监控" )
+					{
+						checkLabelBox.selected = true;
+						checkLabelBox.dispatchEvent( new MouseEvent( "labelClick" ) );
+					}
+					/*var chkbox:CheckBox = new CheckBox();
+					chkbox.id = deviceGroup.deviceTypeId;
+					chkbox.label = "";
+					tlLabelGroup.addElement( chkbox );
+					
+					var  label:Label = new Label();
+					label.id = "lbl" + deviceGroup.deviceTypeId;
+					label.text = deviceGroup.deviceType;
+					label.addEventListener( MouseEvent.CLICK, labelClickFunciton );
+					tlLabelGroup.addElement( label );*/
+					
+					/*var linkbutton:LinkButton = new LinkButton();
+					linkbutton.id = deviceGroup.deviceTypeId;
+					linkbutton.label = deviceGroup.deviceType;
+					linkbutton.addEventListener(MouseEvent.CLICK , labelClickFunciton);
+					tlLabelGroup.addElement( linkbutton );*/
+				}
+				if (_deviceGroupList[0].deviceList.length!=0) 
+				{				
+					addItemTodeviceList(_deviceGroupList[0]);
+				}
+			}
+			/**
+			 *添加设备到TileGroup
+			 * 
+			 */ 
+			private function addItemTodeviceList(deviceGp:DeviceGroup):void{
+				deviceArrayGroup.visible =deviceArrayGroup.includeInLayout =true;
+				var tmpcount:Number=0;
+				for each (var deviceInfo:DeviceInfo in deviceGp.deviceList) 
+				{
+					var checkbox:CheckBox = new CheckBox();
+					checkbox.id = deviceInfo.id;
+					checkbox.label = deviceInfo.title;
+					checkbox.selected = deviceInfo.selected;
+					checkbox.addEventListener(MouseEvent.CLICK , deviceCheck );
+					tldeviceGroup.addElement( checkbox );
+					if (deviceInfo.selected) 
+					{
+						tmpcount+=1;
+					}
+				}
+				Devcount=tmpcount;
+			}
+			
+			/**
+			 * 点击控件改变颜色，区分选中与未选中
+			 * @param component 要控制的组件
+			 * @param color 状态，0:未选中，1:选中
+			 */ 
+			private function ChangeUIColor(component:UIComponent,color:uint):void  { 
+				if(color==0){
+					color=0xcdd5e2;
+				}
+				else if(color==1)
+				{
+					color=0x8c9fbd;
+				};
+				component.graphics.beginFill( color, 0.8 );
+				component.graphics.drawRect( 0, 0, component.width, component.height );
+				component.graphics.endFill();
+			}
+			
+			/**
+			 * 点击linkButton
+			 * 改变颜色
+			 */ 
+			private function ChangeLabelColor(checkbox:CheckLabelBox):void
+			{
+				for (var i:int = 0; i < tlLabelGroup.numElements; i++) 
+				{
+					var checkboxElement:CheckLabelBox =  tlLabelGroup.getElementAt(i) as CheckLabelBox;
+					if ( checkboxElement != checkbox )
+						ChangeUIColor( checkboxElement, 0 );
+					else
+						ChangeUIColor( checkbox, 1 );
+				}
+			}
+			
+			/**
+			 * 点击linkButton
+			 * TileGroup列出设备
+			 */ 
+			protected function labelClickFunciton(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				tldeviceGroup.removeAllElements();
+				deviceLabelGroup.visible = deviceLabelGroup.includeInLayout= listGroup.visible  = true;
+				
+				var checkbox:CheckLabelBox = event.target as CheckLabelBox;
+				ChangeLabelColor( checkbox );
+				var typeId:String = checkbox.id;
+				for each (var deviceGroup:DeviceGroup in _deviceGroupList) 
+				{
+					if (typeId==deviceGroup.deviceTypeId) 
+					{
+						addItemTodeviceList(deviceGroup);
+					}
+				}	
+			}
+			
+			/**
+			 * 组织数据传给web
+			 * 
+			 */
+			private function getDeviceData(type:String,deviceAC:ArrayCollection):void{
+				var tmpArr:ArrayCollection = new ArrayCollection();
+				for each (var device:DeviceInfo in deviceAC) 
+				{
+					if (device.selected||type=="removedevice") 
+					{
+						var obj:Object={
+							deviceId:device.id,
+								deviceTypeId:device.typeId,
+								deviceDesc:device.desc
+						}
+						tmpArr.addItem( obj );
+					}
+				}
+				
+				var jsondevice:String = JSON.stringify(tmpArr.toArray());
+				trace(jsondevice);
+				sendDeviceInfo(type,jsondevice);
+				
+			}
+			
+			/**
+			 *点击checkbox
+			 * 更新地图状态
+			 * 更新deviceSelected状态
+			 * 
+			 */
+			private function reloadevice(deviceId:String,select:Boolean):void{
+				
+				
+				var deviceid:String = deviceId;
+				var typeId:String = deviceid.substring(0,4);
+				var dataAc:ArrayCollection = new ArrayCollection();
+				
+				if (select) 
+				{
+					for each (var deviceGp:DeviceGroup in _deviceGroupList) 
+					{
+						if (typeId == deviceGp.deviceTypeId) 
+						{
+							for each (var deviceInfo:DeviceInfo in deviceGp.deviceList) 
+							{
+								if (deviceInfo.id == deviceid) 
+								{
+									deviceInfo.selected=true;
+									addItemToMap(deviceInfo);
+									dataAc.addItem(deviceInfo);
+									getDeviceData( "adddevice",dataAc);
+									Devcount+=1;
+									
+									break;
+								}
+							}
+							break;
+						}
+					}
+					
+				}else{
+					
+					
+					
+					for each (var deviceGp1:DeviceGroup in _deviceGroupList) 
+					{
+						if (deviceGp1.deviceTypeId == typeId) 
+						{					
+							for each (var deviceInfo1:DeviceInfo in deviceGp1.deviceList) 
+							{
+								if (deviceInfo1.id==deviceid) 
+								{
+									deviceInfo1.selected = false;
+									for (var i:int = 0; i < tldeviceGroup.numElements; i++) 
+									{
+										var checkBox:CheckBox = tldeviceGroup.getElementAt( i ) as CheckBox;
+										if (checkBox.id == deviceInfo1.id) 
+										{
+											checkBox.selected = deviceInfo1.selected;
+											break;
+										}
+									}
+									break;
+								}
+							}
+							break;
+						}
+						
+					}
+					
+					
+					for each (var gra:Graphic in _graphicsLayer.graphicProvider) 
+					{
+						if(gra.attributes.id == deviceid)
+						{
+							var gratmp:Object =  gra.attributes as Object;
+							_graphicsLayer.remove( gra );
+							_deviceHashmap.remove(deviceid);
+						}
+						
+					}
+					for each (var deviceGroup:DeviceGroup in _deviceGroupList) 
+					{
+						if (typeId == deviceGroup.deviceTypeId) 
+						{
+							for each (var deviceIf:DeviceInfo in deviceGroup.deviceList) 
+							{
+								if (deviceIf.id == deviceid) 
+								{
+									deviceIf.selected=false;
+									dataAc.addItem(deviceIf);
+									getDeviceData( "removedevice",dataAc);
+									Devcount-=1;
+								}
+							}
+							break;
+						}
+					}
+					
+					
+				}
+				// TODO Auto-generated method stub
+			}
+			
+			//地图设备点击，取消
+			protected function deviceCheck(event:MouseEvent):void
+			{
+				
+				var deviceid:String = event.target.id;
+				var select:Boolean = event.target.selected;
+				reloadevice( deviceid,select);
+				
+				// TODO Auto-generated method stub
+			}
+			
+			/**
+			 * 添加框线到图层中
+			 * 
+			 */ 
+			private function drawPolygon(pointList:Vector.<MapPoint>):void{
+				graphicsLayer.clear();
+				//_lineLayer.clear();
+				var polyline:Polyline = new Polyline();
+				var lineGraphic:Graphic = new Graphic( polyline, new SimpleLineSymbol( "solide", 0xED1C24, 1, 4 ) );
+				_lineLayer.add( lineGraphic );
+				for (var i:int = 0; i < pointList.length-1; i++) 
+				{
+					var ptStart:MapPoint = pointList[i] as MapPoint;
+					var ptEnd:MapPoint = pointList[i+1] as MapPoint;
+					var path:Array = [];
+					path.push( ptStart );
+					path.push( ptEnd );
+					polyline.addPath( path );
+				}
+				var leng:int = map.layerIds.length;
+				var layerid:String;
+				for (var j:int = 0; j < leng; j++) 
+				{
+					var name:String = map.layers[j].name;
+					if (name=="ReservePlanLineLayer") 
+					{
+						layerid=map.layerIds[j];
+					}
+				}
+				//var obj:GraphicsLayer =  map.layers;
+				map.reorderLayer(layerid,1);
+				_lineLayer.refresh();
+				
+			}
+			
+			
+			
+			/**
+			 * 把deviceInfo添加到图层中
+			 * 
+			 */ 
+			
+			private function addItemToMap( result:DeviceInfo ):void{
+				
+				var graphic:Graphic = new Graphic();
+				var devResult:PlanQueryResult = new PlanQueryResult();
+				devResult.title = result.desc;
+				devResult.name = result.desc; 
+				devResult.id = result.id;
+				var deviceSelected:Boolean = result.selected;
+				if (deviceSelected) 
+				{
+					
+					
+					var type:String = result.typeId;
+					devResult.type= type;
+					devResult.content = "设备编号:"+result.id;
+					var mapPoint:MapPoint = new MapPoint(result.longitude,result.latitude);
+					devResult.point = mapPoint;
+					var rankSymbol:PlanRankSymbol = getRankSymbol(  type );
+					
+					
+					if (rankSymbol!=null) 
+					{
+						var flag:Boolean = true;
+						for each (var gra:Graphic in _graphicsLayer.graphicProvider) 
+						{
+							
+							if(gra.attributes!=null&&(gra.attributes.id == devResult.id))
+							{
+								flag = false;
+							}
+							
+						}
+						
+						if (flag) 
+						{
+							graphic.symbol = rankSymbol.resultMarkerSymbol;
+							graphic.attributes = devResult;
+							graphic.geometry = devResult.point;
+							
+							graphic.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+							graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+							graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+							_graphicsLayer.add(graphic);
+							_deviceHashmap.add(devResult.id,devResult.id);
+						}
+						
+						
+						
+						
+					}
+					
+				}	
+				
+			}
+			
+			/**
+			 * 根据关键字获取symbol
+			 */ 
+			
+			private function getRankSymbol( keyValue:String ):PlanRankSymbol 
+			{
+				for each ( var symbol:PlanRankSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			
+			/**
+			 * 点击图层，图层消失
+			 * 同时更新TileGroup中checkbox
+			 * 以及deviceInfo中的deviceSelected为false
+			 */ 
+			protected function mouseClickGraphic(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var gra:Graphic =  event.currentTarget as Graphic;
+				_graphicsLayer.remove( gra );
+				var id:String = gra.attributes.id;
+				var type:String = gra.attributes.type;
+				var tempgra:Object = gra.attributes as Object;
+				var select:Boolean = false;
+				reloadevice(id,select);
+			}
+			//清除所有要素		
+			private function clear_gra():void{
+				
+				graphicsLayer.clear();
+				
+				_graphicsLayer.clear();
+				_placeGraphicLayer.clear();
+				_LineList.length = 0;
+				_fbdList.removeAll();
+				_findResult.removeAll();
+				_lineLayer.clear();
+				_deviceGroupList.length = 0;
+				_pointGroupList.removeAll();
+				_pointArrayList.length = 0;
+				_fbdHashmap.clear();
+				_deviceHashmap.clear();
+				setMapAction(null,null,null,null);
+				listGroup.visible = false;
+				
+			}
+			
+			protected function mouseOverGraphic(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var gra:Graphic = event.currentTarget as Graphic;
+				
+				showInfoWindow(gra.attributes);	
+				
+			}
+			private var hitimer:uint;
+			protected function mouseOutGraphic(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if ( hitimer != 0 )
+					clearTimeout( hitimer );
+				
+			}
+			
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					if (infoTemplate !=null) 
+					{
+						map.infoWindow.content = infoTemplate as UIComponent;
+						map.infoWindow.label = infoData.title || "";
+						infoTemplate.data = infoData;
+						map.infoWindow.show(infoData.point);
+					}
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			
+			private function infoReady(event:AppEvent):void {
+				trace("infoReady");
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+				}
+			}
+			
+			
+			
+			//发送数据到web
+			protected function sendDeviceInfo(type:String,data:String):void
+			{
+				// TODO Auto-generated method stub
+				var _planid:String =planid;
+				AppEvent.dispatch( AppEvent.SEND_RESERVEPLAN_DATA ,{planid:_planid , type:type , data:data});
+				
+			}
+			
+			
+			//获取web传输的数据处理
+			private function getPlanInfo(event:AppEvent):void
+			{
+				// TODO Auto Generated method stub
+				var tmpplanid:String = event.data.planid||"24331";
+				var type:String = event.data.type;
+				var tmpdata:String = event.data.data;
+				if (type=="initplan") 
+				{
+					if (tmpplanid!=null) 
+					{
+						planid = tmpplanid;
+						AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA,{planid:planid,type:"area"});
+					} 	
+				}else 
+					if(type=="adddevice"){
+						//Alert.show(tmpdata.toString());
+						var xmlFile:XML = XML( tmpdata );
+						var pointNode:XMLList = xmlFile..deviceInfo;
+						
+						_findResult.removeAll();
+						for (var i:int = 0; i < pointNode.length(); i++) 
+						{
+							var deviceInfo:DeviceInfo = new DeviceInfo();
+							deviceInfo.planId = pointNode[i].planId;
+							deviceInfo.desc = pointNode[i].deviceDesc;
+							deviceInfo.id = pointNode[i].deviceId;
+							deviceInfo.title = pointNode[i].deviceId+"("+pointNode[i].deviceDesc+")";
+							deviceInfo.typeId = pointNode[i].deviceTypeId;
+							deviceInfo.typeName = getDeviceType( pointNode[i].deviceTypeId );
+							deviceInfo.location = pointNode[i].location;
+							deviceInfo.latitude = pointNode[i].latitude;
+							deviceInfo.longitude = pointNode[i].longitude;
+							_findResult.addItem( deviceInfo );	
+						}	
+						GetItemInfo( "webadd",_findResult );
+						
+						
+					}else 
+						if(type=="removedevice"){
+							var deviceList:Object = tmpdata.split(";");
+							for (var j:int = 0; j < deviceList.length; j++) 
+							{
+								reloadevice(deviceList[j],false);
+							}
+						}else if(type=="removefbd"){
+							var fbdArr:Array = tmpdata.split(";");
+							for each (var fbdCode:String in fbdArr) 
+							{
+								if (_fbdHashmap.containsKey(fbdCode)) 
+								{
+									_fbdHashmap.remove(fbdCode);
+								}
+							}
+							
+						}
+			}
+			
+			
+			private function getDeviceType(typeId:String):String{
+				var type:String="未知";
+				if (typeId=="3021") 
+				{
+					type="全彩板";
+				}else if(typeId =="3022"){
+					type="光带板";
+				}else if(typeId =="3031"){
+					type="匝控";
+				}else if(typeId =="3040"){
+					type="视频监控";
+				}else if(typeId =="3050"){
+					type="事件检测";
+				}else if(typeId =="3014"){
+					type="视频采集";
+				}else if(typeId =="3000"){
+					type="天网";
+				}
+				return type;
+			}
+			
+			private function addPlaceToMap():void{
+				placeChk.selected = true;
+				if (placeAc.length()>0) 
+				{
+					for each (var obj:Object in placeAc) 
+					{
+						var graphic:Graphic = new Graphic();
+						var placeQuery:PlanQueryResult = new PlanQueryResult();
+						placeQuery.id = obj.name;
+						placeQuery.title = obj.name;
+						placeQuery.content = "保障地点： "+obj.name;
+						
+						var mapPoint:MapPoint = new MapPoint(obj.longitude,obj.latitude);
+						placeQuery.point = mapPoint;
+						
+						var type:String = "flag";
+						
+						var rankSymbol:PlanRankSymbol = getRankSymbol(  type );
+						
+						if (rankSymbol!=null) 
+						{
+							
+							
+							graphic.symbol = rankSymbol.resultMarkerSymbol;
+							graphic.attributes = placeQuery;
+							graphic.geometry = placeQuery.point;
+							
+							graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+							graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+							_placeGraphicLayer.add(graphic);
+						}
+					}			
+				}
+			}
+			
+			//区域点集排序加到地图上
+			private function addAeraToMap(areadata:Object):void
+			{
+				// TODO Auto Generated method stub
+				var list:ArrayCollection = areadata as ArrayCollection;
+				var ptarray:Vector.<AreaInfo> = new Vector.<AreaInfo>;
+				if (list.length>0) 
+				for (var j:int = 0; j < list.length; j++) 
+				{
+					var ptinfo:PointInfo = new PointInfo();
+					ptinfo.areaid = list[j].areaid;
+					ptinfo.sortid = list[j].sortid;
+					ptinfo.latitude = list[j].latitude;
+					ptinfo.longitude = list[j].longitude;
+					ptinfo.planid = list[j].planid;
+					if (ptarray.length == 0) 
+					{
+						var tmparea:AreaInfo = new AreaInfo();
+						tmparea.areaid = ptinfo.areaid;
+						tmparea.pointList.push( ptinfo );
+						ptarray.push(tmparea);
+					}else
+					{
+						var flag:Boolean = false;
+						for each (var areaInfo:AreaInfo in ptarray) 
+						{
+							if (areaInfo.areaid == ptinfo.areaid) 
+							{
+								flag = true;
+								areaInfo.pointList.push( ptinfo );
+								break;
+							}
+							
+						}
+						if (!flag) 
+						{
+							var tmparea1:AreaInfo = new AreaInfo();
+							tmparea1.areaid = ptinfo.areaid;
+							tmparea1.pointList.push( ptinfo );
+							ptarray.push(tmparea1);
+						}
+					}
+				}
+				
+				_areaid = ptarray.length;
+				
+				for (var k:int = 0; k < ptarray.length; k++) 
+				{
+					var area:AreaInfo = ptarray[k];
+					var pointInfoList:Vector.<PointInfo> = area.pointList ;
+					var sort:Sort = new Sort();
+					sort.fields = [new SortField("sortid",true,true)];
+					pointInfoList=pointInfoList.sort(sortPoint);
+					var pointList:Vector.<MapPoint> = new Vector.<MapPoint>();
+					
+					for (var i:int = 0; i < pointInfoList.length; i++) 
+					{
+						var point:MapPoint = new MapPoint();
+						point.y = pointInfoList[i].latitude;
+						point.x = pointInfoList[i].longitude;
+						pointList.push(point);
+					}
+					drawPolygon(pointList);
+					
+				}
+				
+				
+				
+				function sortPoint(pointa:PointInfo,pointb:PointInfo):Number{
+					var x:Number = pointa.sortid;
+					var y:Number = pointb.sortid;
+					if (x < y)
+					{
+						return -1;
+					}
+					else if (x > y)
+					{
+						return 1;
+					}
+					else
+					{
+						return 0;
+					}
+					
+				}
+			}	
+			//删除重要地点
+			private function removePlaceFromMap():void{
+				_placeGraphicLayer.clear();
+			}
+			//添加重要地点
+			private function checkPlaceFlag(event:MouseEvent):void{
+				var placeflag:Boolean = event.target.selected;
+				if (placeflag) 
+				{
+					addPlaceToMap();
+				}else
+				{
+					removePlaceFromMap();
+				}
+			}
+			
+			//获取再次编辑的数据
+			private function dataRefresh(event:AppEvent):void
+			{
+				if (planid!=null) 
+				{
+					var data:Object = event.data  ;
+					if (data.key == "ReservePlanManagerInfo") 
+					{
+						var planinfo:Object = data.planinfo;
+						if (planinfo.planid==planid) 
+						{
+							getItemFromObject( planinfo );
+						}
+					}
+				}else{
+					Alert.show("noPlanId!");
+				}
+				
+				
+				// TODO Auto Generated method stub
+				
+			}
+			
+			
+			
+			private function  getItemFromObject(obj:Object):void{
+				
+				var type:String = obj.type;
+				var data:Object = obj.data;
+				if (type=="device") 
+				{
+					//Alert.show(data.toArray().toString());
+					var deviceList:ArrayCollection = data as ArrayCollection;
+					var addtype:String = "webadd";
+					if (deviceList!=null) 
+					{
+						for (var i:int = 0; i < deviceList.length; i++) 
+						{
+							var deviceInf:Object = deviceList.getItemAt( i );
+							if (deviceInf.deviceType=="fbd") 
+							{
+								_fbdHashmap.add(deviceInf.deviceId,deviceInf.deviceId);
+							}else
+							{   
+								if (!_deviceHashmap.containsKey(deviceList[i].deviceId)) 
+								{
+									var tmpInfo:DeviceInfo = new DeviceInfo();
+									tmpInfo.desc =deviceList[i].deviceDesc;
+									tmpInfo.id=deviceList[i].deviceId;      
+									tmpInfo.selected=deviceList[i].deviceSelected||true;
+									tmpInfo.title=deviceList[i].deviceId+"("+deviceList[i].deviceDesc+")";   
+									tmpInfo.typeName=getDeviceType(deviceList[i].deviceTypeId);    
+									tmpInfo.typeId=deviceList[i].deviceTypeId;  
+									tmpInfo.latitude=deviceList[i].latitude;      
+									tmpInfo.longitude=deviceList[i].longitude;    
+									tmpInfo.location=deviceList[i].location;      
+									tmpInfo.postId=deviceList[i].postId;        
+									tmpInfo.postName=deviceList[i].postName;
+									tmpInfo.channelId=deviceList[i].channelId;
+									
+									_findResult.addItem(tmpInfo);
+								}
+							}
+						}
+						if (_findResult.length>0) 
+						{
+							GetItemInfo(addtype,_findResult );
+						}
+					}
+				}else 
+					if(type=="area")
+					{
+						if (data=="dataready") 
+						{
+							trace(data);
+						}else{
+						addAeraToMap(data);
+						AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA,{planid:planid,type:"device"});
+						}
+					}else{
+							trace("数据类型有问题");
+						}
+				
+			}
+			
+			
+			
+			
+			protected function wTemplate_minimizedHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			protected function deviceAll_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:GlowFilter id="glowFilter" alpha="1" color="{getStyle('focusColor')}" inner="true"
+					  strength="2"/>
+		<esri:SimpleFillSymbol id="fillSymbol" alpha="0.5" color="0xFF0000" style="solid"/>
+		<esri:SimpleLineSymbol id="lineSymbol" alpha="1" color="0xFF0000" width="2" style="solid"/>
+		
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="wTemplate" width="335"
+						   closed="wTemplate_closedHandler(event)" enableIcon="true"
+						   minimized="wTemplate_minimizedHandler(event)"
+						   fontFamily="微软雅黑"
+						   open="wTemplate_openHandler(event)"
+						   enableCloseButton="false">
+		<s:VGroup width="100%">
+			<s:HGroup width="100%" height="20" verticalAlign="middle" paddingLeft="5" >
+				<s:Label text="查询范围："/>
+				<controls:CheckBoxIndeterminate  id="chkAll" label="全部" selected="true"
+												 click="chkAll_clickHandler(event,'tlCheckGroup')"/>
+				<s:Image id="btnShowDetail" source="assets/images/w_collapse_down.png" useHandCursor="true" 
+						 click="btnShowDetail_clickHandler(event)"/>
+				<controls:CheckBoxIndeterminate  id="placeChk" label="重要场所" 
+												 click="checkPlaceFlag(event)" visible="{placeflag}"/>
+				
+				<!--<s:Button id="sendDeviceInfo" width="50" label="选定" click="sendDeviceInfo_clickHandler(event)"/>-->
+				<s:Button id="clear" width="50" label="清除" click="clear_gra()"/>
+			</s:HGroup>
+			<s:HGroup id="drawImageGroup" contentBackgroundAlpha="0.2" contentBackgroundColor="#EEAAAA" 
+					  horizontalAlign="right" verticalAlign="top"  paddingLeft="5" >
+				<s:Label width="60" height="25" text="区域选择: "/>
+				<s:Image width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.EXTENT}"
+						 source="assets/images/i_draw_rect.png" toolTip="矩形"/>
+				<s:Image width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.FREEHAND_POLYGON}"
+						 source="assets/images/i_draw_freepoly.png" toolTip="多边形"/>
+				<s:Image width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.CIRCLE}"
+						 source="assets/images/i_draw_circle.png" toolTip="圆"/>	
+				<s:Image width="40" height="40" buttonMode="true" 
+						 click="activateDrawTool(event)" name="{DrawTool.POLYLINE}"
+						 source="assets/images/i_draw_line.png" toolTip="折线"/>
+			</s:HGroup>
+			<s:Scroller id="scrlCheckGroup" height="100%" width="100%"
+						visible="false" includeInLayout="false">
+				<s:TileGroup id="tlCheckGroup" paddingLeft="5" paddingTop="5"  horizontalCenter="CENTER" />
+			</s:Scroller>
+			
+			<s:VGroup width="100%" id="listGroup" visible="false">
+				<s:Line width="100%">
+					<s:stroke>
+						<s:SolidColorStroke color="0"/>
+					</s:stroke>
+				</s:Line>
+				
+				<s:Scroller id="deviceLabelGroup" width="100%" height="30"
+							visible="true" includeInLayout="false">
+					<s:TileGroup id="tlLabelGroup" paddingLeft="2" paddingTop="2" 
+								 horizontalGap="2" verticalGap="2" horizontalCenter="CENTER"/>
+				</s:Scroller>
+				<s:Line width="100%">
+					<s:stroke>
+						<s:SolidColorStroke color="0"/>
+					</s:stroke>
+				</s:Line>
+				<s:VGroup width="100%">
+					<!--<controls:CheckBoxIndeterminate  id="deviceAll" label="全部" width="60" paddingLeft="5" selected="true"
+													 click="deviceAll_clickHandler(event)" />
+					<s:Line width="100%">
+						<s:stroke>
+							<s:SolidColorStroke color="0"/>
+						</s:stroke>
+					</s:Line>-->
+					<s:Scroller id="deviceArrayGroup" width="100%" height="200" 
+								visible="true" includeInLayout="false">
+						<s:TileGroup id="tldeviceGroup" paddingLeft="5" paddingTop="5" />
+					</s:Scroller>
+				</s:VGroup>
+				<!--<s:Label  x="60" text="{Devcount}"/>-->
+				
+			</s:VGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

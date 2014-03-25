@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   xmlns:Query="widgets.Query.*"
+				   initialize="init()" layout="absolute" widgetConfigLoaded="configLoad()">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			
+			
+			
+			
+			private var _lineLayer:GraphicsLayer = new GraphicsLayer();
+			private var _picLayer:GraphicsLayer = new GraphicsLayer();
+			private var _picGraphic:Graphic = new Graphic();
+			private var pointArray:Array = new Array();
+			
+			
+			private var allpointsInfo:ArrayCollection = new ArrayCollection();
+			private var timerArray:Array = new Array();
+			
+			
+			
+			
+			private var xMin:Number;
+			private var xMax:Number;
+			private var yMin:Number;
+			private var yMax:Number;
+			private var infoUrl:String;
+			
+			
+			private var _rankSymbols:Vector.<TraceResultSymbol> = new Vector.<TraceResultSymbol>(); 
+			
+			private var carpic:String;
+			private var devpicurl:String;
+			private var sourceHeight:Number;
+			private var sourceWidth:Number;
+			private var type:String;
+			private var speed:Number;
+			private var timer:Timer ;
+			
+			private var queryRefreshRate:Number;
+			
+			
+			
+			private var i:int=0; 
+			private var flag:int=0;
+			
+			private function configLoad():void{
+				if ( configXML ) {
+					
+					
+					
+					infoUrl = configXML.info;
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					var SymbolsList:XMLList = configXML..symbols;
+					
+					for (var k:int = 0;  k< SymbolsList.length(); k++) 
+					{
+						var symbolList:XMLList = SymbolsList[j].symbol;
+						for (var j:int = 0; j < symbolList.length(); j++) 
+						{
+							
+							
+							
+							
+							var rankSymbol:TraceResultSymbol = new TraceResultSymbol();
+							var tmptype:String = symbolList[j].@type;
+							rankSymbol.type = tmptype.toLowerCase();
+							
+							var resultMarkerSymboldevURL:String = symbolList[j].devsymbol.@devpicurl || widgetIcon;
+							var resultMarkerSymboldevHeight:Number = symbolList[j].devsymbol.@height || 20;
+							var resultMarkerSymboldevWidth:Number = symbolList[j].devsymbol.@width || 20;
+							var resultMarkerSymboldevXOffset:Number = symbolList[j].devsymbol.@xoffset || 0;
+							var resultMarkerSymboldevYOffset:Number = symbolList[j].devsymbol.@yoffset || 0;
+							
+							rankSymbol.resultMarkerSymboldev = new PictureMarkerSymbol( resultMarkerSymboldevURL, 
+								resultMarkerSymboldevWidth, resultMarkerSymboldevHeight, resultMarkerSymboldevXOffset, resultMarkerSymboldevYOffset );
+							
+							var resultMarkerSymbolinfoURL:String = symbolList[j].infosymbol.@infopicurl || widgetIcon;
+							var resultMarkerSymbolinfoHeight:Number = symbolList[j].infosymbol.@height || 20;
+							var resultMarkerSymbolinfoWidth:Number = symbolList[j].infosymbol.@width || 20;
+							var resultMarkerSymbolinfoXOffset:Number = symbolList[j].infosymbol.@xoffset || 0;
+							var resultMarkerSymbolinfoYOffset:Number = symbolList[j].infosymbol.@yoffset || 0;
+							
+							rankSymbol.resultMarkerSymbolinfo = new PictureMarkerSymbol( resultMarkerSymbolinfoURL, 
+								resultMarkerSymbolinfoWidth, resultMarkerSymbolinfoHeight, resultMarkerSymbolinfoXOffset, resultMarkerSymbolinfoYOffset );
+							
+							
+							
+							
+							
+							_rankSymbols.push( rankSymbol );
+						}
+					}
+					
+					queryRefreshRate =configXML.queryRefreshRate ||0;
+					speed= configXML.speed || 10 ;
+					
+					
+				}
+			}
+			
+			protected function init():void
+			{
+				
+				_lineLayer = new GraphicsLayer();
+				_lineLayer.name="TracePlayBack";
+				_picLayer = new GraphicsLayer();
+				_picLayer.name="TracePlayBack";
+				map.addLayer(_lineLayer);
+				map.addLayer( _picLayer );
+				AppEvent.addListener(AppEvent.TRACE_PLAYBACK,getPoints);
+				AppEvent.addListener( AppEvent.TRACE_PLAYBACK_PAUSE , clickPause );
+				
+			}
+			
+			
+			private   function clickPause(event:AppEvent):void
+			{
+				var flag:Boolean = event.data as Boolean;
+				if(flag)
+				{
+					if (!hasEventListener("playEnd")) 
+					{
+						
+					
+					addEventListener("playEnd",nextLine);
+
+					dispatchEvent(new Event("playEnd"));
+					}
+
+				}else
+				{
+					removeEventListener("playEnd",nextLine);
+				}
+			}
+			
+			private function getPoints(event:AppEvent):void{
+				
+				
+				//AppEvent.dispatch( AppEvent.DELETEALLPOINTS );
+				_lineLayer.clear();	
+				_picLayer.clear();
+				
+				addEventListener("playEnd",nextLine);
+
+
+				var str:String = event.data as String;
+				var xmlFile:XML = XML( str );
+				var pointNode:XMLList = xmlFile..point;
+				type =  xmlFile.type;
+				type=type.toLowerCase();
+				
+				var xAc:ArrayCollection = new ArrayCollection();
+				var yAc:ArrayCollection = new ArrayCollection();
+				
+				pointArray=new Array();
+				allpointsInfo=new ArrayCollection();
+				xMin=yMin=xMax=yMax=0;
+				
+				if(str!=null &&str !="")
+				{
+					for (var a:int=0;a<pointNode.length();a++)
+					{
+						var traceResult:TraceResult = new TraceResult();
+						traceResult.id = pointNode[a].id;
+						traceResult.name = pointNode[a].title;
+						traceResult.title = pointNode[a].title;
+						traceResult.type = type;
+						traceResult.url =  pointNode[a].picurl||"";
+						traceResult.content = pointNode[a].content;
+						traceResult.icon = null;
+						
+						var xP:Number = pointNode[a].x;
+						var yP:Number = pointNode[a].y;
+						
+						traceResult.point = new MapPoint(xP,yP);
+						
+						
+						
+						
+						allpointsInfo.addItem( traceResult );
+						pointArray.push([xP,yP]);
+						yAc.addItem(yP);
+						xAc.addItem(xP);
+						
+					}
+					if(pointArray.length >1 ){
+						var ptsrn:Array = String(pointArray[0]).split(",");
+						var ptn:MapPoint = new MapPoint(ptsrn[0],ptsrn[1]);
+						map.centerAt(ptn);
+						
+						doPlayLine(i);
+					}else if (pointArray.length==1){
+						
+						//AppEvent.dispatch( AppEvent.ADDPOINTS,allpointsInfo[0]);
+						addPointIntoMap( allpointsInfo[0] );
+						var ptsr:Array = String(pointArray[0]).split(",");
+						var pt:MapPoint = new MapPoint(ptsr[0],ptsr[1]);
+						
+						map.centerAt(pt);
+					}							
+				}
+				
+				
+			}
+			
+			
+			private function doPlayLine(n:int):void{
+				if(pointArray.length>1){
+					
+					var fromArray:Array = String(pointArray[n]).split(",");
+					var toArray:Array = String(pointArray[n+1]).split(",");
+					addPointIntoMap( allpointsInfo[n] as TraceResult );
+					//AppEvent.dispatch( AppEvent.ADDPOINTS,allpointsInfo[n]);
+					allpointsInfo.removeItemAt(0);
+					pointArray.shift();
+					var fromPt:MapPoint = new MapPoint(fromArray[0],fromArray[1]);
+					var toPt:MapPoint = new MapPoint(toArray[0],toArray[1]);
+					
+					if(toArray[0] && toArray[1]){
+						getallPoints( fromPt, toPt);
+					}else{
+						Alert.show("err"); 
+					}
+				}
+				
+			}
+			
+			
+			
+			private function addPointIntoMap(Result:Object):void{
+				
+				
+				var rankSymbol:TraceResultSymbol = new TraceResultSymbol();
+				
+				
+				rankSymbol = getRankSymbol( type );
+				
+				var traceResult:TraceResult = new TraceResult();
+				traceResult.id = Result.id;
+				traceResult.name = Result.name;
+				traceResult.title = Result.name;
+				traceResult.content = Result.content;
+				traceResult.type = Result.type;
+				traceResult.url = Result.url;
+				traceResult.point = Result.point as MapPoint;
+				
+				var gra:Graphic =new Graphic();
+				gra.symbol = rankSymbol.resultMarkerSymboldev;
+				gra.attributes = traceResult;
+				gra.geometry = traceResult.point;
+				
+				
+				gra.addEventListener(MouseEvent.CLICK,mouseClickGraphic);
+				gra.addEventListener(MouseEvent.MOUSE_OVER,mouseOverGraphic);
+				gra.addEventListener(MouseEvent.MOUSE_OUT,mouseOutGraphic);
+				
+				
+				
+				_picLayer.add( gra );
+				
+			}
+			
+			private function getallPoints(fromPt:MapPoint, toPt:MapPoint):void{
+				var xtmp:Number=fromPt.x;
+				var ytmp:Number=fromPt.y;
+				var xoffset:Number = ( toPt.x - fromPt.x ) / speed;
+				var yoffset:Number = ( toPt.y - fromPt.y ) / speed;
+				var Ptarray:Array = new Array([fromPt.x,fromPt.y]);
+				for (var j:int = 2; j <speed ; j++) 
+				{
+					xtmp+=xoffset;
+					ytmp+=yoffset;
+					Ptarray.push([xtmp,ytmp]);
+				}
+				
+				Ptarray.push([toPt.x,toPt.y]);
+				playLine(Ptarray,toPt);
+				
+			}
+			
+			private function playLine(allpoints:Array,endpoint:MapPoint):void{
+				
+				var timer:Timer =new Timer( 100 );
+
+				timerArray.push( timer);
+				
+				var m:Number = 0;
+				
+				var polyline:Polyline = new Polyline();
+				var lineGraphic:Graphic = new Graphic( polyline, new SimpleLineSymbol( "solide", 0xED1C24, 1, 4 ) );
+				_lineLayer.add( lineGraphic );
+				
+				_picGraphic = new Graphic();
+				_picLayer.add(_picGraphic);
+				
+				//定义轨迹图标
+				var picmarker:PictureMarkerSymbol = new PictureMarkerSymbol();//轨迹回放
+				picmarker = getRankSymbol(type).resultMarkerSymbolinfo;
+				_picGraphic.symbol = picmarker;
+				
+				
+				if(allpoints){
+					for each (var timertmp:Timer in timerArray) 
+					{
+						timertmp.stop();
+					}
+					
+					timer.start();
+					timer.addEventListener( TimerEvent.TIMER, timerTick );
+				}
+				
+				
+				
+				function timerTick( event:TimerEvent ):void {
+					
+					
+					var fromPtmp:Array = String(allpoints[m]).split(",");
+					var toPtmp:Array = String(allpoints[m+1]).split(",");
+					var fromPtt:MapPoint = new MapPoint(fromPtmp[0],fromPtmp[1]);
+					var toPtt:MapPoint = new MapPoint(toPtmp[0],toPtmp[1]);
+					var graphic:Graphic = new Graphic();
+					
+					var ptStart:MapPoint = fromPtt;
+					graphic.symbol = picmarker;
+					graphic.geometry = fromPtt;
+					var ptEnd:MapPoint = toPtt;
+					
+					var path:Array = [];
+					_picGraphic.geometry = ptEnd;
+					
+					path.push( ptStart );
+					path.push( ptEnd );
+					polyline.addPath( path );
+					
+					_lineLayer.refresh();
+					_picLayer.refresh();
+					
+					m++;
+					if ( m>allpoints.length-1 ) 
+					{
+						dispatchEvent(new Event("playEnd"));
+						timer.stop();
+						timer.removeEventListener(TimerEvent.TIMER, timerTick );
+						timer = null;
+					}
+				}				
+			}
+			
+			
+			
+			
+			private function nextLine(e:Event):void{
+				
+				if(pointArray.length != 1){
+					doPlayLine(i);
+				}else{
+					addPointIntoMap(allpointsInfo[0] as TraceResult );
+					//AppEvent.dispatch( AppEvent.ADDPOINTS,allpointsInfo[0]);
+					allpointsInfo.removeItemAt(0);
+					
+					pointArray.shift();
+				}
+				
+			}
+			
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			
+			
+			private function infoReady(event:AppEvent):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			
+			private function createAndStartWidgetTimer():void {
+				if ( queryRefreshRate && queryRefreshRate > 0 ) {
+					if (!timer) {
+						var seconds:Number = 1;
+						var rate:Number = seconds * 1000;
+						timer = new Timer(rate);
+					}
+					timer.start();
+				}
+			}
+			
+			
+			
+			private var hitimer:uint;
+			
+			private function mouseOverGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				
+				//				
+				showInfoWindow(gra.attributes);				
+			}
+			
+			private function mouseOutGraphic(event:Event):void {
+				if ( hitimer != 0 )
+					clearTimeout( hitimer );
+			}
+			
+			
+			private function mouseClickGraphic(event:Event):void{
+				var gra:Graphic = event.currentTarget as Graphic;
+				var type:String = gra.attributes.type;
+				var id:String = gra.attributes.id;
+				var clickurl:String = gra.attributes.url;
+				if(clickurl!=""&&clickurl!= null)
+				{
+					var urlReq:URLRequest = new URLRequest( clickurl );
+					navigateToURL( urlReq );
+					
+				}
+				
+				//AppEvent.dispatch( AppEvent.OPEN_DEVICE,{ type:type, id:id } );
+				
+			}
+			
+			
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					
+					infoTemplate.data = infoData;
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			} 
+			
+			
+			private function getRankSymbol( type:String ):TraceResultSymbol {
+				for each ( var symbol:TraceResultSymbol in _rankSymbols ) {
+					if ( symbol.type == type )
+						return symbol;
+				}
+				return null;
+			}
+			
+			
+			private function clear():void{
+				//AppEvent.dispatch( AppEvent.DELETEALLPOINTS);
+				_lineLayer.clear();
+				_picLayer.clear();
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</viewer:BaseWidget>

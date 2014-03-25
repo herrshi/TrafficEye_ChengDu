@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<configuration>
+	<title>ArcGIS Viewer for Flex</title>
+	<subtitle>... using ArcGIS</subtitle>
+	<logo>assets/images/logo.png</logo>
+	<!--textColor,backgroundColor,rolloverColor,selectionColor,titleColor,applicationBackgroundColor -->
+	<stylecolors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444,0x000000
+	</stylecolors> <!-- Sky Blue -->
+	<applicationbackgroudalpha>1</applicationbackgroudalpha>
+	<stylealpha>0.8</stylealpha>
+
+	<!-- UI elements -->
+	<!--widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml" 
+		url="widgets/Navigation/NavigationWidget.swf"/> <widget right="-2" bottom="-2" 
+		config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf"/> 
+		<widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" 
+		url="widgets/MapSwitcher/MapSwitcherWidget.swf"/> <widget left="0" top="0" 
+		config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/> 
+		<widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" 
+		url="widgets/Coordinate/CoordinateWidget.swf"/ -->
+
+	<!--gis服务器地址 -->
+	<map initialextent="103.9565 30.5608 104.1897 30.7392" top="0"
+		serverip="128.64.25.61:8399" mouseenable="true">
+
+		<operationallayers>
+			<layer label="发布段" type="dynamic" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_fbd_morph/MapServer" />
+		</operationallayers>
+	</map>
+
+	<!-- widgets organized into widget containers that manage close/open etc -->
+	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+	<widgetcontainer layout="float">
+		<widget label="发布段_变形" preload="open"
+			config="widgets/Query/chengdu/QueryWidget_fbd_morph_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<!-- <widget label="发布段环线" -->
+		<!-- config="widgets/Query/chengdu/QueryWidget_fbd_huan_local.xml" -->
+		<!-- url="widgets/Query/QueryWidget.swf" /> -->
+	</widgetcontainer>
+
+	<widgetcontainer layout="fix">
+		<widget label="交通状态图例" preload="open" bottom="10" right="10"
+			url="widgets/StaticImage/StaticImageWidget.swf" config="widgets/StaticImage/StaticImageWidget_Legend_morph.xml" />
+	</widgetcontainer>
+</configuration>
+

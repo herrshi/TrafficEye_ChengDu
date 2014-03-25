@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/3</layer>
+	<titlefield>事件检测.name</titlefield>
+	<idfield>事件检测.ip</idfield>
+	<type>SJJC</type>
+	<linkfield></linkfield>
+	<CheckWindow name="筛选面板" show="true">
+		<showField name="事件检测.type" alias="设备位置">
+			<field keyvalue="三环" alias="三环" />
+			<field keyvalue="城区隧道" alias="城区隧道" />
+			<field keyvalue="二环桥下" alias="二环地面" />
+			<field keyvalue="二环桥上" alias="二环高架" />
+		</showField>
+		<showField name="STATE" alias="设备状态">
+			<field keyvalue="1" alias="设备正常" />
+			<field keyvalue="2" alias="设备故障" />
+		</showField>
+	</CheckWindow>
+	<fields all="false">
+		<field name="事件检测.name" alias="设备位置" />
+		<field name="事件检测.deviceid" alias="编号" />
+		<field name="事件检测.type" alias="设备位置" />
+		<field name="STATE_CH" alias="设备状态" />
+		<field name="事件检测.ip" show="false" />
+		<field name="STATE" show="false" />
+
+	</fields>
+	<eventType flag="openDevice" />
+
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>60</refreshrate>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>STATE</keyfield>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="1" alias="设备正常">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj30.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="2" alias="设备故障">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj20_y.png"
+				height="12" width="12" />
+		</symbol>
+		<symbol keyvalue="0" alias="未知">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj30_b.png"
+				height="12" width="12" />
+		</symbol>
+	</symbols>
+</configuration>
+
+ 

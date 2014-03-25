@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark"				   
+	xmlns:viewer="com.esri.viewer.*" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	layout="absolute"
+	widgetConfigLoaded="configLoad()" creationComplete="init()" >
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.TextSymbol;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.WidgetStates;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.ModuleEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.rpc.soap.WebService;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import services.flowwebservice.FlowWebService;
+			
+			import widgets.Locate.LocateResult;
+			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
+			
+			private var _refreshTimer:Timer;
+			private var _debug:Boolean = false;
+			private var _showText:Boolean = false;
+			
+			
+			[Bindable]private var _unlocateEventAC:ArrayCollection = new ArrayCollection();
+			
+			private var _relateWidgetTitleList:Array = [];
+			private var _relateWidgetIdList:Array = [];
+			
+			//private var _caseService:CaseService;
+			private var _flowWebService:FlowWebService;
+			private var _caselayername:String;
+			
+			
+			
+			private var _userId:String;
+			
+			private var _roleId:String;
+			
+			
+			private function init():void {
+				cmbIdList.textInput.editable = false;
+				
+				for each ( var serviceObj:Object in configData.webservices ) {
+					if ( serviceObj.name == "FlowWebService" ) {
+						var service:String = serviceObj.service;
+						var port:String = serviceObj.port;
+						var wsdl:String = serviceObj.wsdl;
+						//_caseService = new CaseService( service, port, wsdl );
+						_flowWebService = new FlowWebService( service, port, wsdl );
+						break;
+					}
+				}
+				
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				
+				AppEvent.addListener( AppEvent.DISPATCH_IDS, getIds );
+				
+				
+				_flowWebService.addEventListener(FaultEvent.FAULT, caseServiceFaultHandler);
+				_flowWebService.addEventListener(ResultEvent.RESULT, caseServiceResultHandler);
+				//_caseService.addEventListener( ResultEvent.RESULT, caseServiceResultHandler );
+				//_caseService.addEventListener( FaultEvent.FAULT, caseServiceFaultHandler );
+			}
+			
+			
+			private function getIds(event:AppEvent):void{
+				_userId = event.data.userId||"";
+				_roleId = event.data.roleId||"";
+				
+			}
+			private function configLoad():void {
+				
+				
+				if ( configXML ) {					
+					_debug = ( configXML.debug == "true" ? true : false );
+					_showText = ( configXML.showtext == "true" ? true : false );
+					_caselayername =  configXML.Caselayername;
+					
+				
+					
+					var infoUrl:String = configXML.info;
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};					
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					var relateWidgetTitles:String = configXML.relatewidgets;
+					_relateWidgetTitleList = relateWidgetTitles.split( "," );
+
+					//若没有关联的widget则立即请求数据，若有关联widget则等关联widget创建完成后再请求数据
+					if ( relateWidgetTitles && relateWidgetTitles != "" ) {
+						//						AppEvent.addListener( AppEvent.LEGEND_CHECKBOX_CLICKED, legendItemVisibleChanged );
+						AppEvent.addListener( AppEvent.WIDGET_CREATED, widgetCreated );
+					}
+					else {
+						refreshEvent();
+					}
+					
+					for each ( var title:String in _relateWidgetTitleList ) {
+						var id:Number = getWidgetId( title );						
+						if ( id > -1 ) {
+							_relateWidgetIdList.push( id );
+							AppEvent.dispatch( AppEvent.WIDGET_RUN, id );
+						}
+					}
+					
+					var refreshRate:uint = configXML.refreshrate;
+					if ( refreshRate ) {
+						_refreshTimer = new Timer( refreshRate*1000 );
+						_refreshTimer.addEventListener( TimerEvent.TIMER, refreshEvent );
+						_refreshTimer.start();
+					}					
+				}
+			}
+			
+			/* private function legendItemVisibleChanged( event:AppEvent ):void {
+			var widgetTitle:String = event.data.widgetTitle;
+			if ( _relateWidgetTitleList.indexOf( widgetTitle ) == -1 )
+			return;
+			
+			var rankValue:String = event.data.rankValue;
+			var visible:Boolean = event.data.visible;
+			var symbol:QueryResultSymbol = getSymbol( rankValue );
+			symbol.visible = visible;
+			
+			for each ( var gra:Graphic in _eventLayer.graphicProvider ) {
+			var attr:QueryResult = gra.attributes as QueryResult;
+			var status:String = attr.status;
+			if ( status == rankValue ) {
+			gra.visible = visible;
+			}
+			}
+			} */
+			
+			private function widgetCreated( event:AppEvent ):void {
+				var id:Number = event.data as Number;
+				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
+					//最小化图例widget
+					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+					//请求数据
+					refreshEvent();
+				}
+			}
+			
+			private var resultAC:ArrayCollection; 
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key == "EventInfo" ) {
+					resultAC = event.data.data;
+					setEventData( resultAC );
+				}
+			} 
+			
+			private var eventSymbol:PictureMarkerSymbol = 
+				new PictureMarkerSymbol( "assets/flash/Red_glow.swf", 40, 40, -15, 15 );
+			
+			private function setEventData( resultAC:ArrayCollection ):void {				
+				if ( _debug )
+					Alert.show( resultAC.length.toString() );
+				
+				_unlocateEventAC.removeAll();
+				AppEvent.dispatch( AppEvent.CLEAR_TEXT );
+				
+				for ( var i:uint = 0; i < resultAC.length; i++ ) {
+					var x:Number = resultAC[i].longitude;
+					var y:Number = resultAC[i].latitude;
+					
+					var eventId:String = resultAC[i].caseId;
+					var eventNo:String = resultAC[i].caseId;
+					var time:String = resultAC[i].callPoliceTime;
+					var desc:String = resultAC[i].content;
+					
+					var eventIds:String = resultAC[i].eventIds;
+					var taskSourceTypeId:String = resultAC[i].taskSourceTypeId;
+					var id:String =  resultAC[i].id;
+					
+					var location:String = resultAC[i].occurPlace;
+					var reportor:String = resultAC[i].callPolicePersonName;
+					var status:String;
+					if ( isNaN(x) || isNaN(y) || x == 0 || y == 0 ) {
+						status = "Unlocate";
+						var event:Object = {
+							eventId: eventId,
+							time: time,
+							location: location,
+							reportor: reportor,
+							
+							taskSourceTypeId:taskSourceTypeId,
+							eventIds:eventIds,
+							taskSourceId:id,
+							
+							desc: desc
+						}
+						_unlocateEventAC.addItem( event );
+					}						
+					else
+						status = resultAC[i].Status;
+					
+				}
+				
+				if ( _unlocateEventAC.length > 0 ) {
+					cmbIdList.dataProvider = _unlocateEventAC;
+					var idx:int = itemExist( _selectedItem );
+					if ( idx == -1 || _selectedItem == undefined ) {
+						idx = 0;
+					}
+					cmbIdList.selectedIndex = idx;
+					_selectedItem = _unlocateEventAC[idx];
+					txtEventTime.text = _selectedItem.time;
+					txtEventLocation.text = _selectedItem.location;
+					txtEventDesc.text = _selectedItem.desc;
+				} 
+			}
+			
+			private function itemExist( item:* ):int {
+				if ( item == undefined )
+					return -1;
+				
+				for ( var i:int = 0; i < _unlocateEventAC.length; i++ ) {
+					var obj:Object = _unlocateEventAC[i];
+					if ( obj.eventId == item.eventId )
+						return i;
+				}
+				return -1;
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private function infoReady(event:AppEvent):void
+			{
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId)
+				{
+					infoTemplate = event.data.infoWidget;
+				}
+			}
+			
+			private function infoError(event:ModuleEvent):void
+			{
+				
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData)
+				{
+					map.infoWindow.data = infoData;
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				}
+				else
+				{
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function refreshEvent( event:TimerEvent = null ):void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: "EventInfo" } );
+				/* var resultString:String = "<SJ_LIST><SJ SJID='123' SJNO='SJ20101118110103' X='104.0628' Y='30.6699' OCCUR_TIME='2010-11-18 11:01:03' SJ_DESC='发生一件事件' SJ_LOCATION='xx路yy路' status=''/></SJ_LIST>";
+				setEventData( resultString );  */  
+			}
+			
+			protected function widgetOpenHandler(event:Event):void {
+				
+				openWidget("警情管理图层" );
+				for each ( var id:Number in _relateWidgetIdList ) {
+					AppEvent.dispatch( AppEvent.WIDGET_RUN, id );
+					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+				}
+				refreshEvent();
+				if ( _refreshTimer && !_refreshTimer.running )
+					_refreshTimer.start();
+				
+			}
+			
+			protected function widgetCloseHandler(event:Event):void {
+				closeWidget("警情管理图层");
+				if ( _refreshTimer && _refreshTimer.running )
+					_refreshTimer.stop();
+				AppEvent.dispatch( AppEvent.CLEAR_TEXT );
+				//				showInfoWindow( null );
+				
+				for each ( var id:Number in _relateWidgetIdList ) {
+					AppEvent.dispatch( AppEvent.WIDGET_CHANGE_STATE, 
+						{ id: id, state: WidgetStates.WIDGET_CLOSED } );
+				}
+			}
+			
+			
+			//记录当前选中的项目，刷新后保留当前选择
+			private var _selectedItem:* = undefined;
+			protected function cmbIdList_changeHandler(event:IndexChangeEvent):void {
+				_selectedItem = cmbIdList.selectedItem;
+				txtEventTime.text = _selectedItem.time;
+				txtEventLocation.text = _selectedItem.location;
+				txtEventDesc.text =_selectedItem.desc;
+			}
+			
+			[Bindable][Embed(source="/assets/images/cross_cursor.png")]             
+			private var crossCursor:Class;              
+			private var cursorID:int;
+			private var _isAdd:Boolean = false;
+			
+			protected function btnLocate_clickHandler(event:MouseEvent):void {
+				if ( _isAdd ) {
+					CursorManager.removeCursor( cursorID );
+					map.removeEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+					btnLocate.label = "定位";
+					_isAdd = false;
+				}
+				else {
+					cursorID = CursorManager.setCursor(crossCursor, 2, -5, -5); 
+					map.addEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+					btnLocate.label = "取消定位";
+					_isAdd = true;
+				}
+			}
+			
+			private function mapClickHandler( event:MapMouseEvent ):void {
+				if ( !_flowWebService ) {
+					AppEvent.dispatch( AppEvent.APP_ERROR, "WebService配置错误" );
+					return;
+				}
+				
+				/* var token:AsyncToken = _caseService.locateCaseInfo( "web", "test", "0", "0" ); */
+				if ( _unlocateEventAC.length > 0 && cmbIdList.selectedIndex > -1 ) {
+					var unlocateEvent:Object = _unlocateEventAC[ cmbIdList.selectedIndex ];
+					var pt:MapPoint = event.mapPoint;
+					
+					var eventId:String = unlocateEvent.eventId;
+					
+					var taskSourceId:String = unlocateEvent.taskSourceId;
+					var taskSourceTypeId:String = unlocateEvent.taskSourceTypeId;
+					var eventIds:String = unlocateEvent.eventIds;
+					
+					var longitude:String = pt.x.toString();
+					var latitude:String = pt.y.toString();
+					var locationResult:LocationResult=new LocationResult();
+					
+					var location:LocationResult = new LocationResult();
+					
+					var dateFormatter:DateFormatter = new DateFormatter();
+					dateFormatter.formatString = "YYYY-MM-DD JJ:NN:SS";
+					var nowDate:String= dateFormatter.format(new Date());
+					
+					
+					locationResult.taskSourceTypeId=taskSourceTypeId;
+					locationResult.taskSourceId=taskSourceId;
+					locationResult.eventId=eventIds;
+					locationResult.userId=_userId;
+					locationResult.actionParameterXml=null;
+					locationResult.businessFormXml.PositionTime=nowDate;
+					locationResult.businessFormXml.PositionDeptId=" ";
+					locationResult.businessFormXml.PositionUserId=_userId;
+					locationResult.businessFormXml.Longitude=longitude;
+					locationResult.businessFormXml.Latitude=latitude;
+					trace( eventId, longitude, latitude );
+					var token:AsyncToken = _flowWebService.executeEvent(locationResult.taskSourceTypeId,locationResult.taskSourceId,locationResult.eventId,
+						locationResult.userId,locationResult.actionParameterXml,locationResult.businessFormXml);
+					//var token:AsyncToken = _caseService.locateCaseInfo(locationResult);
+				} 
+			}
+			
+			private function caseServiceResultHandler( event:ResultEvent ):void {
+				var ret:Boolean = event.result;
+				if ( ret == true ) {
+					Alert.show( "事件定位成功" );
+					btnLocate_clickHandler( null );
+					refreshEvent( null );
+				}					
+				else {
+					AppEvent.dispatch( AppEvent.APP_ERROR, "事件定位失败" );
+				}
+				
+				
+			}
+			
+			private function caseServiceFaultHandler( event:FaultEvent ):void {
+				var strInfo: String = "Error: \n"
+				strInfo += "Event Target: " + event.target + "\n";
+				strInfo += "Event Type: " + event.type + "\n";
+				strInfo += "Fault Code: " + event.fault.faultCode + "\n";
+				strInfo += "Fault Info: " + event.fault.faultString + "\n";
+				strInfo += "Fault Detail: " + event.fault.faultDetail;
+				AppEvent.dispatch( AppEvent.APP_ERROR, strInfo );
+			}
+			
+			protected function btnOpenMapSearch_clickHandler(event:MouseEvent):void {
+				var id:Number = getWidgetId( "地图搜索" );
+				if ( id > -1 )
+					AppEvent.dispatch( AppEvent.WIDGET_RUN, id );
+			}
+			
+			
+			protected function search_clickHandler(event:MouseEvent):void{
+				var tempString:String = filterStr.text;
+				if(tempString!=null && tempString!="" && tempString.length!=0)
+					_unlocateEventAC.filterFunction = dataFilter;
+				else
+					_unlocateEventAC.filterFunction = null;
+				function dataFilter(item:Object):Boolean{
+					if(!item || !item.location || !item.desc)
+						return false;
+					
+					return item.location.indexOf(tempString)!=-1 || item.desc.indexOf(tempString)!=-1;
+					
+				}
+				_unlocateEventAC.refresh();
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="wTemplate" width="300" height="350" fontFamily="微软雅黑" 
+						   open="widgetOpenHandler(event)" closed="widgetCloseHandler(event)"
+						   enableCloseButton="false">
+		<s:VGroup height="350" width="100%" >
+			<mx:Form width="100%" fontSize="12" paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5">
+				<mx:FormHeading label="未定位事件列表" fontSize="14"/>
+				
+				<mx:FormItem label="检索：" width="100%">
+					<s:HGroup width="100%" gap="10" horizontalAlign="center">
+						<s:TextInput id="filterStr" width="100%" editable="true" selectable="true"/>
+						<s:Button id="searchButton" label="搜索" fontSize="14" click="search_clickHandler(event)"/>
+					</s:HGroup>
+				</mx:FormItem>
+				
+				<mx:FormItem label="编号：" width="100%">
+					<!--<s:HGroup width="100%" gap="10">-->
+					<s:ComboBox id="cmbIdList" width="100%" labelField="eventId" requireSelection="true"
+								change="cmbIdList_changeHandler(event)"/>
+					<!--<s:Button id="search" label="搜索" fontSize="12" click="search_clickHandler(event)"/>
+					</s:HGroup>-->
+				</mx:FormItem>
+				
+				<mx:FormItem label="时间：" width="100%">
+					<s:TextArea id="txtEventTime" width="100%" heightInLines="1" editable="false" selectable="false"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="地点：" width="100%">
+					<s:TextArea id="txtEventLocation" width="100%" heightInLines="3" editable="false" selectable="true" />
+				</mx:FormItem>
+				
+				<mx:FormItem label="描述：" width="100%">
+					<s:TextArea id="txtEventDesc" width="100%" heightInLines="3" editable="false" selectable="true" />
+				</mx:FormItem>
+			</mx:Form>
+			<s:HGroup width="100%" gap="10" horizontalAlign="center">
+				<s:Button id="btnLocate" fontSize="14" label="定位" click="btnLocate_clickHandler(event)"/>
+				<s:Button id="btnOpenMapSearch" fontSize="14" label="地图搜索" click="btnOpenMapSearch_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

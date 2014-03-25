@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer/0</layer>
+	<titlefield>发布段.FBD_NAME</titlefield>
+	<idfield>发布段.FBD_CODE</idfield>
+	<type>FBD</type>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="发布段.FBD_NAME" alias="设备位置" />
+		<field name="发布段.FBD_CODE" alias="发布段编号" />
+		<field name="VOLUME" alias="流量" />
+		<field name="SPEED" alias="平均速度" />
+		<field name="OCC" alias="占有率" />
+	</fields>
+	<buttons>
+		<button>状态发布</button>
+	</buttons>
+	<eventType flag="openDevice" />
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>20</refreshrate>
+	<refreshratetype>发布段</refreshratetype>
+	<hinttimeout>0</hinttimeout>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+</configuration>

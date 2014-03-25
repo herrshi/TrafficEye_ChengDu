@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   layout="absolute" 
+				   widgetConfigLoaded="configLoad()" 
+				   creationComplete="init()">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.supportClasses.TimeReference;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.ViewerContainer;
+			
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.managers.CursorManager;
+			
+			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
+			
+			[Bindable][Embed(source="/assets/images/cross_cursor.png")]             
+			private var _crossCursor:Class;              
+			private var _cursorID:int;
+			
+			private var _graLayer:GraphicsLayer;
+			private var _graSymbol:QueryResultSymbol;
+			
+			private var _buttonArray:Array = [];
+			
+			private var _dataType:String;
+			
+			
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>(); 
+
+			
+			
+			private function init():void {
+				_graLayer = new GraphicsLayer();
+				map.addLayer( _graLayer );
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+			}
+			
+			private function configLoad():void {
+				if ( configXML ) {
+					_dataType = configXML.datatype || "ConstructionPointInfo";
+					
+					var isShow:String = configXML.isShow||"true";
+
+					if (isShow=="false") 
+					{
+						wTemplate.visible=false;
+					}else
+					{
+						wTemplate.visible=true;
+					}
+					
+					var scaleSymbolList:XMLList = configXML..symbols;
+					for (var i:int = 0; i < scaleSymbolList.length(); i++) 
+					{
+						
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							rankSymbol.keyValue = keyValue;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							_rankSymbols.push( rankSymbol );
+						}
+						
+					}
+
+					/*
+					var url:String = configXML.symbol.@url || "assets/images/i_flag.png";
+					var height:Number = configXML.symbol.@height || 30;
+					var width:Number = configXML.symbol.@width || 30;
+					var xoffset:Number = configXML.symbol.@xoffset || -15;
+					var yoffset:Number = configXML.symbol.@yoffset || 15;
+					_graSymbol = new PictureMarkerSymbol( url, width, height, xoffset, yoffset );
+					*/
+					//buttons设置
+					var buttonList:XMLList = configXML..button;
+					for ( var k:uint = 0; k < buttonList.length(); k++ ) {
+						var buttonLabel:String = buttonList[k];
+						var button:Object = {
+							label:buttonLabel
+						}
+						_buttonArray.push( button );
+					}
+					
+					var infoUrl:String = configXML.info;
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};	
+					
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+				}
+				
+				refreshData();
+			}
+			
+			private function refreshData( event:TimerEvent = null ):void {
+				AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: _dataType } );
+			}
+			
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key == _dataType ) {
+					refreshConstrunctionPoint( event.data.data );
+				}		
+			}
+			
+			
+			private function getRankSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			
+			
+			private function refreshConstrunctionPoint( pointAC:ArrayCollection ):void {
+				_graLayer.clear();
+				showInfoWindow( null );
+				
+				for each ( var construnctionPoint:Object in pointAC ) {
+					var x:Number = construnctionPoint.ffltLongitude;
+					var y:Number = construnctionPoint.ffltLatitude;
+					if ( isNaN( x ) || isNaN( y ) )
+						return;
+					
+					var id:String = construnctionPoint.fstrId || "";//编号
+					var desc:String = construnctionPoint.fstrDesc || "";//施工详情
+					var company:String = construnctionPoint.fstrCompany || "";//施工单位
+					var fstrConsUnit:String = construnctionPoint.fstrConsUnit ||"";//建设单位
+					var length:Number = construnctionPoint.ffltLongLength || 0;//占道范围长度
+					var widht:Number = construnctionPoint.ffltWidthLength || 0;//占道范围宽度
+					var sectionId:String = construnctionPoint.fstrSectionId || "";//施工区域
+					var roadsectId:String = construnctionPoint.fstrRoadSectId || "";//施工路段
+					var fdtStartTime:String = construnctionPoint.fdtStartTime || "";//开始时间
+					var finishTime:String = construnctionPoint.fdtFinishTime || "";//结束时间
+					var fstrDepartId:String = construnctionPoint.fstrDepartId || "";//所属分局
+					var fstrRoadNature:String = construnctionPoint.fstrRoadNature ||"";//道路性质
+					var fstrDigLocation:String =construnctionPoint.fstrDigLocation ||"";//挖占位置
+					var fdtUpdateTime:String = construnctionPoint.fdtUpdateTime||"";//数据更新时间
+					var fdtCreateTime:String =construnctionPoint.fdtCreateTime||"";//数据创建时间
+					var nState:int = construnctionPoint.isFinished;//当前状态
+					trace(construnctionPoint.isFinished);
+					var state:String;
+					switch ( nState ) {
+						case 4:
+							state = "未完成";
+							break;
+						case 1:
+							state = "超时未完成";
+							break;
+						case 2:
+							state="超时完成";
+							break;
+						case 3:
+							state="限时完成";
+							break;
+						case 0:
+							state="未知";
+							break;
+						default:
+							state = "未知";
+					}
+					
+					
+					var pt:MapPoint = new MapPoint( x, y );
+					var queryResult:QueryResult = new QueryResult();
+					queryResult.id = id;
+					queryResult.title = company;
+					queryResult.point = pt;
+					queryResult.content = "开始时间：" + fdtStartTime + 
+						"\n描述：" + desc + 
+						"\n施工长度：" + length + 
+						"\n区域：" + sectionId +
+						"\n路段：" + roadsectId + 
+						"\n所属分局:  "+fstrDepartId+
+						"\n更新时间：" + fdtUpdateTime +
+						"\n结束时间：" + finishTime+
+					    "\n状态：" + state 
+						;
+					queryResult.buttons = _buttonArray;
+					_graSymbol= getRankSymbol( state );
+					
+					var gra:Graphic = new Graphic(  );
+					gra.symbol = _graSymbol.resultMarkerSymbol;
+					gra.geometry = queryResult.point;
+					gra.attributes = queryResult;
+					gra.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+					_graLayer.add( gra );
+				}
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number( event.data.id );
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+				}
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					infoTemplate.data = infoData;
+					map.infoWindow.label = infoData.title || "";
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function mapClickHandler( event:MapMouseEvent ):void {
+				var pt:MapPoint = event.mapPoint;
+				var paramArray:Array = [ pt.x, pt.y ];
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{ functionName: "addConstructionPoint", params: paramArray } );
+				
+			}
+			
+			private var _currentPointId:String;
+			
+			private function mouseOverGraphic(event:MouseEvent):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				_currentPointId = ( gra.attributes as QueryResult ).id;
+				showInfoWindow(gra.attributes);
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void {
+				
+				if ( _graLayer )
+					map.addLayer( _graLayer );
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void {
+				map.removeLayer( _graLayer );
+				
+				//清除鼠标信息
+				CursorManager.removeAllCursors();
+				map.removeEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+				
+			}
+			
+			protected function btnLocate_clickHandler(event:MouseEvent):void {
+				_cursorID = CursorManager.setCursor( _crossCursor, 2, -5, -5 ); 
+				map.addEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+			}
+			
+			protected function btnCancel_clickHandler(event:MouseEvent):void {
+				CursorManager.removeAllCursors();
+				map.removeEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+			}
+			
+			protected function btnChangeState_clickHandler(event:MouseEvent):void {
+				currentState = ( currentState == "stateSimple" ? "stateComplete" : "stateSimple" );
+			}
+			
+			protected function btnAdd_clickHandler(event:MouseEvent):void {
+				_cursorID = CursorManager.setCursor( _crossCursor, 2, -5, -5 ); 
+				map.addEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+			}
+			
+			protected function btnFinish_clickHandler(event:MouseEvent):void {
+				CursorManager.removeAllCursors();
+				map.removeEventListener( MapMouseEvent.MAP_CLICK, mapClickHandler );
+			}
+			
+		]]>
+	</fx:Script>
+	<viewer:states>
+		<s:State name="stateSimple"/>
+		<s:State name="stateComplete"/>
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition id="trans">
+			<s:Sequence>
+				<s:Resize duration="400" target="{wTemplate}"/>
+				<s:Rotate angleBy="180"
+						  autoCenterTransform="true"
+						  duration="400"
+						  target="{btnChangeState}"/>
+			</s:Sequence>
+		</s:Transition>
+	</viewer:transitions>
+	
+	<viewer:WidgetTemplate id="wTemplate"
+						   height="80" width="180"
+						   enableIcon="false" enableMinimizeButton="false"
+						   open="wTemplate_openHandler(event)" 
+						   closed="wTemplate_closedHandler(event)"
+						   enableCloseButton="false">
+		<s:HGroup height="100%" width="100%" horizontalAlign="center">
+			<s:Button id="btnAdd" label="新增施工点" 
+					  click="btnAdd_clickHandler(event)"/>
+			<s:Button id="btnFinish" label="结束新增" 
+					  click="btnFinish_clickHandler(event)"/>
+		</s:HGroup>
+		<s:VGroup visible="false" includeInLayout="false" 
+				  height="100%" width="100%" paddingLeft="0" paddingRight="0">
+			<s:Form width="100%" fontSize="12" >
+				<s:layout>
+					<s:FormLayout gap="-14" paddingLeft="-14" paddingRight="-14"/>
+				</s:layout>
+				
+				<s:FormItem label="施工单位：" width="100%">
+					<s:TextArea id="txtCompany" width="100%" heightInLines="1"/>
+				</s:FormItem>
+				
+				<s:FormItem label="申请时间：" width="100%">
+					<mx:DateField id="dtfApplyTime" width="100%" 
+								  formatString="YYYY-MM-DD" selectedDate="{new Date()}"/>
+				</s:FormItem>
+				
+				<s:FormItem label="描述：" width="100%">
+					<s:TextArea id="txtDesc"  width="100%" heightInLines="2"/>
+				</s:FormItem>
+				
+				<s:FormItem label="施工长度：" width="100%" 
+							visible.stateSimple="false" includeInLayout.stateSimple="false">
+					<s:TextArea id="txtLength" width="100%" heightInLines="1"/>
+				</s:FormItem>
+				
+				<s:FormItem label="区域编号：" width="100%" 
+							visible.stateSimple="false" includeInLayout.stateSimple="false">
+					<s:TextArea id="txtSectionId" width="100%" heightInLines="1"/>
+				</s:FormItem>
+				
+				<s:FormItem label="路段编号：" width="100%" 
+							visible.stateSimple="false" includeInLayout.stateSimple="false">
+					<s:TextArea id="txtRoadsectId" width="100%" heightInLines="1"/>
+				</s:FormItem>
+				
+				<s:FormItem label="审批时间：" width="100%" 
+							visible.stateSimple="false" includeInLayout.stateSimple="false">
+					<mx:DateField id="dtfAgreeTime" width="100%" formatString="YYYY-MM-DD"/>
+				</s:FormItem>
+				
+				<s:FormItem label="完成时间：" width="100%" 
+							visible.stateSimple="false" includeInLayout.stateSimple="false">
+					<mx:DateField id="dtfFinishTime" width="100%" formatString="YYYY-MM-DD"/>
+				</s:FormItem>
+			</s:Form>
+			
+			<s:HGroup width="100%" gap="10" horizontalAlign="center">
+				<s:Button id="btnLocate" label="定位" click="btnLocate_clickHandler(event)"/>
+				<s:Button id="btnCancel" label="取消" click="btnCancel_clickHandler(event)"/>
+				<s:Button id="btnChangeState" 
+						  toolTip.stateSimple="显示详细" toolTip.stateComplete="隐藏详细"
+						  width="20" height="20"
+						  icon="assets/images/w_down.png" 
+						  click="btnChangeState_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

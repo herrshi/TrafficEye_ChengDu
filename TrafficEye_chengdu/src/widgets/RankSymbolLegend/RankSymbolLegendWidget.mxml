@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   creationComplete="init()">
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			
+			import widgets.Query.QueryResultSymbol;
+			
+			
+			[Bindable]
+			private var _rankList:Array = [];
+			
+			[Bindable]
+			private var _labelText:String = "管制点：72个\n民警：83人\n协警与劝导员：172人" +
+				"\n限行告示牌：11个\n电子抓拍：8个\n固定与移动交通标牌：1320个"; 
+			
+			private function init():void {
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				
+			}
+			private function dataRefreshed( event:AppEvent ):void {
+				var key:String = event.data.key;
+				if ( key != this.widgetTitle ) 
+					return;
+				
+				lblText.visible = lblText.includeInLayout = key == "三环管制标牌数量";
+				
+				var rankSymbols:Vector.<QueryResultSymbol> = event.data.data;
+				_rankList = [];
+				var totalCount:Number = 0;
+				for each ( var rank:QueryResultSymbol in rankSymbols ) {
+					var source:String = rank.resultMarkerSymbol.source.toString();
+					var alias:String = rank.keyValueAlias || rank.keyValue ;
+					var value:String = rank.keyValue;
+					var count:Number = rank.count;
+					var visible:Boolean = rank.visible;
+					totalCount += count;
+					
+					var item:Object = {
+						widgetTitle: widgetTitle,
+						source: source,
+						alias: alias,
+						value: value,
+						count: count,
+						visible: visible
+					}
+					_rankList.push( item );
+				}
+				if ( key != "三环管制标牌数量" ) {
+					var total:Object = {
+						widgetTitle: widgetTitle,
+						source: null,
+						alias: "总数",
+						value: null,
+						count: totalCount,
+						visible: null
+					}
+					_rankList.push( total );
+				}				
+				
+				dgLegend.rowCount = _rankList.length;
+//				wTemplate.height = dgLegend.rowHeight * dgLegend.rowCount + 50;
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void {
+//				wTemplate.height = dgLegend.rowHeight * dgLegend.rowCount + 50; 
+			}
+
+			protected function wTemplate_closedHandler(event:Event):void {
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<viewer:WidgetTemplate id="wTemplate" width="230" 
+						   enableIcon="false" enableMinimizeButton="false"		   
+						   open="wTemplate_openHandler(event)" 
+						   closed="wTemplate_closedHandler(event)">
+		<s:VGroup height="100%" width="100%" gap="5">
+			<mx:DataGrid id="dgLegend" width="100%" height="100%" 
+						showHeaders="false" verticalScrollPolicy="auto"
+						fontFamily="微软雅黑" fontSize="14"
+						dataProvider="{_rankList}" >
+				<mx:columns>
+					<mx:DataGridColumn >
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox paddingLeft="5" horizontalGap="10" verticalAlign="middle" 
+										 backgroundAlpha="0.8"  >
+
+									<fx:Script>
+										<![CDATA[
+											import com.esri.viewer.AppEvent;
+											import com.esri.viewer.ViewerContainer;
+											
+											protected function checkbox_clickHandler(event:MouseEvent):void {
+												var checkbox:CheckBox = event.currentTarget as CheckBox;
+												trace( data.widgetTitle, data.value, checkbox.selected );
+												AppEvent.dispatch( AppEvent.LEGEND_CHECKBOX_CLICKED, 
+													{ widgetTitle: data.widgetTitle, rankValue: data.value, visible: checkbox.selected } );
+											}
+											
+											private function getUnit():String {
+												var title:String = data.widgetTitle as String;
+												if ( title.indexOf(  "警员" ) >= 0 )
+													return "人";
+												else
+													return "个";
+											}
+										]]>
+									</fx:Script>
+
+									<mx:Image height="20" width="20" source="{data.source}" visible="{data.source}"/>
+									<s:Label width="90" textAlign="center" text="{data.alias}" visible="{data.alias}"/>
+									<s:Label width="50" text="{data.count + getUnit()}"/>
+									<s:CheckBox selected="{data.visible}" visible="{data.visible != null}" click="checkbox_clickHandler(event)"/>
+								</mx:HBox>								
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</mx:columns>
+			</mx:DataGrid>
+			<s:Label id="lblText" text="{_labelText}" fontFamily="微软雅黑" fontSize="14" visible="false" includeInLayout="false"/>
+		</s:VGroup>		
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

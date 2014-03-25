@@ -1,0 +1,49 @@
+﻿<!--视频采集 -->
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/5</layer>
+	<titlefield>视频采集.deviceid</titlefield>
+	<idfield>视频采集.ip</idfield>
+	<type>SPCJ</type>
+	<linkfield></linkfield>
+	<CheckWindow name="筛选面板" show="true">
+		<showField name="视频采集.type" alias="设备位置">
+			<field keyvalue="三环" alias="三环" />
+			<field keyvalue="二环桥下" alias="二环地面" />
+			<field keyvalue="二环桥上" alias="二环高架" />
+			<field keyvalue="城区" alias="城区" />
+		</showField>
+		<showField name="STATE" alias="设备状态">
+			<field keyvalue="1" alias="设备正常" />
+			<field keyvalue="2" alias="设备故障" />
+		</showField>
+	</CheckWindow>
+	<widIconUrl>assets/images/device/cctv_sanhuan30.png</widIconUrl>
+	<fields all="false">
+		<field name="视频采集.name" alias="设备描述" />
+		<field name="视频采集.deviceid" alias="设备编号" />
+		<field name="视频采集.ip" show="false" />
+		<field name="视频采集.type" alias="设备位置" />
+		<field name="STATE_CH" alias="设备状态" />
+		<field name="STATE" show="false" />
+	</fields>
+	<eventType flag="openDevice" />
+	<refreshrate>60</refreshrate>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>STATE</keyfield>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="1" alias="设备正常">
+			<picturemarkersymbol url="assets/images/device/cctv_sanhuan20.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="2" alias="设备故障">
+			<picturemarkersymbol url="assets/images/device/cctv_sanhuan20_y.png"
+				height="12" width="12" />
+		</symbol>
+		<symbol keyvalue="0" alias="未知">
+			<picturemarkersymbol url="assets/images/device/cctv_sanhuan30_b.png"
+				height="12" width="12" />
+		</symbol>
+	</symbols>
+</configuration>

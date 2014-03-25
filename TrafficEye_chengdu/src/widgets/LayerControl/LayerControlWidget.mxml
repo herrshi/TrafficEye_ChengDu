@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   widgetConfigLoaded="configLoad()" 
+
+				   xmlns:viewer="com.esri.viewer.*"  
+				   xmlns:toc="com.esri.viewer.components.toc.*"
+				   layout="absolute"
+				   creationComplete="init()">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import mx.containers.GridItem;
+			import mx.containers.GridRow;
+			
+			[Bindable]
+			private  var Hidevalue:Boolean;
+			
+			private function init():void {
+				toc.map = map;
+				AppEvent.addListener( AppEvent.CHANGE_WIDGET_ACTIVITY, changeWidgetActivityHandler );
+				AppEvent.dispatch( AppEvent.DATA_OPT_LAYERS, null, getOplayers );
+			}
+			
+			private var _oplList:Array;
+			private function getOplayers( event:AppEvent ):void {
+				_oplList = event.data as Array;
+			}
+			
+			private function configLoad():void {
+				if ( configXML ) {
+					this.height = 50;
+					Hidevalue = configXML.Hidevalue || false;
+					var colCount:uint = configXML.colnum || 2;
+					this.width = ( colCount + 1 ) * 30 + 5;
+					var groupList:XMLList = configXML..group;
+					var isShow:String = configXML.isShow||"true";
+					if (isShow=="false") 
+					{
+						wTemplate.visible=false;
+					}else
+					{
+						wTemplate.visible=true;
+					}
+					for ( var i:uint = 0; i < groupList.length(); i++ ) {
+						//增加group的title
+						var title:String = groupList[i].@title;					
+						if ( title && title != "" ) {
+							var titleRow:GridRow = new GridRow();
+							var labelItem:LabelGridItem = new LabelGridItem();
+							labelItem.colSpan = colCount;
+							labelItem.labelText = title;
+							titleRow.addElement( labelItem );
+							grdContent.addElement( titleRow );
+							this.height += 40;
+						}
+						
+						
+						var itemList:XMLList = groupList[i]..item;
+						//根据colCount生成gridRow
+						var rowCount:uint = Math.ceil( itemList.length() / colCount );
+						this.height += rowCount * 40;
+						var rowArray:Array = [];
+						for ( var j:uint = 0; j < rowCount; j ++ ) {
+							var row:GridRow = new GridRow();
+							rowArray.push( row );
+							grdContent.addElement( row );
+						}
+						
+						//增加group的按钮
+						for ( var k:uint = 0; k < itemList.length(); k++ ) {
+							var id:String = itemList[k].@id;
+							var imageEnable:String = itemList[k].@imageenable;
+							var imageDisable:String = itemList[k].@imagedisable;
+							var tooltip:String = itemList[k].@tooltip;
+							var state:String = itemList[k].@initstate || "disable";
+							
+							var functionList:XMLList = itemList[k]..clickfunction;
+							var functionArray:Array = [];
+							for ( var m:uint = 0; m < functionList.length(); m++ ) {
+								var functionName:String = functionList[m].@name;
+								
+								var paramList:XMLList = functionList[m]..param;
+								var paramMap:Hashtable = new Hashtable();
+								for ( var n:uint = 0; n < paramList.length(); n++ ) {
+									var paramName:String = paramList[n].@name;
+									var paramValue:String = paramList[n].@value;
+									paramMap.add( paramName, paramValue );
+								}
+								var clickFunction:Object = {
+									name: functionName,
+									paramMap: paramMap
+								}
+								functionArray.push( clickFunction );
+							}
+							
+							var rowIndex:uint = Math.floor( k / colCount );
+							var imageRow:GridRow = rowArray[ rowIndex ];
+							var gridItem:ImageGridItem = new ImageGridItem();
+							imageRow.addElement( gridItem );
+							
+							gridItem.id = id;
+							gridItem.imageDisable = imageDisable;
+							gridItem.imageEnable = imageEnable;
+							gridItem.imageTooltip = tooltip;
+							gridItem.currentState = state;
+							gridItem.functionArray = functionArray;
+							gridItem.addEventListener( MouseEvent.CLICK, clickFunciton );
+						}
+					}
+				}
+			}
+			
+			private function clickFunciton( event:MouseEvent ):void {
+				var gridItem:GridItem = event.currentTarget as GridItem;
+				if ( gridItem is ImageGridItem ) {
+					gridItemClick( gridItem as ImageGridItem );
+				}
+			}
+			
+			private function gridItemClick( imageGridItem:ImageGridItem ):void {
+				imageGridItem.currentState = ( imageGridItem.currentState == "enable" ) ? "disable" : "enable";	
+				var functionArray:Array = imageGridItem.functionArray;
+				var imageState:String = imageGridItem.currentState;
+				
+				for each ( var clickFunction:Object in functionArray ) {
+					var functionName:String = clickFunction.name;
+					var paramMap:Hashtable = clickFunction.paramMap;
+					switch ( functionName.toLowerCase() ) {
+						case "openwidget":
+							var widgetName:String = paramMap.find( "widgetname" );
+							if ( imageState == "enable" ) {
+								openWidget( widgetName );
+								trace(widgetName +"open");
+							}
+							else {
+								closeWidget( widgetName );
+								trace(widgetName +"close");
+
+							}
+							break;
+						
+						case "openlayer":
+							var serviceName:String = paramMap.find( "servicename" );
+							var strId:String = paramMap.find( "layerindex" );
+							var layerIndex:int = strId ? Number( strId ) : -1;
+							openLayer( serviceName, layerIndex, imageState );
+							break;
+					}
+				}
+			}
+			
+			private function openLayer( serviceName:String, layerIndex:int, layerState:String ):void {
+				var visible:Boolean = layerState == "enable" ? true : false;
+				//改变服务可见性
+				if ( layerIndex == -1 ) {
+					for each ( var opl:Object in _oplList ) {
+						if ( opl.label == serviceName ) {
+							opl.visible = visible;
+							AppEvent.dispatch( AppEvent.MAP_SERVICE_VISIBLE, opl );
+							break;
+						}
+					}
+				}
+				//改变图层可见性
+				else {
+					toc.setLayerVisible( serviceName, layerIndex, visible );
+				}
+			}
+			
+			private function changeWidgetActivityHandler( event:AppEvent ):void {
+				var name:String = event.data.name;
+				var visible:Boolean = event.data.visible;
+				var state:String = visible ? "enable" : "disable";
+				for each ( var row:GridRow in grdContent.getChildren() ) {
+					for each ( var item:GridItem in row.getChildren() ) {
+						if ( item.id == name && item.currentState != state ) {
+							gridItemClick( item as ImageGridItem );
+							break;
+						}
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<viewer:WidgetTemplate id="wTemplate" height="100%" width="100%"
+						   enableMinimizeButton="true" enableCloseButton="false" enableIcon="false"   >
+		<viewer:layout>
+			<s:HorizontalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
+		</viewer:layout>
+		<mx:Grid id="grdContent" height="100%" width="100%" verticalGap="3" horizontalGap="3" horizontalAlign="center"/>
+		<toc:TOC id="toc" visible="false" includeInLayout="false"/>
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

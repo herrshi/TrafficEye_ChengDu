@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/6</layer>
+	<titlefield>事件定位.name</titlefield>
+	<idfield>事件定位.deviceid</idfield>
+	<type>SJ</type>
+	<linkfield></linkfield>
+	<isShowCheckWid>true</isShowCheckWid>
+	<widIconUrl>assets/images/event/light_red.png</widIconUrl>
+	<fields all="false">
+		<field name="事件定位.name" alias="设备位置" />
+		<field name="事件定位.deviceid" alias="编号" />
+		<field name="STATE" show="false" />
+
+	</fields>
+	<eventType flag="openDevice" />
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>10</refreshrate>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>STATE</keyfield>
+	<hidekeyvalue>0,</hidekeyvalue>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="2" alias="未处理">
+			<picturemarkersymbol url="assets/images/event/light.swf"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="1" alias="正在处理">
+			<picturemarkersymbol url="assets/images/event/light_green.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3" alias="未处理(2min)">
+			<picturemarkersymbol url="assets/images/event/light_red.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
+</configuration>
+
+ 

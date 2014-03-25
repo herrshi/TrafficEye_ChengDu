@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" ?>
+<configuration>
+	<title>ArcGIS Viewer for Flex</title>
+	<subtitle>... using ArcGIS</subtitle>
+	<logo>assets/images/logo.png</logo>
+	<!--textColor,backgroundColor,rolloverColor,selectionColor,titleColor,applicationBackgroundColor -->
+	<stylecolors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444</stylecolors> <!-- Sky Blue -->
+	<stylealpha>0.8</stylealpha>
+	<showerror>true</showerror>
+
+	<!-- UI elements -->
+	<widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml"
+		url="widgets/Navigation/NavigationWidget.swf" />
+	<widget right="-2" bottom="-2"
+		config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<!--widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" 
+		url="widgets/MapSwitcher/MapSwitcherWidget.swf"/> <widget left="0" top="0" 
+		config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/ -->
+	<!--widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" 
+		url="widgets/Coordinate/CoordinateWidget.swf"/ -->
+
+	<!--gis服务器地址 -->
+	<map initialextent="104.799 26.573 104.878 26.615" top="0"
+		serverip="10.10.40.117:8399">
+		<basemaps>
+			<layer label="基础图层" type="tiled" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/lps/base_lps/MapServer" />
+			<layer label="发布段" type="dynamic" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/lps/lps_fbd_new/MapServer" />	
+		</basemaps>
+	</map>
+
+	<!-- widgets organized into widget containers that manage close/open etc -->
+	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+
+	<widgetcontainer layout="float">
+		<widget label="preloadQueryWidget" preload="open"
+			url="widgets/Query/QueryWidget.swf" />
+		<widget label="overlay" preload="open"
+			url="widgets/Overlay/OverlayWidget.swf" config="widgets/Overlay/OverlayWidget_local.xml" />
+	
+		<widget label="发布段程序" config="widgets/Query/lps/QueryWidget_fbd.xml"
+			url="widgets/Query/QueryWidget.swf" />
+		<widget label="诱导板" config="widgets/Query/lps/QueryWidget_ydb.xml"
+			url="widgets/Query/QueryWidget.swf" />
+		<widget label="地磁检测" config="widgets/Query/lps/QueryWidget_dc.xml"
+			url="widgets/Query/QueryWidget.swf" />
+	</widgetcontainer>
+
+	<widgetcontainer layout="vertical">
+		<widget label="功能" preload="open"
+			url="widgets/LayerControl/LayerControlWidget.swf" 
+			config="widgets/LayerControl/LayerControlWidget_lps.xml" />
+	</widgetcontainer>
+
+	<remoteobjects
+		endpoint="http://10.10.40.106:8080/traffic/messagebroker/amf">
+		<remoteobject name="PoliceManager" enable="true"
+			destination="GPSInfoService" refreshrate="30" />
+		<remoteobject name="EventManager" enable="true"
+			destination="caseInfoService" refreshrate="30" />
+		<remoteobject name="PoliceDeployment" enable="true"
+			destination="policeLayoutService" />
+		<remoteobject name="ConstructionPoint" enable="true"
+			destination="constructionPointServiceImpl" />
+		<remoteobject name="ReservePlanManager" enable="true"
+			destination="ReservePlanManagerService" />
+	</remoteobjects>
+</configuration>
+

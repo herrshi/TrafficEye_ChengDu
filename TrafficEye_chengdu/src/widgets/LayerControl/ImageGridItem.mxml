@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:GridItem xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" 
+			 currentState="disable" 
+			 toolTip="{_imageTooltip}">
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	<mx:states>
+		<s:State name="enable"/>
+		<s:State name="disable"/>
+	</mx:states>
+	
+	<mx:transitions>
+		<s:Transition id="t1" autoReverse="true">
+			<s:CrossFade
+				target="{contentGroup}" 
+				duration="500" />
+		</s:Transition>
+	</mx:transitions>
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable]private var _imageEnable:String;
+
+			public function set imageEnable(value:String):void {
+				_imageEnable = value;
+			}
+			
+			[Bindable]private var _imageDisable:String;
+
+			public function set imageDisable(value:String):void {
+				_imageDisable = value;
+			}
+			
+			[Bindable] private var _imageTooltip:String;
+
+			public function set imageTooltip(value:String):void {
+				_imageTooltip = value;
+			}
+			
+			private var _functionArray:Array;
+
+			public function get functionArray():Array {
+				return _functionArray;
+			}
+
+
+			public function set functionArray(value:Array):void {
+				_functionArray = value;
+			}
+			
+			
+			[Bindable] private var _lineWeight:uint = 3;
+			
+		]]>
+	</fx:Script>
+	<s:Group id="contentGroup" top="0" bottom="0" left="0" right="0">
+		
+		<mx:Image top="{_lineWeight}" bottom="{_lineWeight}" left="{_lineWeight}" right="{_lineWeight}"  
+				  id="imgEnable" source="{_imageEnable}" 
+				  visible.enable="true" visible.disable="false" 
+				  buttonMode="true" width="30" height="30"/>
+		
+		<mx:Image top="{_lineWeight}" bottom="{_lineWeight}" left="{_lineWeight}" right="{_lineWeight}"  
+				  id="imgDisable" source="{_imageDisable}" 
+				  visible.enable="false" visible.disable="true" 
+				  buttonMode="true" width="30" height="30"/>
+		
+		<s:Rect top="0" bottom="0" left="0" right="0">
+			<s:stroke>
+				<s:SolidColorStroke id="outLine" weight="{_lineWeight}"
+									color.enable="0x53B4F8" color.disable="0xa5a5a5" />
+			</s:stroke>
+		</s:Rect>		
+	</s:Group>
+	
+</mx:GridItem>

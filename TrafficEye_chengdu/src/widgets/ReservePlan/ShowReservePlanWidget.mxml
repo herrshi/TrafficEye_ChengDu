@@ -1,0 +1,1288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   xmlns:esri="http://www.esri.com/2008/ags" 
+				   layout="absolute" 
+				   fontFamily="微软雅黑"
+				   creationComplete="basewidget1_creationCompleteHandler(event)"
+				   widgetConfigLoaded="basewidget1_widgetConfigLoadedHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.CheckBox;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.components.Label;
+			
+			/**
+			 * 显示Polyline
+			 * */
+			private var _polylineLayer:GraphicsLayer;
+			/**
+			 * 显示Polygon的轮廓
+			 * */
+			private var _contourLayer:GraphicsLayer;
+			/**
+			 * 显示设备
+			 * */
+			private var _deviceLayer:GraphicsLayer;
+			/**
+			 * 警员图层
+			 *  
+			 */
+			private var _policeLayer:GraphicsLayer;
+			/**
+			 * 警员刷新周期
+			*/
+			private var _refreshPoliceRate:uint;
+			
+			/**
+			 * 显示设备类型
+			 * */
+			private var _deviceShowTypeArray:Array = new Array();
+			/**
+			 * 绘制移动车辆
+			 * */
+			private var _carPointLayer:GraphicsLayer;
+			
+			private var _planId:String;
+			
+			private var _widgetInitComplete:Boolean = false;
+			
+			private var _deviceResultTable:Hashtable;
+			
+			/**
+			 * 是否是调试状态，若处于调试状态则初始化时用配置的planId，不向web请求planId。
+			 * 因为调试时通过接口获取的planId是null
+			 * */
+			private var _isDebug:Boolean;
+			
+			private var _rankSymbols:Vector.<PlanRankSymbol> = new Vector.<PlanRankSymbol>;
+			
+			private var _sort:Sort;
+			
+			/**
+			 * 重点区域
+			 * 
+			 */
+			private var _placeFlag:Boolean;
+			private var _placeAc:XMLList;
+			private var _placeGraphicLayer:GraphicsLayer;
+			private var _isShowPlace:Boolean;
+			/**
+			 * 保存wTemplate的width height
+			 */
+			private var _width:int = 0;
+			private var _height:int = 0;
+			
+			protected function basewidget1_creationCompleteHandler(event:FlexEvent):void
+			{
+				_contourLayer = new GraphicsLayer();
+				_contourLayer.symbol = _contourSymbol;
+				map.addLayer( _contourLayer );	
+				
+				_deviceLayer = new GraphicsLayer();
+				map.addLayer( _deviceLayer );
+				
+				_policeLayer = new GraphicsLayer();
+				map.addLayer( _policeLayer );
+				
+				_placeGraphicLayer = new GraphicsLayer();
+				map.addLayer( _placeGraphicLayer );
+				_isShowPlace = true;
+				
+				_polylineLayer = new GraphicsLayer();
+				_polylineLayer.symbol = _lineSymbol;
+				_polylineLayer.visible = false;
+				map.addLayer( _polylineLayer );
+				
+				_carPointLayer = new GraphicsLayer();
+				_carPointLayer.symbol = carPointSymbol;
+				map.addLayer( _carPointLayer );
+				
+				_carGraphic = new Graphic();
+				_carPointLayer.add( _carGraphic );
+				
+				_deviceResultTable = new Hashtable();
+				
+				_sort = new Sort();
+				_sort.fields = [ new SortField( "id", false, true ) ];
+				
+				//公里/小时->米/秒
+				_speed = stpSpeed.value * 1000 / 3600;
+			}
+			
+			protected function basewidget1_widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					var symbolList:XMLList = configXML..symbol;
+					for each ( var symbolXML:XML in symbolList ) {
+						var rankSymbol:PlanRankSymbol = new PlanRankSymbol();
+						var keyValue:String = symbolXML.@keyvalue;
+						rankSymbol.keyValue = keyValue;
+						
+						var resultMarkerSymbolURL:String = symbolXML.picturemarkersymbol.@url || widgetIcon;
+						var resultMarkerSymbolHeight:Number = symbolXML.picturemarkersymbol.@height || 30;
+						var resultMarkerSymbolWidth:Number = symbolXML.picturemarkersymbol.@width || 30;
+						var resultMarkerSymbolXOffset:Number = symbolXML.picturemarkersymbol.@xoffset || 0;
+						var resultMarkerSymbolYOffset:Number = symbolXML.picturemarkersymbol.@yoffset || 0;
+						rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+							resultMarkerSymbolWidth, resultMarkerSymbolHeight, 
+							resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+						
+						_rankSymbols.push( rankSymbol );
+					}
+					
+					
+					_placeFlag = configXML.isShowFlag[0] == "true" ? true : false;
+					_placeAc = configXML.placeInfo..info;
+					
+					if (_placeFlag) 
+					{
+						addPlaceToMap();
+					}
+					
+					
+					var infoUrl:String = configXML.info; 
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					_isDebug = configXML.debug == "true" ? true : false;
+					_refreshPoliceRate = configXML.refreshPoliceRate||20;
+					if ( _isDebug )
+					{
+						_planId = configXML.debug.@planid;
+					}
+					//若不是调试状态则请求方案编号
+					//监听AppEvent.SET_PLAN_INFO获取返回
+					if ( !_isDebug )
+					{
+						AppEvent.dispatch( AppEvent.GET_PLAN_ID, { type: "initplan" } );
+					}
+						//若是调试状态则直接请求方案区域数据
+						//监听AppEvent.DATA_NEW_PUBLISHED获取范围
+					else
+					{
+						AppEvent.dispatch( 
+							AppEvent.REFRESH_PLAN_DATA, 
+							{ 
+								planid: _planId, 
+								type: "area" 
+							} 
+						);
+					}
+					_widgetInitComplete = true;
+				}
+			}
+			
+			protected function wTemplate_openHandler(event:Event):void
+			{
+				
+				wTemplate.resizable = false;
+				if (_height!=0&&_width!=0) 
+				{
+					wTemplate.widgetHeight = _height;
+					wTemplate.widgetWidth = _width;
+				}
+				
+				
+				
+				//从web获取方案数据，以及web编辑的设备、发布段数据
+				AppEvent.addListener( AppEvent.SET_PLAN_INFO, setPlanInfo );
+				//获取方案数据包括区域和设备
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataNewPublishedHandler );
+				
+				if (_carGraphic&&_carPointLayer) 
+				{
+					_carPointLayer.add( _carGraphic );
+				}
+				
+				if ( _widgetInitComplete&&!_isMinimized)
+				{
+					//若不是调试状态则请求方案编号
+					//监听AppEvent.SET_PLAN_INFO获取返回
+					if ( !_isDebug )
+					{
+						AppEvent.dispatch( AppEvent.GET_PLAN_ID, { type: "initplan" } );
+					}
+						//若不是调试状态则直接请求方案区域数据
+						//监听AppEvent.DATA_NEW_PUBLISHED获取返回
+					else
+					{
+						AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA, { planid: _planId, type: "area" } );
+					}
+				}
+				
+				//添加重点区域
+				if (_placeFlag&&_isShowPlace) 
+				{
+					addPlaceToMap();
+				}
+				
+				if (_deviceLayer) 
+				refreshDeviceLayer();
+				
+				_isMinimized = false;
+			}
+			
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				clearAll();
+				_carPointLayer.clear();
+				_polylineLayer.clear();
+				_contourLayer.clear();
+				AppEvent.removeListener( AppEvent.SET_PLAN_INFO, setPlanInfo );
+				AppEvent.removeListener( AppEvent.DATA_NEW_PUBLISHED, dataNewPublishedHandler );
+			}
+			
+			[Embed(source="assets/images/player/PoliceCar.png")]
+			private var _carCursor:Class;
+			private var _carCursorID:Number;
+			protected function imgPoliceCar_clickHandler(event:MouseEvent):void
+			{
+				_carCursorID = cursorManager.setCursor( _carCursor, 2, -20, -20 );
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			override public function showInfoWindow( infoData:Object ):void {
+				if ( infoData ) {
+					if ( infoTemplate != null ) 
+					{
+						map.infoWindow.content = infoTemplate as UIComponent;
+						map.infoWindow.label = infoData.title || "";
+						infoTemplate.data = infoData;
+						map.infoWindow.show(infoData.point);
+					}
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			
+			private function infoReady( event:AppEvent ):void {
+				var id:Number = Number( event.data.id );
+				if ( id == this.widgetId ) 
+				{
+					infoTemplate = event.data.infoWidget;
+				}
+			}
+			
+			/**
+			 * 清除所有设备、区域
+			 * */
+			private function clearAll():void
+			{
+				if (refreshpolicetimer&&refreshpolicetimer.running) 
+				{
+					refreshpolicetimer.stop();
+				}
+				imgStop_clickHandler();
+				_placeGraphicLayer.clear();
+				_isShowPlace = false;
+				_policeLayer.clear();
+				_polylineLayer.clear();
+				_contourLayer.clear();
+				_deviceLayer.clear();
+				containerDeviceType.visible = containerDeviceType.includeInLayout = false;
+				containerDeviceType.removeAllElements();
+				/*containerDeviceList.visible = containerDeviceList.includeInLayout = false;
+				grpDeviceList.removeAllElements();*/
+				_deviceResultTable.clear();
+				_deviceShowTypeArray.length = 0;
+			}
+			
+			/**
+			 * 得到关键字对应的symbol
+			 * */
+			private function getRankSymbol( keyValue:String ):PlanRankSymbol 
+			{
+				for each ( var symbol:PlanRankSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			private function setPlanInfo( event:AppEvent ):void
+			{
+				var type:String = event.data.type;
+				var receivedData:String;
+				var deviceAC:ArrayCollection;
+				switch( type )
+				{
+					case "initplan":
+					{
+						clearAll();
+						_planId = event.data.planid;
+						//请求方案区域数据
+						//监听AppEvent.DATA_NEW_PUBLISHED获取返回值
+						if ( _planId && _planId != "" ) 
+							AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA, { planid: _planId, type: "area" } );
+						break;
+					}
+					//通过setPlanInfo增加setMapCenter类型接收deviceId
+					case "setMapCenter":
+					{
+						var deviceId:String = event.data.data;
+						setMapCenter( deviceId );
+					}
+				}
+			}
+			
+			private function dataNewPublishedHandler( event:AppEvent ):void
+			{
+				if ( event.data.key != "ReservePlanManagerInfo" ) 
+					return;
+				
+				var planInfo:Object = event.data.planinfo;
+				if ( planInfo.data == "dataready" )
+				{
+					return;
+				}
+				
+				if ( planInfo.planid == _planId )
+				{
+					var type:String = planInfo.type;
+					switch( type )
+					{
+						case "area":
+						{
+							var pointAC:ArrayCollection = planInfo.data;
+							drawAreaFromWeb( pointAC );
+							//区域绘制完成后请求方案设备数据
+							//监听AppEvent.DATA_NEW_PUBLISHED获取返回
+							AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA,
+								{
+									planid:_planId,
+									type:"device"
+								}
+							);
+							break;
+						}
+							
+						case "device":
+						{
+							var deviceAC:ArrayCollection = planInfo.data;
+							updateDeviceFromWeb( deviceAC, true );
+							//设备添加完成之后请求police数据
+							//监听AppEvent.DATA_NEW_PUBLISHED获取返回
+							AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA,
+								{
+									planid:_planId,
+									type:"police"
+								}
+							);
+							break;
+						}
+							
+						case "police":
+						{
+							var policeAC:ArrayCollection = planInfo.data;
+							addPoliceToMap(policeAC);
+							break;
+						}
+					}
+				}
+			}
+			
+			/**
+			 * 解析web传来的方案区域数据，并绘制在地图上。
+			 * 每个区域由若干个polygon组成，点的areaid属性描述了点属于哪个polygon。
+			 * polygon画完以后查找是否有对应的折线,polygon的编号是planid-area-x，line的编号是planid-line-x。
+			 * @param allPointAC: 点集
+			 * */
+			private function drawAreaFromWeb( allPointAC:ArrayCollection ):void
+			{
+				if ( !allPointAC || allPointAC.length == 0 )
+					return;
+				
+				var _polygonTable:Hashtable = new Hashtable();
+				var _polylineTable:Hashtable = new Hashtable();
+				
+				//按照areaId将所有点分类
+				for each ( var pointObj:Object in allPointAC )
+				{
+					var areaId:String = pointObj.areaid;
+					var pt:MapPoint = new MapPoint( pointObj.longitude, pointObj.latitude );
+					var sortId:int = pointObj.sortid;
+					
+					var pointAC:ArrayCollection;
+					if ( areaId.indexOf( "area" ) > 0 )
+					{
+						pointAC = _polygonTable.find( areaId );
+						if ( pointAC )
+						{
+							pointAC.addItem( 
+								{ 
+									id: sortId, 
+									point: pt 
+								} 
+							);
+						}
+						else
+						{
+							pointAC = new ArrayCollection();
+							pointAC.addItem( { id: sortId, point: pt } );
+							_polygonTable.add( areaId, pointAC );
+						}
+					}
+					else if ( areaId.indexOf( "line" ) > 0 )
+					{
+						pointAC = _polylineTable.find( areaId );
+						if ( pointAC )
+						{
+							pointAC.addItem( 
+								{ 
+									id: sortId, 
+									point: pt 
+								} 
+							);
+						}
+						else
+						{
+							pointAC = new ArrayCollection();
+							pointAC.addItem( { id: sortId, point: pt } );
+							_polylineTable.add( areaId, pointAC );
+						}
+					}
+					
+				}
+				
+				var graphic:Graphic;
+				//绘制polyline
+				var areaIdArray:Array = _polylineTable.getKeySet();
+				for each ( areaId in areaIdArray )
+				{
+					pointAC = _polylineTable.find( areaId );
+					if ( !pointAC || pointAC.length == 0 )
+						return;
+					
+					var polyline:Polyline = getPolylineFromPointAC( pointAC );
+					graphic = new Graphic( polyline );
+//					graphic.addEventListener( MouseEvent.CLICK, drawGraphic_clickHandler );
+//					graphic.addEventListener( MouseEvent.MOUSE_OVER, drawGraphic_MouseOverHandler );
+//					graphic.addEventListener( MouseEvent.MOUSE_OUT, polylineGraphic_MouseOutHandler );
+					_polylineLayer.add( graphic );
+				}
+				
+				//绘制polygon
+				areaIdArray = _polygonTable.getKeySet();
+				for ( var i:uint = 0; i < areaIdArray.length; i++ )
+				{
+					areaId = areaIdArray[i];
+					pointAC = _polygonTable.find( areaId );
+					if ( !pointAC || pointAC.length == 0 )
+						return;
+					
+					var polygon:Polygon = getPolygonFromPointAC( pointAC );
+					graphic = new Graphic( polygon );
+					
+					//查找是否有对应的polyline
+					var lineId:String = areaId.replace(  "area", "line" );
+					var lineAC:ArrayCollection = _polylineTable.find( lineId );
+					if ( lineAC )
+					{
+						polyline = getPolylineFromPointAC( lineAC );
+						graphic.attributes = polyline;
+						graphic.addEventListener( MouseEvent.CLICK, drawGraphic_ClickHandler );
+						graphic.addEventListener( MouseEvent.MOUSE_OVER, drawGraphic_mouseOverHandler );
+						graphic.addEventListener( MouseEvent.MOUSE_OUT, drawGraphic_mouseOutHandler );
+					}
+					_contourLayer.add( graphic );
+					
+				}
+			}
+			
+			private function getPolylineFromPointAC( pointAC:ArrayCollection ):Polyline
+			{
+				pointAC.sort = _sort;
+				pointAC.refresh();
+				var path:Array = [];
+				for each ( var pointObj:Object in pointAC )
+				{
+					var pt:MapPoint = pointObj.point;
+					path.push( pt );
+				}
+				
+				var polyline:Polyline = new Polyline( [path] );
+				return polyline;
+			}
+			
+			private function getPolygonFromPointAC( pointAC:ArrayCollection ):Polygon
+			{
+				pointAC.sort = _sort;
+				pointAC.refresh();
+				
+				var ring:Array = [];
+				for each ( var pointObj:Object in pointAC )
+				{
+					var pt:MapPoint = pointObj.point;
+					ring.push( pt );
+				}
+				
+				var polygon:Polygon = new Polygon( [ring] );
+				return polygon;
+			}
+			
+			
+			private function drawGraphic_mouseOverHandler( event:MouseEvent ):void
+			{
+				if ( cursorManager.currentCursorID == _carCursorID )
+				{
+					glowGraphic.play( [event.target] );
+				}
+			} 
+			
+			private function drawGraphic_mouseOutHandler( event:MouseEvent ):void
+			{
+				if ( glowGraphic.isPlaying )
+					glowGraphic.stop();
+			}
+			
+			
+			/**
+			 * 解析web传来的方案设备/发布段数据，并更新列表和地图。
+			 * @param allDeviceAC: ArrayCollection 所有设备和发布段的列表
+			 * @param selected: Boolean，是新增还是删除设备
+			 * */
+			private function updateDeviceFromWeb( allDeviceAC:ArrayCollection, selected:Boolean ):void
+			{
+				for each ( var deviceObj:Object in allDeviceAC )
+				{
+					//发布段
+					if ( deviceObj.deviceType == "fbd" )
+					{
+						
+					}
+					else
+					{
+						var deviceInfo:DeviceInfo = new DeviceInfo();
+						deviceInfo.desc = deviceObj.deviceDesc;
+						deviceInfo.id = deviceObj.deviceId;      
+						deviceInfo.selected = selected;
+						deviceInfo.title = deviceObj.deviceId+"("+deviceObj.deviceDesc+")";   
+						deviceInfo.typeName = getDeviceTypeName(deviceObj.deviceTypeId);    
+						deviceInfo.typeId = deviceObj.deviceTypeId;  
+						deviceInfo.latitude = deviceObj.latitude;      
+						deviceInfo.longitude = deviceObj.longitude;    
+						deviceInfo.location = deviceObj.location;      
+						deviceInfo.postId = deviceObj.postId;        
+						deviceInfo.postName = deviceObj.postName;
+						deviceInfo.channelId = deviceObj.channelId;
+						_deviceResultTable.add( deviceObj.deviceId, deviceInfo );
+						
+						//若此设备类型当前显示则更新列表
+						/*if ( _highlightedCheckLabelBox && _highlightedCheckLabelBox.id == deviceInfo.typeId )
+						{
+							var checkBox:CheckBox = new CheckBox();
+							checkBox.id = deviceInfo.id;
+							checkBox.label = deviceInfo.desc;
+							checkBox.selected = selected;
+							grpDeviceList.addElement( checkBox );
+						}*/
+						
+						//更新图层
+						var rankSymbol:PlanRankSymbol = getRankSymbol( deviceInfo.typeId );
+						if ( !rankSymbol )
+							continue;
+						
+						var pt:MapPoint = new MapPoint( deviceInfo.longitude, deviceInfo.latitude );
+						var devResult:PlanQueryResult = new PlanQueryResult();
+						devResult.title = deviceInfo.desc;
+						devResult.name = deviceInfo.desc; 
+						devResult.id = deviceInfo.id;
+						devResult.type= deviceInfo.typeId;
+						devResult.content = "设备编号:"+deviceInfo.id;
+						devResult.plusInfo = deviceInfo.channelId;
+						devResult.point = pt;
+						var graphic:Graphic = new Graphic( pt , rankSymbol.resultMarkerSymbol, devResult );
+						//初始不显示设备
+						graphic.visible = false;
+						graphic.addEventListener( MouseEvent.MOUSE_OVER, deviceGraphic_MouseOverHandler );
+						graphic.addEventListener( MouseEvent.CLICK,  deviceGraphic_ClickHandler );
+						_deviceLayer.add( graphic );
+					}
+				}
+				
+				addDeviceTypeToContainer();
+			}
+			
+			private function deviceGraphic_ClickHandler( event:MouseEvent ):void
+			{
+				var  graphic:Graphic = event.currentTarget as Graphic;
+				var  deviceDesc:String = graphic.attributes.name;
+				var  deviceid:String = graphic.attributes.id;
+				var  type:String = graphic.attributes.type;
+				if (type=="3040"||type=="3050"||type=="3014") 
+					{
+						deviceid = graphic.attributes.plusInfo;
+					}
+				AppEvent.dispatch( AppEvent.OPEN_DEVICE,{type:type,id:deviceid,desc:deviceDesc} );
+				trace(type+"---"+deviceid+"--desc--"+deviceDesc);
+
+			}
+			private function deviceGraphic_MouseOverHandler( event:MouseEvent ):void
+			{
+				var gra:Graphic = event.currentTarget as Graphic;
+				showInfoWindow(gra.attributes);	
+			}
+			
+			/**
+			 * 将设备类型添加到container
+			 * */
+			private function addDeviceTypeToContainer():void
+			{
+				if ( _deviceResultTable.size > 0 )
+				{
+					containerDeviceType.visible = containerDeviceType.includeInLayout = true;
+					//containerDeviceList.visible = containerDeviceList.includeInLayout = true;
+				}
+				
+				for each ( var id:String in _deviceResultTable.getKeySet() )
+				{
+					var deviceInfo:DeviceInfo = _deviceResultTable.find( id );
+					var typeName:String = deviceInfo.typeName;
+					var typeId:String = deviceInfo.typeId;
+					
+					//检查设备类型是否已添加
+					var typeFound:Boolean = false;
+					//var rdbtn:RadioButton;
+					/*RadioButton改为CheckBox*/
+					var checkbox:CheckBox = new CheckBox();
+					for ( var i:uint = 0; i < containerDeviceType.numElements; i++ )
+					{
+						checkbox = containerDeviceType.getElementAt( i ) as CheckBox;
+						if ( checkbox &&(typeId == checkbox.id ))
+						{
+							typeFound = true;
+							break;
+						}
+					}
+					if ( !typeFound )
+					{
+						checkbox = new CheckBox();
+						checkbox.id = typeId;
+						checkbox.label = typeName;
+						checkbox.addEventListener( MouseEvent.CLICK, deviceTypeButton_ClickHandler );
+						containerDeviceType.addElement( checkbox );
+					}
+				}
+				
+				//setDefaultDeviceType();
+				containerDeviceType.height = containerDeviceTypeLayout.rowCount * 50;
+			}
+			
+			private function deviceTypeButton_ClickHandler( event:MouseEvent ):void
+			{
+				var checkbox:CheckBox = event.target as CheckBox;
+				var selected:Boolean = event.target.selected;
+				var typeId:String = checkbox.id;
+				//addDeviceListToGroup( typeId );
+				//更新_deviceShowType并且更新图层
+				if (selected) 
+				{
+					_deviceShowTypeArray.push( typeId );
+					refreshDeviceLayer();
+				}
+				else 
+				{
+					for (var i:int = 0; i < _deviceShowTypeArray.length; i++) 
+					{
+						if (_deviceShowTypeArray[i]==typeId) 
+						{
+							_deviceShowTypeArray.splice(i,1);
+							break;
+						}
+					}
+					refreshDeviceLayer();
+				}
+			}
+			//刷新_deviceLayer只显示_deviceShowTypeArray中的类型
+			private function refreshDeviceLayer():void
+			{
+				for each (var gra:Graphic in _deviceLayer.graphicProvider) 
+				{
+					if (_deviceShowTypeArray.length>0) 
+					{
+						for each (var showType:String in _deviceShowTypeArray) 
+						{
+							if (gra.attributes.type == showType) 
+							{
+								gra.visible = true;
+								break;
+							}else
+							{
+								gra.visible = false;
+							}
+						}
+					}
+					else
+					{
+						gra.visible = false;
+					}
+					
+				}
+				_deviceLayer.refresh();
+			}
+			
+			
+			
+			private var refreshpolicetimer:Timer;
+			private function refreshPoliceData():void{
+				
+				if ( _refreshPoliceRate && _refreshPoliceRate > 0 && !refreshpolicetimer ) {
+					if ( !refreshpolicetimer ) {
+						refreshpolicetimer = new Timer( _refreshPoliceRate * 1000 );
+						refreshpolicetimer.addEventListener( TimerEvent.TIMER, timerTick );
+					}
+					refreshpolicetimer.start();
+				}
+			}
+			
+			
+			protected function timerTick(event:TimerEvent):void
+			{
+				// TODO Auto-generated method stub
+				AppEvent.dispatch( AppEvent.REFRESH_PLAN_DATA,{planid:_planId,type:"police"});
+			}
+			
+			//警员数量
+			[Bindable]
+			private var _policeNum:int=0;
+			//分拣police数据，每一个警员依次加到_policeLayer
+			private function addPoliceToMap(data:ArrayCollection):void
+			{
+				var policeList:ArrayCollection =  data;
+				_policeNum = policeList.length;
+				_policeLayer.clear();
+				for (var i:int = 0; i < policeList.length; i++) 
+				{
+					addPoliceItemToMap( policeList[i] );
+				}
+			}
+			
+			//添加警员到_policeLayer
+			private function addPoliceItemToMap( result:Object ):void{
+				var graphic:Graphic = new Graphic();
+				var policeResult:PlanQueryResult =  new PlanQueryResult();
+				
+				policeResult.id = result.policeId;
+				policeResult.name = result.policeName;
+				policeResult.type = "police";
+				policeResult.title = result.policeName;
+				var type:String = result.policeType;
+				var content:String = 
+					"警号：" + result.policeId + 
+					"\n所属单位：" +result.policeDeptName +
+					"\n所属部门：" + result.policeGroupName + 
+					"\n手台号：" + result.policeGpsCode +
+					"\n职务：" + result.policeDuty;
+				policeResult.content = content;
+				
+				var mapPoint:MapPoint = new MapPoint(result.longitude,result.latitude);
+				policeResult.point = mapPoint;
+				var rankSymbol:PlanRankSymbol =  getRankSymbol( type );
+				if (rankSymbol!=null) 
+				{
+					
+					graphic.symbol = rankSymbol.resultMarkerSymbol;
+					graphic.attributes = policeResult;
+					graphic.geometry = policeResult.point;
+					graphic.visible = true;
+					
+					graphic.addEventListener( MouseEvent.MOUSE_OVER,deviceGraphic_MouseOverHandler  );
+					graphic.addEventListener( MouseEvent.CLICK,deviceGraphic_ClickHandler );
+					_policeLayer.add(graphic);
+				}
+				
+				
+			}
+			
+			
+			
+			
+			/**
+			 * 将某种类型的设备全部添加到container
+			 * */
+			/*private function addDeviceListToGroup( typeId:String ):void
+			{
+				grpDeviceList.removeAllElements();
+				
+				for each ( var id:String in _deviceResultTable.getKeySet() )
+				{
+					var deviceInfo:DeviceInfo = _deviceResultTable.find( id );
+					var deviceTypeId:String = deviceInfo.typeId;
+					if ( deviceTypeId == typeId )
+					{
+						var label:Label = new Label();
+						label.id = deviceInfo.id;
+						label.text = deviceInfo.desc;
+						label.addEventListener( MouseEvent.CLICK, deviceLabel_ClickHandler );
+						grpDeviceList.addElement( label );
+					}
+				}
+			}*/
+			
+			private function deviceLabel_ClickHandler( event:MouseEvent ):void
+			{
+				var label:Label = event.target as Label;
+				var deviceId:String = label.id;
+				for each ( var graphic:Graphic in _deviceLayer.graphicProvider )
+				{
+					var attributes:PlanQueryResult = graphic.attributes as PlanQueryResult;
+					if ( deviceId == attributes.id )
+					{
+						var pt:MapPoint = graphic.geometry as MapPoint;
+						map.centerAt( pt );
+						showInfoWindow( attributes );
+						break;
+					}
+				}
+			}
+			
+			
+			private function setMapCenter(deviceId:String):void
+			{
+				for each (var gra:Graphic in _deviceLayer.graphicProvider) 
+				{
+					if (gra.attributes.id == deviceId) 
+					{
+						gra.visible =  true;
+						var mapPoint:MapPoint = gra.attributes.point as MapPoint;
+						map.centerAt( mapPoint );
+						break;
+					}
+				}
+				
+			}
+			private function getDeviceTypeName( typeId:String ):String
+			{
+				var type:String = "未知";
+				switch( typeId )
+				{
+					case "3021":
+					{
+						type="全彩板";
+						break;
+					}
+					case "3022":
+					{
+						type="光带板";
+						break;
+					}
+					case "3031":
+					{
+						type="匝控";
+						break;
+					}
+					case "3040":
+					{
+						type="视频监控";
+						break;
+					}
+					case "3050":
+					{
+						type="事件检测";
+						break;
+					}
+					case "3014":
+					{
+						type="视频采集";
+						break;
+					}
+					case "3000":
+					{
+						type="天网";
+						break;
+					}
+				}
+				return type;
+			}
+			
+			private var _carGraphic:Graphic;
+			
+			/**
+			 * 车辆从轨迹的起点还是终点移动
+			 * */
+			private var _startFromFirst:Boolean;
+			
+			/**
+			 * 车辆移动的轨迹
+			 * */
+			private var _movePath:Array;
+			
+			/**
+			 * 监控速度变化，若有变化则重新计算xoffset
+			 * */
+			private var _speedHasChanged:Boolean = false;
+			
+			private var _speed:Number;
+			
+			/**
+			 * 车辆点移动的时间间隔
+			 * */
+			private var _timerDelay:Number = 400;
+			
+			private function drawGraphic_ClickHandler( event:MouseEvent ):void
+			{
+				if ( cursorManager.currentCursorID == _carCursorID )
+				{
+					var graphic:Graphic = event.currentTarget as Graphic;
+					var polyline:Polyline = graphic.attributes as Polyline;
+					
+					//计算点击位置离polyline的哪个端点更近，以确定起始点
+					var localClickPoint:Point = new Point( event.stageX, event.stageY );
+					var clickPoint:MapPoint = map.toMap( localClickPoint );
+					_movePath = polyline.paths[0] as Array;
+					var firstPoint:MapPoint = _movePath[0];
+					var lastPoint:MapPoint = _movePath[_movePath.length - 1];
+					var firstDistance:Number = getDistance( clickPoint.x, clickPoint.y, firstPoint.x, firstPoint.y );
+					var lastDistance:Number = getDistance( clickPoint.x, clickPoint.y, lastPoint.x, lastPoint.y );
+					if ( firstDistance < lastDistance )
+					{
+						_carGraphic.geometry = firstPoint;
+						_startFromFirst = true;
+					}
+					else
+					{
+						_carGraphic.geometry = lastPoint;
+						_startFromFirst = false;
+					}
+					
+					imgStart.enabled = true;
+				}
+			} 
+			
+			/**
+			 * 角度转弧度
+			 * */
+			private function rad( d:Number ):Number {
+				return d * Math.PI / 180.0;
+			}
+			private const EARTH_RADIUS:Number = 6378.137;
+			
+			/**
+			 * 两点之间的直线距离
+			 * @param lat1: Number 点1纬度
+			 * @param lng1: Number 点1经度
+			 * @param lat2: Number 点2纬度
+			 * @param lng2: Number 点2经度
+			 * @return Number 距离（公里）
+			 * */
+			private function getDistance( lat1:Number, lng1:Number, lat2:Number, lng2:Number ):Number {
+				var radLat1:Number = rad( lat1 );
+				var radLat2:Number = rad( lat2 );
+				var radLng1:Number = rad( lng1 );
+				var radLng2:Number = rad( lng2 );
+				
+				var a:Number = radLat1 - radLat2;
+				var b:Number = radLng1 - radLng2;
+				var s:Number = 2 * Math.asin( Math.sqrt( Math.pow( Math.sin( a / 2 ), 2 ) + 
+					Math.cos( radLat1 ) * Math.cos( radLat2 ) * Math.pow( Math.sin( b / 2 ), 2 ) ) );
+				s = s * EARTH_RADIUS;
+				s = Math.round( s * 10000 ) / 10000;
+				return s;
+			}
+			
+			private var _timer:Timer;
+			
+			private var _aleadyInMove:Boolean = false;
+			
+			/**
+			 * 在一条折线上移动点
+			 * @param path: Array of MapPoint, 表示折线的点集
+			 * @param startFromFirst: Boolean, 从折线的第一个点还是最后一个点开始移动，也就是移动方向
+			 * */
+			private function moveCarPointInPath():void
+			{
+				_aleadyInMove = true;
+				var currentPoint:MapPoint;
+				
+				var currentIndex:uint;
+				var gap:int;
+				
+				var xOffset:Number;
+				var yOffset:Number;
+				
+				if ( _startFromFirst )
+				{
+					currentIndex = 0;
+					gap = 1;
+				}
+				else
+				{
+					currentIndex = _movePath.length - 1;
+					gap = -1;
+				}
+				currentPoint = new MapPoint( ( _movePath[currentIndex] as MapPoint ).x, 
+					( _movePath[currentIndex] as MapPoint ).y );
+				_carGraphic.geometry = currentPoint;
+				moveCarPointInLine( _movePath[currentIndex], _movePath[currentIndex + gap] );
+				
+				function moveCarPointInLine( startPoint:MapPoint, endPoint:MapPoint ):void
+				{
+					//斜率
+					var k:Number = ( endPoint.y - startPoint.y ) / ( endPoint.x - startPoint.x );					
+					var length:Number = getDistance( startPoint.y, startPoint.x, endPoint.y, endPoint.x ) * 1000;
+					
+					var time:Number = length / _speed;
+					var count:Number = Math.ceil( ( time / ( _timerDelay / 1000 ) ) );
+					xOffset = ( endPoint.x - startPoint.x ) / count;
+					
+					_timer.addEventListener(TimerEvent.TIMER, timerTick );
+					_timer.start();
+					
+					function timerTick( event:TimerEvent ):void
+					{
+						if( _speedHasChanged )
+						{
+							time = length / _speed;
+							count = Math.ceil( ( time / ( _timerDelay / 1000 ) ) );
+							xOffset = ( endPoint.x - startPoint.x ) / count;
+							_speedHasChanged = false;
+						}
+						
+						if ( ( xOffset > 0 && currentPoint.x+xOffset >= endPoint.x  && currentPoint.x< endPoint.x) || 
+							( xOffset < 0 &&   endPoint.x<currentPoint.x && endPoint.x >=currentPoint.x +xOffset  )) 
+						{
+							currentPoint.x = endPoint.x;
+							currentPoint.y = endPoint.y;
+						}
+						else
+						{
+							currentPoint.x += xOffset;
+							currentPoint.y  = k * ( currentPoint.x - startPoint.x ) + startPoint.y;
+						}
+						
+						_carGraphic.geometry = currentPoint;
+					  if ( ( xOffset > 0 && currentPoint.x >= endPoint.x ) || 
+							( xOffset < 0 &&   endPoint.x>=currentPoint.x ) ) 
+						{
+							_timer.stop();
+							_timer.removeEventListener( TimerEvent.TIMER, timerTick );
+							currentIndex += gap;
+
+							if ( currentIndex > 0 && currentIndex < _movePath.length - 1 )
+							{
+								moveCarPointInLine( _movePath[currentIndex], _movePath[currentIndex + gap] );
+							}
+							else
+							{
+								imgStop.enabled = false;
+								imgStart.enabled = true;
+								imgStart.source = "assets/images/player/play_start.png";
+								imgStart.toolTip = "启动";
+								_aleadyInMove = false;
+							}
+						}
+					}
+				}
+			}
+			
+			protected function imgStart_clickHandler(event:MouseEvent):void
+			{
+				if ( imgStart.toolTip == "启动" )
+				{
+					imgStop.enabled = true;
+					imgStart.source = "assets/images/player/play_pause.png";
+					imgStart.toolTip = "暂停";
+					if ( _aleadyInMove )
+						_timer.start();
+					else {
+						_timer = new Timer( _timerDelay );
+						moveCarPointInPath();
+					}
+				}
+				else
+				{
+					imgStop.enabled = true;
+					imgStart.source = "assets/images/player/play_start.png";
+					imgStart.toolTip = "启动";
+					_timer.stop();
+				}
+			}
+			
+			protected function imgStop_clickHandler():void
+			{
+				if(_timer&&_timer.running)
+				_timer.stop();
+				_timer = null;
+				_carGraphic.geometry = null;
+				imgStart.enabled = false;
+				imgStart.source = "assets/images/player/play_start.png";
+				imgStart.toolTip = "启动";
+				imgStop.enabled = false;
+				_aleadyInMove = false;
+			}
+			
+			protected function stpSpeed_changeHandler(event:Event):void
+			{
+				_speed = stpSpeed.value * 1000 / 3600;
+				_speedHasChanged = true;
+			}
+			
+			protected function importPlace_clickHandler():void
+			{
+				// TODO Auto-generated method stub
+				if (_isShowPlace) 
+				{
+					_isShowPlace = false;
+					removePlaceFromMap();
+				}else
+				{
+					_isShowPlace = true;
+					addPlaceToMap();
+				}
+			}
+			
+			private function addPlaceToMap():void{
+				if (_placeAc!=null&&_placeAc.length()>0) 
+				{
+					for each (var obj:Object in _placeAc) 
+					{
+						var graphic:Graphic = new Graphic();
+						var placeQuery:PlanQueryResult = new PlanQueryResult();
+						placeQuery.id = obj.name;
+						placeQuery.title = obj.name;
+						placeQuery.content = "保障地点： "+obj.name;
+						
+						var mapPoint:MapPoint = new MapPoint(obj.longitude,obj.latitude);
+						placeQuery.point = mapPoint;
+						
+						var type:String = "flag";
+						
+						var rankSymbol:PlanRankSymbol = getRankSymbol(  type );
+						
+						if (rankSymbol!=null) 
+						{
+							
+							
+							graphic.symbol = rankSymbol.resultMarkerSymbol;
+							graphic.attributes = placeQuery;
+							graphic.geometry = placeQuery.point;
+							
+							graphic.addEventListener( MouseEvent.ROLL_OVER, deviceGraphic_MouseOverHandler );
+							_placeGraphicLayer.add(graphic);
+						}
+					}			
+				}
+			}
+			
+			private function removePlaceFromMap():void{
+				_placeGraphicLayer.clear();
+			}
+						
+			private var _isMinimized:Boolean = false;
+			protected function wTemplate_minimizedHandler(event:Event):void
+			{
+				//保存width height
+				_isMinimized = true;
+				_height = wTemplate.height;
+				_width = wTemplate.width;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<esri:SimpleLineSymbol id="_lineSymbol" alpha="2" color="0xFF0000" width="2" style="solid"/>
+		
+		<esri:SimpleFillSymbol id="_fillSymbol" alpha="0.5" color="0xFF0000" style="solid">
+			<esri:SimpleLineSymbol alpha="1" width="2" color="0xFF0000" style="solid"/>
+		</esri:SimpleFillSymbol>
+		
+		<esri:SimpleFillSymbol id="_contourSymbol" alpha="0.2" color="0xFF0000" style="solid">
+			<esri:SimpleLineSymbol alpha="1" width="2" color="0xFF0000" style="dash"/>
+		</esri:SimpleFillSymbol>
+		
+		<esri:PictureMarkerSymbol id="carPointSymbol" source="assets/images/PoliceCar.png"/>
+		
+		<mx:Glow id="glowGraphic" duration="1000" repeatCount="0"         
+				 blurXFrom="0.0" blurXTo="50.0" 
+				 blurYFrom="0.0" blurYTo="50.0" 
+				 color="0xFF0000"/>
+		
+	</fx:Declarations>
+	
+	<viewer:WidgetTemplate id="wTemplate" 
+						   open="wTemplate_openHandler(event)" 
+						   closed="wTemplate_closedHandler(event)"
+						   minimized="wTemplate_minimizedHandler(event)"
+						   enableCloseButton="false">
+		<s:VGroup width="100%" paddingLeft="5" paddingRight="5">
+			<s:BorderContainer width="100%" backgroundAlpha="0">
+				<s:layout>
+					<s:HorizontalLayout gap="5" paddingLeft="5" paddingTop="5" paddingBottom="5" 
+										verticalAlign="middle"/>
+				</s:layout>
+				
+				<s:Image id="imgPoliceCar" buttonMode="true" useHandCursor="true" 
+						 source="assets/images/player/PoliceCar.png"
+						 click="imgPoliceCar_clickHandler(event)"/>
+				
+				<s:Image id="imgStart" enabled="false"
+						 buttonMode="true" useHandCursor="true" toolTip="启动"
+						 source="assets/images/player/play_start.png" 
+						 click="imgStart_clickHandler(event)"/>
+				
+				<s:Image id="imgStop" enabled="false" 
+						 buttonMode="true" useHandCursor="true" toolTip="停止"
+						 source="assets/images/player/play_stop.png" 
+						 click="imgStop_clickHandler()"/>
+				
+				<s:Image id="importPlace" enabled="true"  width="20" height="20"
+						 buttonMode="true"  toolTip="重点区域"
+						 source="assets/images/i_flag.png" 
+						 click="importPlace_clickHandler()"/>
+				
+				<s:Label text="速度："/>
+				<s:NumericStepper id="stpSpeed" width="40" value="40" 
+								  minimum="10" maximum="200" stepSize="5" 
+								  change="stpSpeed_changeHandler(event)"/>
+				<s:Label text="公里/小时"/>
+			</s:BorderContainer>
+			
+			<s:BorderContainer id="containerDeviceType" width="100%" backgroundAlpha="0"
+							   visible="false" includeInLayout="false">
+				<s:layout>
+					<s:TileLayout id="containerDeviceTypeLayout"
+								  paddingLeft="5" horizontalGap="5" verticalGap="5"/>
+				</s:layout>
+			</s:BorderContainer>
+			
+			<!--<s:BorderContainer id="containerDeviceList" width="100%" height="200" backgroundAlpha="0"
+							   visible="false" includeInLayout="false">
+				<s:Scroller width="100%" height="100%">
+					<s:VGroup id="grpDeviceList" paddingLeft="5" paddingTop="5"/>
+				</s:Scroller>
+			</s:BorderContainer>-->
+			<s:HGroup width="100%" height="100%"  horizontalAlign="left"  
+					  paddingLeft="20" paddingTop="5" paddingBottom="5">
+			<s:Label id="policeLabel" text="警员数量："/>
+			<s:Label id="policeCount" text="{_policeNum}"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:GridItem xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" 
+			 verticalAlign="middle">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			private var _labelText:String;
+			
+			[Bindable]
+			private var _lineWeight:uint = 2;
+
+			public function set labelText(value:String):void {
+				_labelText = value;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Group id="contentGroup" top="0" bottom="0" left="0" right="0" width="100%">
+		<s:Label top="{_lineWeight}" bottom="{_lineWeight}" left="{_lineWeight}" right="{_lineWeight}"  
+				 text="{_labelText}" fontSize="14" width="100%" textAlign="center"/>
+		
+		<s:Rect top="0" bottom="0" left="0" right="0">
+			<s:stroke>
+				<s:SolidColorStroke color="0xa5a5a5" weight="{_lineWeight}"/>
+			</s:stroke>
+		</s:Rect>	
+	</s:Group>
+</mx:GridItem>

@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   xmlns:esri="http://www.esri.com/2008/ags" 
+				   layout="absolute" 
+				   creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.supportClasses.BufferParameters;
+			import com.esri.ags.tasks.supportClasses.LengthsParameters;
+			import com.esri.ags.tools.DrawTool;
+			
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.Fault;
+			
+			/**
+			 * 保存用户绘制的Polyline
+			 * */
+			private var _polylineLayer:GraphicsLayer;
+			/**
+			 * 保存用户绘制的Polygon
+			 * */
+			private var _polygonLayer:GraphicsLayer;
+			/**
+			 * 保存用户绘制的Polygon的轮廓，和polyline缓冲区的轮廓
+			 * */
+			private var _contourLayer:GraphicsLayer;
+			/**
+			 * 绘制移动车辆
+			 * */
+			private var _carPointLayer:GraphicsLayer;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				_polylineLayer = new GraphicsLayer();
+				_polylineLayer.symbol = lineSymbol;
+				map.addLayer( _polylineLayer );
+				
+				_polygonLayer = new GraphicsLayer();
+				_polygonLayer.symbol = fillSymbol;
+				map.addLayer( _polygonLayer );
+				
+				_contourLayer = new GraphicsLayer();
+				_contourLayer.symbol = contourSymbol;
+				map.addLayer( _contourLayer );		
+				
+				_carPointLayer = new GraphicsLayer();
+				_carPointLayer.symbol = carPointSymbol;
+				map.addLayer( _carPointLayer );
+			}
+			
+			protected function activateDrawTool( event:MouseEvent ):void
+			{
+				var drawType:String = Image( event.currentTarget ).name;
+				var drawStatus:String = Image( event.currentTarget ).toolTip;
+				switch( drawType )
+				{
+					case DrawTool.POLYLINE:
+					{
+						setMapAction( drawType, drawStatus, lineSymbol, map_drawEndHandler );
+						break;
+					}
+					
+					/*case DrawTool.POLYGON:
+					{
+						setMapAction( drawType, drawStatus, fillSymbol, map_drawEndHandler );
+						break;
+					}*/
+				}
+			}
+			
+			private function map_drawEndHandler( event:DrawEvent ):void
+			{
+				var drawGraphic:Graphic = event.graphic;
+				switch( drawGraphic.geometry.type )
+				{
+					case Geometry.POLYLINE:
+					{
+						_polylineLayer.add( drawGraphic );
+						//length
+						var lengthParam:LengthsParameters = new LengthsParameters();
+						lengthParam.geodesic = true;
+						lengthParam.polylines = [ Polyline( drawGraphic.geometry ) ];
+						geometryService.lengths( lengthParam, new AsyncResponder( lengthCompleteHandler, geoServiceFaultHandler, drawGraphic ) );
+						
+						//buffer
+						var bufferParam:BufferParameters = new BufferParameters();
+						bufferParam.geometries = [ drawGraphic.geometry ];
+						bufferParam.distances = [0.001];
+						bufferParam.unit = GeometryService.UNIT_METER;
+						bufferParam.bufferSpatialReference = map.spatialReference;
+						bufferParam.outSpatialReference = map.spatialReference;
+						bufferParam.unionResults = true;
+						geometryService.buffer( bufferParam, new AsyncResponder( bufferCompleteHandler, geoServiceFaultHandler, drawGraphic ) );
+						break;
+					}
+						
+					/*case Geometry.POLYGON:
+					{
+						_contourLayer.add( drawGraphic );
+						break;
+					}*/
+				}
+			}
+			
+			private function bufferCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var bufferResultsArray:Array = item as Array;
+				for ( var i:uint = 0; i < bufferResultsArray.length; i++ )
+				{
+					var bufferGraphic:Graphic = new Graphic( bufferResultsArray[i] as Polygon );
+					//把原始的折线保存到缓冲区的attributes
+					bufferGraphic.attributes = { polyline: token as Graphic };
+					bufferGraphic.addEventListener( MouseEvent.CLICK, polygonGraphic_clickHandler );
+					bufferGraphic.addEventListener( MouseEvent.MOUSE_OVER, polygonGraphic_MouseOverHandler );
+					bufferGraphic.addEventListener( MouseEvent.MOUSE_OUT, polygonGraphic_MouseOutHandler );
+					_contourLayer.add( bufferGraphic );
+				}
+			}
+			
+			private function lengthCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var distance:Number = ( item as Array )[0];
+				var polyline:Graphic = token as Graphic;
+				//把长度保存到折线的attributes
+				polyline.attributes = { distance: distance };
+			}
+			
+			private function geoServiceFaultHandler( fault:Fault, asyncToken:AsyncToken ):void
+			{
+				showError( fault.faultString );
+			}
+			
+			
+			[Embed(source="assets/images/PoliceCar.png")]
+			private var _carCursor:Class;
+			private var _carCursorID:Number;
+			protected function imgPoliceCar_clickHandler(event:MouseEvent):void
+			{
+				_carCursorID = cursorManager.setCursor( _carCursor, 2, -20, -20 );
+			}
+			
+			private function polygonGraphic_clickHandler( event:MouseEvent ):void
+			{
+				_carPointLayer.clear();
+				
+				if ( cursorManager.currentCursorID == _carCursorID )
+				{
+					var bufferPolygon:Graphic = event.currentTarget as Graphic;
+					var polylineGraphic:Graphic = bufferPolygon.attributes.polyline;
+					var polyline:Polyline = polylineGraphic.geometry as Polyline;
+					
+					//计算点击位置离polyline的哪个端点更近，以确定起始点
+					var localClickPoint:Point = new Point( event.stageX, event.stageY );
+					var clickPoint:MapPoint = map.toMap( localClickPoint );
+					//一般一次只画一条折线，一个polyline里只包含一条折线，path=paths[0]
+					var path:Array = polyline.paths[0] as Array;
+					var firstPoint:MapPoint = path[0];
+					var lastPoint:MapPoint = path[path.length - 1];
+					var firstDistance:Number = getDistance( clickPoint.x, clickPoint.y, firstPoint.x, firstPoint.y );
+					var lastDistance:Number = getDistance( clickPoint.x, clickPoint.y, lastPoint.x, lastPoint.y );
+					if ( firstDistance < lastDistance )
+					{
+						moveCarPointInPath( path, true );
+					}
+					else
+					{
+						moveCarPointInPath( path, false );
+					}
+				}
+			}
+			
+			private function polygonGraphic_MouseOverHandler( event:MouseEvent ):void
+			{
+				
+			}
+			
+			private function polygonGraphic_MouseOutHandler( event:MouseEvent ):void
+			{
+				
+			}
+			
+			/**
+			 * 角度转弧度
+			 * */
+			private function rad( d:Number ):Number {
+				return d * Math.PI / 180.0;
+			}
+			private const EARTH_RADIUS:Number = 6378.137;
+			
+			/**
+			 * 两点之间的直线距离
+			 * @param lat1: Number 点1纬度
+			 * @param lng1: Number 点1经度
+			 * @param lat2: Number 点2纬度
+			 * @param lng2: Number 点2经度
+			 * @return Number 距离（公里）
+			 * */
+			private function getDistance( lat1:Number, lng1:Number, lat2:Number, lng2:Number ):Number {
+				var radLat1:Number = rad( lat1 );
+				var radLat2:Number = rad( lat2 );
+				var radLng1:Number = rad( lng1 );
+				var radLng2:Number = rad( lng2 );
+				
+				var a:Number = radLat1 - radLat2;
+				var b:Number = radLng1 - radLng2;
+				var s:Number = 2 * Math.asin( Math.sqrt( Math.pow( Math.sin( a / 2 ), 2 ) + 
+					Math.cos( radLat1 ) * Math.cos( radLat2 ) * Math.pow( Math.sin( b / 2 ), 2 ) ) );
+				s = s * EARTH_RADIUS;
+				s = Math.round( s * 10000 ) / 10000;
+				return s;
+			}
+			
+			protected function btnStart_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			protected function btnStop_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			/**
+			 * 在一条折线上移动点
+			 * @param path: Array of MapPoint, 表示折线的点集
+			 * @param startFromFirst: Boolean, 从折线的第一个点还是最后一个点开始移动，也就是移动方向
+			 * */
+			private function moveCarPointInPath( path:Array, startFromFirst:Boolean ):void
+			{
+				var timer:Timer = new Timer( 50 );
+				
+				var currentPoint:MapPoint;
+				var currentGraphic:Graphic;
+				
+				var currentIndex:uint;
+				var gap:int;
+				
+				var xOffset:Number;
+				var yOffset:Number;
+				
+				if ( startFromFirst )
+				{
+					currentIndex = 0;
+					gap = 1;
+				}
+				else
+				{
+					currentIndex = path.length - 1;
+					gap = -1;
+				}
+				currentPoint = new MapPoint( ( path[currentIndex] as MapPoint ).x, ( path[currentIndex] as MapPoint ).y );
+				currentGraphic = new Graphic( currentPoint );
+				_carPointLayer.add( currentGraphic );
+				moveCarPointInLine( path[currentIndex], path[currentIndex + gap] );
+				
+				function moveCarPointInLine( startPoint:MapPoint, endPoint:MapPoint ):void
+				{
+					xOffset = ( endPoint.x - startPoint.x ) / 20;
+					yOffset = ( endPoint.y - startPoint.y ) / 20;
+					
+					timer.addEventListener(TimerEvent.TIMER, timerTick );
+					timer.start();
+					
+					function timerTick( event:TimerEvent ):void
+					{
+						currentPoint.x += xOffset;
+						currentPoint.y += yOffset;
+						currentGraphic.geometry = currentPoint;
+						
+						if ( ( xOffset > 0 && currentPoint.x > endPoint.x ) || ( xOffset < 0 && currentPoint.x < endPoint.x ) ) 
+						{
+							timer.stop();
+							timer.removeEventListener( TimerEvent.TIMER, timerTick );
+							currentIndex += gap;
+							if ( currentIndex > 0 && currentIndex < path.length - 1 )
+							{
+								moveCarPointInLine( path[currentIndex], path[currentIndex + gap] );
+							}
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<esri:SimpleLineSymbol id="lineSymbol" alpha="2" color="0xFF0000" width="2" style="solid"/>
+		
+		<esri:SimpleFillSymbol id="fillSymbol" alpha="0.5" color="0xFF0000" style="solid">
+			<esri:SimpleLineSymbol alpha="1" width="2" color="0xFF0000" style="solid"/>
+		</esri:SimpleFillSymbol>
+		
+		<esri:SimpleFillSymbol id="contourSymbol" alpha="0.2" color="0xFF0000" style="solid">
+			<esri:SimpleLineSymbol alpha="1" width="2" color="0xFF0000" style="dash"/>
+		</esri:SimpleFillSymbol>
+		
+		<esri:PictureMarkerSymbol id="carPointSymbol" source="assets/images/PoliceCar.png"/>
+		
+		<esri:GeometryService id="geometryService" url="http://20.0.56.14:8399/arcgis/rest/services/Geometry/GeometryServer"/>
+	</fx:Declarations>
+	
+	<viewer:WidgetTemplate id="wTemplate">
+		<s:VGroup>
+			<s:HGroup>
+				<s:Image id="imgPolyline" name="{DrawTool.POLYLINE}"
+						 buttonMode="true" toolTip="折线" 
+						 source="assets/images/i_draw_line.png" 
+						 click="activateDrawTool(event)"/>
+				
+				<s:Image id="imgPoliceCar" buttonMode="true" 
+						 source="assets/images/PoliceCar.png" 
+						 click="imgPoliceCar_clickHandler(event)"/>
+			</s:HGroup>
+			
+			<s:HGroup>
+				<s:Button id="btnStart" label="开始" click="btnStart_clickHandler(event)"/>
+				<s:Button id="btnStop" label="停止" click="btnStop_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

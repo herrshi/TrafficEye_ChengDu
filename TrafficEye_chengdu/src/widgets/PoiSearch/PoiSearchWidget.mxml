@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   layout="absolute"
+				   widgetConfigLoaded="init()">
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.rpc.AsyncResponder;
+			
+			[Bindable] private var _searchLayers:ArrayCollection = new ArrayCollection();
+			[Bindable] private var _searchResults:ArrayCollection = new ArrayCollection();
+			
+			private var _markLayer:GraphicsLayer = new GraphicsLayer();
+			
+			private function init():void {
+				if ( configXML ) {
+					var markUrl:String = configXML.defaultsymbols.picturemarkersymbol.@url || widgetIcon;
+					var markHeight:uint = configXML.defaultsymbols.picturemarkersymbol.@height || 30;
+					var markWidth:uint = configXML.defaultsymbols.picturemarkersymbol.@width || 30;
+					_markLayer.symbol = new PictureMarkerSymbol( markUrl, markWidth, markHeight );
+					map.addLayer( _markLayer );
+					
+					var layerConfigList:XMLList = configXML..layer;
+					for ( var i:uint = 0; i < layerConfigList.length(); i++ ) {
+						var url:String = layerConfigList[i];
+						url = url.replace( "[ip]", configData.serverIp );
+						var label:String = layerConfigList[i].@label;
+						var expression:String = layerConfigList[i].@expression;
+						var titleField:String = layerConfigList[i].@titlefield;
+						var scale:uint = layerConfigList[i].@scale;
+						
+						var layerConfig:Object = {
+							url: url,
+							label: label,
+							expression: expression,
+							titleField: titleField,
+							scale: scale
+						}
+						_searchLayers.addItem( layerConfig );
+					}
+					if ( _searchLayers.length > 0 )
+						cmbSearchLayer.selectedIndex = 0;
+				}
+			}
+			
+			private function queryFeatureText():void {
+				lstResult.dataProvider = null;
+				_searchResults.removeAll();
+				
+				var url:String = cmbSearchLayer.selectedItem.url;
+				var expression:String = cmbSearchLayer.selectedItem.expression;
+				var titleField:String = cmbSearchLayer.selectedItem.titleField;
+				if ( url !="" && txtKeyValue.text != "" ) {
+					expression = expression.replace( "[value]", txtKeyValue.text );
+					var queryTask:QueryTask = new QueryTask( url );
+					var query:Query = new Query();
+					query.where = expression;
+					query.outFields = [ titleField ];
+					query.returnGeometry = true;
+					queryTask.execute( query, new AsyncResponder( onResult, onFault ) );
+				}
+			}
+			
+			private function onResult( featureSet:FeatureSet, token:Object = null ): void {
+				var titleField:String = cmbSearchLayer.selectedItem.titleField;
+				for each( var gra:Graphic in featureSet.features ) {
+					var label:String = gra.attributes[ titleField ];
+					var point:MapPoint;
+					switch ( gra.geometry.type ) {
+						case Geometry.MAPPOINT:
+							point = gra.geometry as MapPoint;
+							break;
+						case Geometry.MULTIPOINT:
+							var points:Multipoint = gra.geometry as Multipoint;
+							point = points.points[0];
+							break;
+					}
+					
+					
+					var result:Object = {
+						label: label,
+						point:point
+					}
+					_searchResults.addItem( result );
+				}
+				
+				lstResult.dataProvider = _searchResults;
+			}
+			
+			private function onFault( info:Object, token:Object = null ): void {
+				Alert.show( info.toString() );
+			}
+			protected function txtKeyValue_keyDownHandler(event:KeyboardEvent):void
+			{
+				if ( event.keyCode == 13 )
+					btnSearch_clickHandler( null );
+			}
+			
+			protected function cmbSearchLayer_keyDownHandler(event:KeyboardEvent):void
+			{
+				if ( event.keyCode == 13 )
+					btnSearch_clickHandler( null );
+			}
+
+			protected function btnSearch_clickHandler(event:MouseEvent):void
+			{
+				queryFeatureText();
+			}
+
+
+			protected function lstResult_clickHandler(event:MouseEvent):void
+			{
+				_markLayer.clear();
+				var scale:uint = cmbSearchLayer.selectedItem.scale;
+				
+				var result:Object = lstResult.selectedItem;
+				var point:MapPoint = result.point;
+				map.centerAt( point );
+				_markLayer.add( new Graphic( point ) );
+				if ( map.scale > scale )
+					map.scale = scale;
+			}
+
+
+			protected function wTemplate_openHandler(event:Event):void
+			{
+				_markLayer.visible = true;
+			}
+
+
+			protected function wTemplate_closedHandler(event:Event):void
+			{
+				_markLayer.clear();
+				_markLayer.visible = false;
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<viewer:WidgetTemplate id="wTemplate" width="400" height="300" 
+						   open="wTemplate_openHandler(event)" closed="wTemplate_closedHandler(event)">		
+		<s:VGroup width="100%" height="100%" styleName="WidgetText" 
+				  paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5">
+			<s:HGroup width="100%" height="30" verticalAlign="middle">
+				<s:Label text="类型" textAlign="right" width="60"/>
+				<s:ComboBox id="cmbSearchLayer" width="100%" height="25" 
+							dataProvider="{_searchLayers}" keyDown="cmbSearchLayer_keyDownHandler(event)"/>
+			</s:HGroup>
+			
+			<s:HGroup width="100%" height="30" verticalAlign="middle">
+				<s:Label text="关键字" textAlign="right" width="60"/>
+				<s:TextInput id="txtKeyValue" width="100%" height="25" keyDown="txtKeyValue_keyDownHandler(event)"/>
+				<s:Button id="btnSearch" label="搜索" click="btnSearch_clickHandler(event)"/>
+			</s:HGroup>
+			
+			<s:List id="lstResult" width="100%" height="100%" verticalScrollPolicy="auto" labelField="label" 
+					click="lstResult_clickHandler(event)"/>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

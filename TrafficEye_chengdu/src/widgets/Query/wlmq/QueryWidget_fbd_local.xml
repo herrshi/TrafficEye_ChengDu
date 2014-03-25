@@ -1,0 +1,27 @@
+﻿<!--变形图环线 -->
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/wlmq/wlmq_fbd/MapServer/0</layer>
+	<titlefield>name</titlefield>
+	<idfield>RoadID</idfield>
+	<type>FBD</type>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="name" alias="设备位置" />
+		<field name="RoadID" alias="编号" />
+		<field name="RoadType" alias="道路等级" />
+	</fields>
+	<eventType flag="openDevice" />
+	<buttons>
+		<button>状态发布</button>
+	</buttons>
+	<showerror>true</showerror>
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>60</refreshrate>
+	<hinttimeout>0</hinttimeout>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+</configuration>

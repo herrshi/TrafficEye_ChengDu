@@ -1,0 +1,979 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*" 
+				   xmlns:controls="com.esri.viewer.components.toc.controls.*" 
+				   layout="absolute" 
+				   widgetConfigLoaded="configLoad()" xmlns:esri="http://www.esri.com/2008/ags" 
+				   xmlns:Query="widgets.Query.*" >
+	
+	<fx:Declarations>
+		<mx:StringValidator id="valueValidator" source="{txtValue}" property="text" requiredFieldError="关键字不能为空"/>
+		<s:GlowFilter id="glowFilter" alpha="1" color="{getStyle('focusColor')}" inner="true"
+					  strength="2"/>
+		<esri:SimpleFillSymbol id="fillSymbol" alpha="0.5" color="0xFF0000" style="solid"/>
+		<esri:EditTool id="editTool" map="{map}"/>
+		<esri:Map>
+			<esri:GraphicsLayer id="myGraphicsLayer"/>
+		</esri:Map>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.FindEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.tasks.FindTask;
+			import com.esri.ags.tasks.IdentifyTask;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.FindParameters;
+			import com.esri.ags.tasks.supportClasses.FindResult;
+			import com.esri.ags.tasks.supportClasses.IdentifyParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.components.toc.utils.MapUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.formatters.IFormatter;
+			import mx.formatters.SwitchSymbolFormatter;
+			import mx.managers.CursorManager;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.http.HTTPService;
+			import mx.validators.Validator;
+			
+			import spark.components.CheckBox;
+			import spark.components.supportClasses.ItemRenderer;
+			
+			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
+			import widgets.RVPUB.RvPubResult;
+			import widgets.RankSymbolLegend.RankSymbolLegendWidget;
+			
+			private var _findUrl:String;
+			private var _findField:Array;
+			private var _findResult:ArrayCollection = new ArrayCollection();
+			private var _markLayer:GraphicsLayer = new GraphicsLayer();
+			
+			//new
+			
+			private var graphicsLayer: GraphicsLayer;
+			private var graphicLineSym: SimpleLineSymbol = new SimpleLineSymbol( "solid", 0xFF0000, 1, 2 );
+			private var graphicPolySym: SimpleFillSymbol = new SimpleFillSymbol( "solid", 0x0099FF, 0.15, graphicLineSym );
+			
+			[Bindable]
+			private var drawRectangleLabel:String;
+			[Bindable]
+			private var drawCircleLabel:String;
+			[Bindable]
+			private var drawFreehandPolygonLabel:String;
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>(); 
+			
+			
+			private var _tempgraphic:ArrayCollection = new ArrayCollection();
+			private var selectedDrawingIcon:Image;
+			private var drawType:String;
+			private var drawStatus:String;
+			private var showlist:Array;
+			private var _findLayerIds:Array;
+			private var hinttimeout:int;
+			private var queryRefreshRate:Number;
+			private var timer:Timer;
+
+
+
+
+
+
+
+			
+			
+			private function configLoad():void {
+				txtValue.setFocus();
+				if ( configXML ) {
+					var markUrl:String = configXML.defaultsymbols.picturemarkersymbol.@url;
+					var markHeight:uint = configXML.defaultsymbols.picturemarkersymbol.@height || 30;
+					var markWidth:uint = configXML.defaultsymbols.picturemarkersymbol.@width || 30;
+					
+					_markLayer.symbol = new PictureMarkerSymbol( markUrl, markWidth, markHeight );
+					map.addLayer( _markLayer );
+					
+				
+
+					_findUrl = configXML.find.url;
+					_findUrl = _findUrl.replace( "[serverip]", configData.serverIp );
+					var fields:String = configXML.find.fields;
+					_findField = fields.split( "," );
+					var layerid:String = configXML.find.layerIds
+					_findLayerIds = layerid.split(",") ;
+					
+					
+					var jsonService:HTTPService = new HTTPService();
+					jsonService.resultFormat = "text";
+					jsonService.url = _findUrl + "/?f=json";
+					jsonService.addEventListener( ResultEvent.RESULT, onJSONLoad );
+					jsonService.send();
+					
+					
+					
+					var scaleSymbolList:XMLList = configXML..symbols;
+					for (var i:int = 0; i < scaleSymbolList.length(); i++) 
+					{
+						
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							rankSymbol.keyValue = keyValue;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							_rankSymbols.push( rankSymbol );
+						}
+						
+					}
+					
+					var infoUrl:String = configXML.info; 
+					
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					
+					graphicsLayer = new GraphicsLayer();
+					graphicsLayer.name = "DeviceLayer";
+					map.addLayer( graphicsLayer);
+					
+				}
+			}
+			
+		
+			
+			
+			private function onJSONLoad( event:ResultEvent ):void {
+				var rawData:String = event.result as String;
+				var jsonObj:Object = JSON.parse( rawData );
+				var layers:Array = jsonObj.layers;
+				for each ( var layerObj:Object in layers ) {
+					var checkBox:CheckBox = new CheckBox();
+					checkBox.label = layerObj.name;
+					checkBox.id = layerObj.id;
+					checkBox.selected = true;
+					checkBox.addEventListener( MouseEvent.CLICK, checkBox_clickHandler ); 
+					
+					
+					if (_findLayerIds[0]=="all") 
+					{
+						tlCheckGroup.addElement( checkBox );
+					}else 
+					{
+						for each (var i:int in _findLayerIds) 
+						{
+							if (i==layerObj.id) 
+							{
+								tlCheckGroup.addElement( checkBox );
+
+							}
+						}
+						
+					}
+					
+					
+				}
+			}
+			
+			
+			private function infoReady(event:AppEvent):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			private function createAndStartWidgetTimer():void {
+				if ( queryRefreshRate && queryRefreshRate > 0 ) {
+					if (!timer) {
+						var seconds:Number = 1;
+						var rate:Number = seconds * 1000;
+						timer = new Timer(rate);
+					}
+					timer.start();
+				}
+			}
+			
+			
+			private function executeCompleteHandler( event:FindEvent ):void {
+				CursorManager.removeBusyCursor();
+				
+
+//				currentState = event.findResults.length > 0 ? "ResultFound" : "ResultNotFound";
+				_findResult.removeAll();
+				for each ( var result:FindResult in event.findResults ) {
+					var pt:MapPoint = getGeomCenter( result.feature );
+					var type:String=result.feature.attributes.deviceid;
+					type=type.substring(0,4);
+					var obj:Object = {
+						name: result.feature.attributes.name,
+						id:result.feature.attributes.deviceid,
+						type:type,
+						point: pt
+					}
+					_findResult.addItem( obj );
+				}
+				GetItemInfo( _findResult );
+//				lstResult.dataProvider = _findResult;
+			}
+			
+			
+			private function GetItemQuery( result:Object ):void{
+				
+				var graphic:Graphic = new Graphic();
+				var rvpubResult:RvPubResult = new RvPubResult();
+				rvpubResult.title = result.name;
+				rvpubResult.name = result.name; 
+				rvpubResult.id = result.id;
+				var type:String = result.type;
+				rvpubResult.type = type;
+				rvpubResult.content = "设备编号:"+result.id;
+				rvpubResult.point = result.point as MapPoint;
+				var rankSymbol:QueryResultSymbol = getRankSymbol(  type );
+				
+				
+				
+				graphic.symbol = rankSymbol.resultMarkerSymbol;
+				graphic.attributes = rvpubResult;
+				graphic.geometry = rvpubResult.point;
+								
+				graphic.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+				graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+				graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+				graphicsLayer.add(graphic);
+
+				
+			}
+			
+			
+			private function getRankSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			private function GetItemInfo( results:ArrayCollection ):void {
+				clear_gra();
+				_tempgraphic.removeAll();
+				var mbcount:int=0;
+				var cbcount:int=0;
+				var rccount:int=0;
+				for each ( var result:Object in results ) {
+					var checkBox:CheckBox = new CheckBox();
+					var type:String = result.type;
+					checkBox.label = result.name+'('+result.id+')';
+					checkBox.id = result.id;
+					checkBox.selected = true;
+					checkBox.addEventListener( MouseEvent.CLICK, chbox );
+	
+					if (type=="3022") 
+						{
+							GetItemQuery(result);
+							
+							VmsMBCheckGroup.addElement( checkBox );
+							mbcount++;
+	
+						}else if(type=="3021") 
+						{
+							GetItemQuery(result);
+
+							VmsCBCheckGroup.addElement( checkBox );
+							cbcount++;
+						}else if(type=="3031")
+						{
+							GetItemQuery(result);
+
+							RCCheckGroup.addElement( checkBox );
+							rccount++;
+						}
+					
+				}
+				
+				if(cbcount >0){
+					ChangescrlCheck("CB");
+					cbclick.visible=true;
+					};
+
+				 if(mbcount >0){
+					ChangescrlCheck("MB");
+					mbclick.visible=true;
+					};
+
+				 if(rccount >0){
+					ChangescrlCheck("RC");
+					rcclick.visible=true;
+					}
+				 
+				 if (mbcount>0) 
+				 {
+					 ChangescrlCheck("MB");
+					 ChangesLinkButton(mbclick,1);
+				 }
+				 else if (cbcount>0) 
+				 {
+					 ChangescrlCheck("CB");
+					 ChangesLinkButton(cbclick,1);
+				 }else if(rccount>0)
+				 {
+					 ChangescrlCheck("RC");					
+					 ChangesLinkButton(rcclick,1);
+				 }
+				 
+				
+			}
+			
+			
+			private function ChangesLinkButton(LinkButtonid:LinkButton,color:uint):void  { 
+				if(color==0){
+					color=0xadbacf;}else 
+					if(color==1)
+					{
+						color=0x8c9fbd;
+					};
+				LinkButtonid.graphics.beginFill(color);
+				LinkButtonid.graphics.drawRect(0, 0, LinkButtonid.width, LinkButtonid.height);
+				LinkButtonid.graphics.endFill();
+				  
+			} 
+			
+			
+			
+			private function ChangescrlCheck(type:String):void{
+				//chkAlldev.visible=true;
+				if(type=="CB")
+				{
+					scrlCheckVMSMB.visible=false;
+					scrlCheckVMSMB.includeInLayout=false;
+					scrlCheckRC.visible=false;
+					scrlCheckRC.includeInLayout=false;
+					scrlCheckVMSCB.visible=true;
+					scrlCheckVMSCB.includeInLayout=true;
+					ChangesLinkButton(cbclick,1);
+					ChangesLinkButton(mbclick,0);
+					ChangesLinkButton(rcclick,0);
+					
+				}else if(type=="MB")
+				{
+					scrlCheckVMSCB.visible=false;
+					scrlCheckVMSCB.includeInLayout=false;
+					scrlCheckRC.visible=false;
+					scrlCheckRC.includeInLayout=false;
+					scrlCheckVMSMB.visible=true;
+					scrlCheckVMSMB.includeInLayout=true;
+					ChangesLinkButton(mbclick,1);
+					ChangesLinkButton(cbclick,0);
+					ChangesLinkButton(rcclick,0);
+
+				}else if(type=="RC")
+				{
+					scrlCheckVMSCB.visible=false;
+					scrlCheckVMSCB.includeInLayout=false;
+					scrlCheckVMSMB.visible=false;
+					scrlCheckVMSMB.includeInLayout=false;
+					scrlCheckRC.visible=true;
+					scrlCheckRC.includeInLayout=true;
+					ChangesLinkButton(rcclick,1);
+					ChangesLinkButton(mbclick,0);
+					ChangesLinkButton(cbclick,0);
+				}	
+				
+			}
+			
+			
+			private function getGeomCenter(gra:Graphic):MapPoint {
+				var pt:MapPoint;
+				switch (gra.geometry.type) {
+					case Geometry.MAPPOINT:
+						pt = gra.geometry as MapPoint;
+						break;
+					case Geometry.MULTIPOINT:
+						const multipoint:Multipoint = gra.geometry as Multipoint;
+						pt = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
+						break;
+					case Geometry.POLYLINE:
+						const pl:Polyline = gra.geometry as Polyline;
+						const pathCount:Number = pl.paths.length;
+						const pathIndex:int = pathCount % 2 == 0 || pathCount == 1 ? pathCount / 2 : pathCount / 2 + 1;
+						const midPath:Array = pl.paths[pathIndex];
+						const ptCount:Number = midPath.length;
+						const ptIndex:int = ptCount % 2 == 0 || ptCount == 1 ? ptCount / 2 : ptCount / 2 + 1;
+						pt = pl.getPoint(pathIndex, ptIndex);
+						break;
+					case Geometry.POLYGON:
+						const poly:Polygon = gra.geometry as Polygon;
+						pt = poly.extent.center;
+						break;
+				}
+				return pt;
+			}
+			
+			private function getSelectedLayer():Array {
+				var result:Array = [];
+				
+				
+				for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) {
+					var checkBox:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+					if ( checkBox.selected ) {
+						result.push( checkBox.id );
+					}
+				}
+				
+				return result;
+			}
+			
+			
+			private function activateDrawTool(event:MouseEvent):void
+			{
+				
+				selectedDrawingIcon = Image(event.currentTarget);
+				clearSelectionFilter();
+				selectedDrawingIcon.filters = [ glowFilter ];
+				
+				drawType =  selectedDrawingIcon.name;
+				switch( drawType )
+				{
+					case DrawTool.EXTENT: 
+					{
+						drawStatus = drawRectangleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;	
+					}
+						
+					case DrawTool.CIRCLE:
+					{
+						drawStatus = drawCircleLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+					case DrawTool.FREEHAND_POLYGON:
+					{
+						drawStatus = drawFreehandPolygonLabel;
+						setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler);
+						break;
+					}
+						
+				}
+				
+			}
+			
+			
+			private function map_drawEndHandler(event:DrawEvent):void
+			{
+				graphicsLayer.clear();
+				var geom:Geometry =  event.graphic.geometry;
+				var gra:Graphic = new Graphic( geom );
+				var po:Polygon ;
+				if (geom.type=="esriGeometryEnvelope") 
+				{
+					po = geom.extent.toPolygon();
+				}else{
+ 					po = geom as Polygon;
+				}
+				trace(po);
+				
+				gra.symbol = graphicPolySym;
+				graphicsLayer.add( gra ); 
+				identifyFeatures( event.graphic.geometry );
+			}
+			
+			private function identifyFeatures( geo: Geometry ): void {
+				
+				
+				var po:Polygon = geo as Polygon;
+
+				var identifyTask:IdentifyTask = new IdentifyTask( _findUrl );
+				identifyTask.disableClientCaching = true;
+				identifyTask.showBusyCursor = true;
+				
+				var identifyParams: IdentifyParameters = new IdentifyParameters();
+				identifyParams.returnGeometry = true;
+				identifyParams.tolerance = 10;
+				identifyParams.width = map.width;
+				identifyParams.height = map.height;
+				identifyParams.geometry = geo;
+				identifyParams.mapExtent = map.extent;
+				identifyParams.layerIds = getSelectedLayer();
+				identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+				identifyParams.spatialReference = map.spatialReference;
+				//identifyParams.layerDefinitions ="deviceid" ;
+				
+				
+				identifyTask.execute( identifyParams, new AsyncResponder ( onIdentifyResult, onIdentifyFault,null ));
+				
+			}
+			
+			
+			private function onIdentifyResult(results: Array, token:Object = null):void
+			{
+				
+				
+				_findResult.removeAll();
+			
+				for each (var result:Object in results) 
+				{
+					var pt:MapPoint = getGeomCenter( result.feature );
+					var type:String =  result.feature.attributes.deviceid as String;
+					type = type.substring(0,4);
+					
+					var obj:Object = {
+						name: result.feature.attributes.name,
+							id:result.feature.attributes.deviceid,
+							type:type,
+							point: pt
+					}
+					_findResult.addItem( obj );
+				}
+				
+				
+				GetItemInfo( _findResult );				
+				
+				
+				
+			}
+			
+			
+			private function onIdentifyFault( info: Object, token: Object = null):void
+			{
+				Alert.show( info.toString() );
+			}
+			
+			
+			private function clearSelectionFilter():void
+			{
+				for (var i:int = 0; i < drawImageGroup.numChildren; i++)
+				{
+					if (drawImageGroup.getChildAt(i).filters && drawImageGroup.getChildAt(i).filters.length > 0)
+					{
+						if (!(selectedDrawingIcon && drawImageGroup.getChildAt(i) === selectedDrawingIcon))
+						{
+							drawImageGroup.getChildAt(i).filters = [];
+						}
+					}
+				}
+			}
+			
+			protected function btnSearch_clickHandler(event:MouseEvent):void {
+				if ( Validator.validateAll( [valueValidator] ).length > 0 ) {
+					return;
+				}
+				
+				var findTask:FindTask = new FindTask( _findUrl );
+				findTask.addEventListener(FindEvent.EXECUTE_COMPLETE, executeCompleteHandler );
+				
+				var findParam:FindParameters = new FindParameters();
+				findParam.contains = true;
+				findParam.returnGeometry = true;
+				findParam.searchFields = _findField;
+				findParam.layerIds = getSelectedLayer();
+				findParam.searchText = txtValue.text;
+				
+				findTask.execute( findParam );
+				CursorManager.setBusyCursor();
+			}
+
+			private function chbox(event:MouseEvent):void{
+				var data:Object = event.target as Object;
+				var flag:Boolean=false;
+				id=data.id;
+				trace(id);
+			
+				if(_tempgraphic.length!=0 ){
+				for (var i:int = 0; i < _tempgraphic.length; i++) 
+				{
+					if (id==_tempgraphic[i].id) 
+					{
+						GetItemQuery(_tempgraphic[i]);
+						_tempgraphic.removeItemAt(i);
+						flag=true;
+						break;
+					}
+					
+				}
+				}
+				 if(!flag)
+				 {
+					
+					 for each (var gra:Graphic in graphicsLayer.graphicProvider) 
+					 {
+						 if(gra.attributes.id == id)
+						 {
+						 	var gratmp:Object =  gra.attributes as Object;
+							_tempgraphic.addItem( gratmp );
+							graphicsLayer.remove( gra );
+						 }
+							 
+					 }
+					 
+			
+				 }
+				
+
+				
+			}
+			
+
+			protected function wTemplate_openHandler(event:Event):void {
+				_markLayer.visible = true;
+			}
+
+			protected function wTemplate_closedHandler(event:Event):void {
+				setMapAction(null,null,null,null);
+
+				_markLayer.clear();
+				_markLayer.visible = false;
+				graphicsLayer.clear();
+
+			}
+
+			protected function txtValue_keyDownHandler(event:KeyboardEvent):void {
+				if ( event.keyCode == 13 ) {
+					btnSearch_clickHandler( null );
+				}
+			}
+
+			protected function chkAll_clickHandler(event:MouseEvent,type:String):void {
+				if(type=='')
+				{
+					chkAlldev.indeterminate = false;
+
+				if(scrlCheckRC.visible)
+					type="RCCheckGroup";
+				if(scrlCheckVMSCB.visible)
+					type="VmsCBCheckGroup";
+				if(scrlCheckVMSMB.visible)
+					type="VmsMBCheckGroup";
+				}
+								
+				switch(type)
+				{
+					case "tlCheckGroup":
+					{
+						chkAll.indeterminate = false;
+						
+						for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) 
+						{
+							var checkBoxtl:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+							checkBoxtl.selected = chkAll.selected;
+						}
+						break;
+					}
+					case "RCCheckGroup":
+					{
+						for ( var j:uint = 0; j < RCCheckGroup.numElements; j++ )
+						{
+							var checkBoxrc:CheckBox = RCCheckGroup.getElementAt( j ) as CheckBox;
+							checkBoxrc.selected = chkAlldev.selected;
+						}
+						break;
+					}
+					case "VmsMBCheckGroup":
+					{
+						for ( var k:uint = 0; k < VmsMBCheckGroup.numElements; k++ ) {
+							var checkBoxmb:CheckBox = VmsMBCheckGroup.getElementAt( k ) as CheckBox;
+							checkBoxmb.selected = chkAlldev.selected;
+						}
+						break;
+					}
+					case 	"VmsCBCheckGroup":
+					{
+						for ( var m:uint = 0; m < VmsCBCheckGroup.numElements; m++ )
+						{
+							var checkBoxcb:CheckBox = VmsCBCheckGroup.getElementAt( m ) as CheckBox;
+							checkBoxcb.selected = chkAlldev.selected;
+						}
+						break;
+					}
+						
+					default:
+					{
+						break;
+					}
+				}
+				
+				
+			}
+			
+			protected function checkBox_clickHandler(event:MouseEvent):void {
+				var bolAllSelected:Boolean = true;
+				var bolNoneSelected:Boolean = true;
+				
+				for ( var i:uint = 0; i < tlCheckGroup.numElements; i++ ) {
+					var checkBox:CheckBox = tlCheckGroup.getElementAt( i ) as CheckBox;
+					bolAllSelected = bolAllSelected && checkBox.selected;
+					bolNoneSelected = bolNoneSelected && ( !checkBox.selected );
+				}
+				if ( bolAllSelected ) {
+					chkAll.indeterminate = false;
+					chkAll.selected = true;
+				}
+				else if ( bolNoneSelected ) {
+					chkAll.indeterminate = false;
+					chkAll.selected = false;
+				}
+				else {
+					chkAll.indeterminate = true;
+					chkAll.selected = false;
+				}
+			}
+			
+			protected function btnShowDetail_clickHandler(event:MouseEvent):void {
+				if ( scrlCheckGroup.visible ) {
+					scrlCheckGroup.visible = scrlCheckGroup.includeInLayout = false;
+					btnShowDetail.source = "assets/images/w_collapse_down.png";
+				}
+				else {
+					scrlCheckGroup.visible = scrlCheckGroup.includeInLayout = true;
+					btnShowDetail.source = "assets/images/w_collapse_up.png";
+				}
+				
+			}
+			
+			private var hitimer:uint;
+			
+			private function mouseOverGraphic( event:MouseEvent ):void {
+				var gra:Graphic = event.currentTarget as Graphic;
+				
+				//				
+				showInfoWindow(gra.attributes);				
+			}
+			
+			private function mouseOutGraphic(event:Event):void {
+				if ( hitimer != 0 )
+					clearTimeout( hitimer );
+			}
+			
+			private function mouseClickGraphic(event:Event):void {
+				var gra:Graphic =  event.currentTarget as Graphic;
+				graphicsLayer.remove( gra );
+				var id:String = gra.attributes.id;
+				var type:String = gra.attributes.type;
+				var tempgra:Object = gra.attributes as Object;
+				if(type=="3021")
+				{
+					for (var i:int = 0; i < VmsCBCheckGroup.numChildren; i++) 
+					{
+						var checkboxcb:CheckBox = VmsCBCheckGroup.getChildAt( i ) as CheckBox;
+						if (checkboxcb.id==id) 
+						{
+							checkboxcb.selected=false;
+							_tempgraphic.addItem(tempgra);
+						}
+					}
+				}else if(type == "3022") 
+				{
+					for (var j:int = 0; j < VmsMBCheckGroup.numChildren; j++) 
+					{
+						var checkboxmb:CheckBox = VmsMBCheckGroup.getChildAt( j ) as CheckBox;
+						if (checkboxmb.id==id) 
+						{
+							checkboxmb.selected=false;
+							_tempgraphic.addItem(tempgra);
+
+						}					}
+				}else if(type == "3031")
+				{
+					for (var k:int = 0; k < RCCheckGroup.numChildren; k++) 
+					{
+						var checkboxrc:CheckBox = RCCheckGroup.getChildAt( k ) as CheckBox;
+						if (checkboxrc.id==id) 
+						{
+							checkboxrc.selected=false;
+							_tempgraphic.addItem(tempgra);
+
+						}					
+					}
+				}	
+				
+				
+			}
+			protected function clear_gra():void
+			{
+				
+				graphicsLayer.clear();
+				_markLayer.clear();
+				VmsMBCheckGroup.removeAllElements();
+				VmsCBCheckGroup.removeAllElements();
+				RCCheckGroup.removeAllElements();
+				cbclick.visible=false;
+				mbclick.visible=false;
+				rcclick.visible=false;
+				// TODO Auto-generated method stub
+				
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					infoTemplate.data = infoData;
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			protected function sendDeviceid_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var type:String="";
+				var DeviceIdsArray:Array=new Array();
+				var DeviceIds:String;
+				if (scrlCheckRC.visible)
+				{
+					type="RC";
+					for ( var j:uint = 0; j < RCCheckGroup.numElements; j++ ) {
+						var checkBoxrc:CheckBox = RCCheckGroup.getElementAt( j ) as CheckBox;
+						if (checkBoxrc.selected) 
+						{
+							DeviceIdsArray.push(checkBoxrc.id);	
+						}
+						DeviceIdsArray.push();
+					}
+				}
+				else if (scrlCheckVMSMB.visible)
+				{
+					type="MB";
+					for ( var k:uint = 0; k < VmsMBCheckGroup.numElements; k++ ) {
+						var checkBoxmb:CheckBox = VmsMBCheckGroup.getElementAt( k ) as CheckBox;
+						if (checkBoxmb.selected) 
+						{
+								DeviceIdsArray.push(checkBoxmb.id);
+						}
+					}
+				}
+				else if (scrlCheckVMSCB.visible)
+				{
+					type="CB";
+					for ( var m:uint = 0; m < VmsCBCheckGroup.numElements; m++ ) {
+						var checkBoxcb:CheckBox = VmsCBCheckGroup.getElementAt( m ) as CheckBox;
+						if (checkBoxcb.selected) 
+						{
+							DeviceIdsArray.push(checkBoxcb.id);
+						}
+					}
+				}
+				if (DeviceIdsArray.length>0) 
+				{
+					DeviceIds=DeviceIdsArray.toString();
+					AppEvent.dispatch(AppEvent.DEVICE_ISSUE, {type:type, DeviceIds:DeviceIds} );
+					trace(type+DeviceIds);						
+				}else
+				{
+					Alert.show("请选择设备！！！");
+				}	
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<viewer:WidgetTemplate id="wTemplate" width="335" 
+						   closed="wTemplate_closedHandler(event)" enableIcon="false"
+						   enableMinimizeButton="false" fontFamily="微软雅黑"
+						   open="wTemplate_openHandler(event)"
+						   enableCloseButton="false">
+		
+		<s:VGroup width="100%">
+			<s:HGroup width="100%" height="30" verticalAlign="middle" paddingLeft="5" >
+				<s:Label text="查询范围："/>
+				<controls:CheckBoxIndeterminate  id="chkAll" label="全部" selected="true"
+												 click="chkAll_clickHandler(event,'tlCheckGroup')"/>
+				<s:Image id="btnShowDetail" source="assets/images/w_collapse_down.png" useHandCursor="true" 
+						 click="btnShowDetail_clickHandler(event)"/>
+			</s:HGroup>
+			
+			<s:Scroller id="scrlCheckGroup" height="150" width="100%"
+						visible="false" includeInLayout="false">
+				<s:TileGroup id="tlCheckGroup" paddingLeft="5" paddingTop="5" />
+			</s:Scroller>
+			
+			<s:HGroup id="drawImageGroup" contentBackgroundAlpha="0.2" contentBackgroundColor="#EEAAAA" 
+					   horizontalAlign="right" verticalAlign="top"  paddingLeft="5" >
+				<s:Label x="-6" width="60" height="25" text="图形搜索: "/>
+				<s:Image x="6" y="7" width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.EXTENT}"
+						 source="assets/images/i_draw_rect.png" toolTip="矩形"/>
+				<s:Image x="54" y="7" width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.FREEHAND_POLYGON}"
+						 source="assets/images/i_draw_freepoly.png" toolTip="多边形"/>
+				<s:Image x="102" y="7" width="40" height="40" buttonMode="true"
+						 click="activateDrawTool(event)" name="{DrawTool.CIRCLE}"
+						 source="assets/images/i_draw_circle.png" toolTip="圆"/>			
+			</s:HGroup>	
+			
+			<s:HGroup width="100%" height="30" verticalAlign="middle" paddingLeft="5" paddingRight="5">
+				<s:Label text="关键字："/>
+				<s:TextInput id="txtValue" width="100%" keyDown="txtValue_keyDownHandler(event)"/>
+				<s:Button id="btnSearch" label="搜索" width="50" click="btnSearch_clickHandler(event)"/>
+				<s:Button label="清除" width="50"  click="clear_gra()"/>
+			</s:HGroup>
+			<s:HGroup name="fbGroup" width="100%" paddingLeft="5" paddingRight="5" visible="true">
+				<mx:LinkButton  label="光带板" id="mbclick" click="ChangescrlCheck('MB')" visible="false" />
+				<mx:LinkButton label="全彩板" id="cbclick"	click="ChangescrlCheck('CB')" visible="false"/>
+				<mx:LinkButton label="匝控"  id="rcclick" click="ChangescrlCheck('RC')" visible="false"/>
+				<controls:CheckBoxIndeterminate id="chkAlldev" label="全部"
+												click="chkAll_clickHandler(event,'')"
+												paddingLeft="5"  selected="true" visible="false"/>
+			<s:HGroup name="rvGroup" width="95%" paddingLeft="5" paddingRight="5" visible="true">
+			</s:HGroup>
+				<s:Button label="发布" id="sendDeviceid" click="sendDeviceid_clickHandler(event)" />	
+
+			</s:HGroup>
+			
+			<s:Scroller id="scrlCheckVMSCB"  width="100%" height="200"
+						visible="false" includeInLayout="false">
+				<s:TileGroup id="VmsCBCheckGroup" paddingLeft="5" paddingTop="5"  visible="true"/>
+			</s:Scroller>
+			<s:Scroller id="scrlCheckVMSMB"  width="100%" height="200" 
+						visible="false" includeInLayout="false">
+				<s:TileGroup id="VmsMBCheckGroup" paddingLeft="5" paddingTop="5"  visible="true"/>
+			</s:Scroller>
+			<s:Scroller id="scrlCheckRC" width="100%" height="200"  
+						visible="false" includeInLayout="false">
+				<s:TileGroup id="RCCheckGroup" paddingLeft="5" paddingTop="5"  visible="true"/>
+			</s:Scroller>
+		</s:VGroup>
+		
+	
+		
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

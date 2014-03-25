@@ -1,0 +1,116 @@
+<configuration>
+	<identify>
+		<url>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device_search/MapServer</url>
+		<layerIds>0,2,3,6</layerIds>
+		<fields>deviceid,name,fbd_code,fbd_name</fields>
+	</identify>
+	<geoserver>http://[serverip]/arcgis/rest/services/Geometry/GeometryServer</geoserver>
+	<isShowFlag>true</isShowFlag>
+	<placeInfo>
+		<info>
+			<name>香格里拉大酒店</name>
+			<longitude>104.0855972</longitude>
+			<latitude>30.64311111</latitude>
+		</info>
+		<info>
+			<name>宽窄巷子</name>
+			<longitude>104.0532222</longitude>
+			<latitude>30.66388611</latitude>
+		</info>
+		<info>
+			<name>双流机场</name>
+			<longitude>103.947</longitude>
+			<latitude>30.57845556</latitude>
+		</info>
+		<info>
+			<name>金牛宾馆</name>
+			<longitude>104.0119944</longitude>
+			<latitude>30.719075</latitude>
+		</info>
+		<info>
+			<name>世纪城会展中心</name>
+			<longitude>104.0769917</longitude>
+			<latitude>30.55670556</latitude>
+		</info>
+		<info>
+			<name>锦江宾馆</name>
+			<longitude>104.0655472</longitude>
+			<latitude>30.64774167</latitude>
+		</info>
+		<info>
+			<name>杜甫草堂</name>
+			<longitude>104.0281972</longitude>
+			<latitude>30.66024722</latitude>
+		</info>
+		<info>
+			<name>许燎源博物馆</name>
+			<longitude>104.1564194</longitude>
+			<latitude>30.58242222</latitude>
+		</info>
+		<info>
+			<name>大熊猫基地</name>
+			<longitude>104.1460167</longitude>
+			<latitude>30.732725</latitude>
+		</info>
+		<info>
+			<name>蜀锦织绣博物馆</name>
+			<longitude>104.0369722</longitude>
+			<latitude>30.65735</latitude>
+		</info>
+		<info>
+			<name>文殊坊成都会馆</name>
+			<longitude>104.073825</longitude>
+			<latitude>30.67414722</latitude>
+		</info>
+		<info>
+			<name>武侯祠锦里</name>
+			<longitude>104.0494917</longitude>
+			<latitude>30.64430556</latitude>
+		</info>
+		<info>
+			<name>金沙遗址</name>
+			<longitude>104.011675</longitude>
+			<latitude>30.67966944</latitude>
+		</info>
+	</placeInfo>
+	<symbols>
+		<symbol keyvalue="3022">
+			<picturemarkersymbol url="assets/images/device/ydp-mb-n.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3021">
+			<picturemarkersymbol url="assets/images/device/ydb-30.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3031">
+			<picturemarkersymbol url="assets/images/device/zk-30.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3040">
+			<picturemarkersymbol url="assets/images/device/sxj_dm20_0.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3014">
+			<picturemarkersymbol url="assets/images/device/cctv_sanhuan30.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3050">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj30.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3060">
+			<picturemarkersymbol url="assets/images/dzjc30.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="3000">
+			<picturemarkersymbol url="assets/images/device/cctv30.png"
+				height="30" width="30" />
+		</symbol>
+		<symbol keyvalue="flag">
+			<picturemarkersymbol url="assets/images/i_flag.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<debug planid="24965">false</debug>
+</configuration>

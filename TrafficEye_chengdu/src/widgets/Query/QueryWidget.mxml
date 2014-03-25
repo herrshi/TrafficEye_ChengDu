@@ -1,0 +1,1342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2010 ESRI
+//
+// All rights reserved under the copyright laws of the United States.
+// You may freely redistribute and use this software, with or
+// without modification, provided you include the original copyright
+// and use restrictions.  See use restrictions in the file:
+// <install location>/License.txt
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:Query="widgets.Query.*"
+				   xmlns:viewer="com.esri.viewer.*"
+				   widgetConfigLoaded="configLoad()"
+				   >
+	
+	<viewer:states>
+		<s:State name="resultsList"/>
+		<s:State name="filterInput"/>
+	</viewer:states>
+	
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade targets="{[resultsList, filterInput]}"/>
+		</s:Transition>
+	</viewer:transitions>
+	
+	
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.ZoomEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.supportClasses.Field;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.IInfowindowTemplate;
+			import com.esri.viewer.utils.Hashtable;
+			
+			import flash.utils.clearTimeout;
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.ModuleEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.AsyncResponder;
+			
+			import spark.components.TileGroup;
+			import spark.components.supportClasses.ItemRenderer;
+			
+			
+			private const ICON_URL:String = "assets/images/";
+			
+			[Bindable]
+			private var filterFieldAlias:String;
+			[Bindable]
+			private var msgVisible:Boolean = false;
+			[Bindable]
+			private var queryResultAC:ArrayCollection;
+			
+			private var allFields:Boolean;
+			private var fields:XMLList;
+			private var filterField:String;
+			private var graphicsLayer:GraphicsLayer;
+			private var infowidgetReady:Boolean = false;
+			private var infoUrl:String;
+			private var queryExpr:String;
+			private var queryLayer:String;
+			private var queryLinkField:String;
+			private var queryRefreshRate:Number;
+			private var queryTitleField:String;
+			private var queryIdField:String;
+			private var queryTypeField:String;
+			private var refreshratetype:String;
+			private var type:String;
+			private var keyField:String;
+			private var hidekeyvalue:String;
+			private var hidekeyvalueAarray:Array;
+			private var timer:Timer;
+			private var useProxy:Boolean;
+			private var zoomScale:Number;
+			private var buttonArray:Array = new Array();
+			private var dateFormatter:DateFormatter = new DateFormatter();
+			private var hinttimeout:int;
+			
+			private var centerPoint:MapPoint;
+			
+			//labels
+			private var loadingLabel:String;
+			private var textFilterClear:String;
+			private var textFilterLabel:String;
+			[Bindable]
+			private var filterButtonLabel:String;
+			[Bindable]
+			private var clearButtonLabel:String;
+			[Bindable]
+			private var noResultLabel:String;
+			private var eventTypeFlag:String;
+			//远程对象的类型
+			private var remoteData:String;
+			
+			[Bindable]
+			private var isShowCheckWid:Boolean;
+			
+			private var CheckWindow:XMLList;
+			
+			[Bindable]
+			private var countnum:Number;
+			
+			
+			private var checkBoxArray:Array;
+			
+			
+			[Bindable]
+			private var checkValue:Hashtable = new Hashtable();
+			// symbols
+			//不同比例尺下的图标
+			private var _scaleSymbols:Vector.<Object> = new Vector.<Object>();
+			private var _rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+			//默认的symbol为不可见的点、线、面
+			private var _defaultMarkSymbol:SimpleMarkerSymbol = new SimpleMarkerSymbol( "circle", 15, 0, 0 );
+			private var _defaultLineSymbol:SimpleLineSymbol = new SimpleLineSymbol( "solid", 0, 0, 5 );
+			private var _defaultFillSymbol:SimpleFillSymbol = new SimpleFillSymbol( "solid", 0, 0 );
+			
+			private var _relateWidgetTitleList:Array = [];
+			private var _relateWidgetIdList:Array = [];
+			
+			private var arrayCollection:ArrayCollection;
+			/**
+			 * 保存width height
+			 **/
+			private var _height:int = 0;
+			private var _width:int = 0;
+			private function configLoad():void {
+				
+				AppEvent.addListener( AppEvent.FIND_DEVICE, findDevice );
+				//				map.addEventListener(ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
+				checkBoxArray = new Array();
+				var allobj:Object ={
+					keyValue:"all",
+					keyValueAlias:"全部"
+				}
+				checkBoxArray.push( allobj );
+				if (configXML) {	
+					//labels
+					countnum=0;
+					if (configXML.CheckWindow[0]) 
+					{
+						isShowCheckWid = configXML.CheckWindow[0].@show[0];
+						CheckWindow = configXML.CheckWindow..showField; 
+						
+					}
+					
+					
+					loadingLabel = configXML.labels.loading || "Loading...";
+					textFilterLabel = configXML.labels.filterresults || "Filter results";
+					textFilterClear = configXML.labels.filterclear || "Show all";
+					filterButtonLabel = configXML.labels.filterbuttonlabel || "Filter";
+					clearButtonLabel = configXML.labels.clearbuttonlabel || "Clear";
+					noResultLabel = configXML.label.noresultlabel || "No result found.";
+					filterField = configXML.filterfield.name;
+					filterFieldAlias = configXML.filterfield.alias || configXML.filterfield.name;
+					queryLayer = configXML.layer;
+					queryLayer = queryLayer.replace( "[serverip]", configData.serverIp );
+					infoUrl = configXML.info;
+					refreshratetype = configXML.refreshratetype ||"";
+					hinttimeout = configXML.hinttimeout;
+					eventTypeFlag = configXML.eventType.@flag;
+					
+					var buttonList:XMLList = configXML..button;
+					for ( var i:uint = 0; i < buttonList.length(); i++ ) {
+						
+						var buttonLabel:String = buttonList[i];
+						var button:Object = {
+							label:buttonLabel
+						}
+						buttonArray.push( button );
+					}
+					
+					queryExpr = configXML.query;
+					// server requires query to have at least one of 'geometry', 'text', or 'where' properties set
+					if (!queryExpr) { 
+						queryExpr = "1=1"; // ... is always true
+					}
+					
+					if (configXML.fields[0]) {
+						allFields = configXML.fields[0].@all[0] == "true";
+						fields = configXML.fields[0].field;
+					}
+					queryTitleField = configXML.titlefield;
+					queryIdField = configXML.idfield;
+					queryLinkField = configXML.linkfield;
+					queryRefreshRate = configXML.refreshrate;
+					queryTypeField = configXML.typefield;
+					type = configXML.type;
+					
+					//useproxy
+					if (configXML.useproxy.length() > 0) {
+						useProxy = configXML.useproxy == "true";
+					}
+					
+					if (Number(configXML.zoomscale) > 0) {
+						zoomScale = Number(configXML.zoomscale);
+						
+						if (map.scale > zoomScale) {
+							map.scale = zoomScale;
+						}
+					}
+					
+					var point:String = configXML.centerpoint;
+					if ( point ) {
+						var ptArr:Array = point.split( "," );
+						if ( !isNaN( ptArr[0] ) && !isNaN( ptArr[1] ) ) {
+							centerPoint = new MapPoint( ptArr[0], ptArr[1] );
+							map.centerAt( centerPoint );
+						}
+					}
+					
+					//rank symbol
+					var scaleSymbolList:XMLList = configXML..symbols;
+					keyField = configXML.keyfield;
+					hidekeyvalue = configXML.hidekeyvalue || "nodata";
+					hidekeyvalueAarray = hidekeyvalue.split(",");
+					for (  i = 0; i < scaleSymbolList.length(); i++ ) {
+						var maxScale:Number = scaleSymbolList[i].@maxscale || 3072000;
+						var minScale:Number = scaleSymbolList[i].@minscale || 6000;
+						var useInRankSymbolWidget:Boolean = scaleSymbolList[i].@useinranksymbolwidget == "true" ? true : false;
+						var rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
+						var symbolList:XMLList = scaleSymbolList[i].symbol;
+						for ( var j:uint = 0; j < symbolList.length(); j++ ) {
+							var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
+							var keyValue:String = symbolList[j].@keyvalue;
+							var keyValueAlias:String = symbolList[j].@alias;
+							rankSymbol.keyValue = keyValue;
+							var obj:Object = {
+								keyValue:keyValue,
+								keyValueAlias:keyValueAlias
+							};
+							checkBoxArray.push( obj );
+							
+							rankSymbol.keyValueAlias = keyValueAlias;
+							
+							var resultMarkerSymbolURL:String = symbolList[j].picturemarkersymbol.@url || widgetIcon;
+							var resultMarkerSymbolHeight:Number = symbolList[j].picturemarkersymbol.@height || 30;
+							var resultMarkerSymbolWidth:Number = symbolList[j].picturemarkersymbol.@width || 30;
+							var resultMarkerSymbolXOffset:Number = symbolList[j].picturemarkersymbol.@xoffset || 0;
+							var resultMarkerSymbolYOffset:Number = symbolList[j].picturemarkersymbol.@yoffset || 0;
+							rankSymbol.resultMarkerSymbol = new PictureMarkerSymbol( resultMarkerSymbolURL, 
+								resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset );
+							
+							rankSymbols.push( rankSymbol );
+							if ( useInRankSymbolWidget )
+								_rankSymbols.push( rankSymbol );
+						}
+						var scaleSymbol:Object = {
+							maxScale: maxScale,
+							minScale: minScale,
+							rankSymbols: rankSymbols
+						}
+						_scaleSymbols.push( scaleSymbol );
+					}
+					
+					
+					
+					graphicsLayer = new GraphicsLayer();
+					graphicsLayer.name = "QueryWidget Results";
+					map.addLayer(graphicsLayer);
+					
+					var data:Object = {
+						id: String(this.widgetId),
+						url: infoUrl,
+						config: null
+					};
+					AppEvent.dispatch( AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady );
+					var relateWidgetTitles:String = configXML.relatewidgets;
+					_relateWidgetTitleList = relateWidgetTitles.split( "," );
+					
+					
+					if (isShowCheckWid) 
+					{
+						getcheckContainer();
+					}
+					//若没有关联的widget则立即请求数据，若有关联widget则等关联widget创建完成后再请求数据
+					if ( relateWidgetTitles && relateWidgetTitles != "" ) {
+						AppEvent.addListener( AppEvent.LEGEND_CHECKBOX_CLICKED, legendItemVisibleChanged );
+						AppEvent.addListener( AppEvent.WIDGET_CREATED, widgetCreated );
+					}
+					else {
+						remoteData = configXML.remotedata;
+						if ( remoteData && remoteData != "" ) {
+							if ( remoteData == "GetIssuesectsByUserInfo" )
+								AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED , getIssuesects );
+							AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: remoteData } );
+						}
+						else {
+							queryFeatures();
+						}
+						
+					}
+					for each ( var title:String in _relateWidgetTitleList ) {
+						var id:Number = getWidgetId( title );
+						if ( id > -1 ) {
+							_relateWidgetIdList.push( id );
+							openWidget( title );
+						}
+					} 
+				}
+				if (filterField) {
+					wTemplate.addTitlebarButton(ICON_URL + "i_searchtext.png", textFilterLabel, toggleFilterPanel);
+					wTemplate.addTitlebarButton(ICON_URL + "i_clear.png", textFilterClear, doClear, false); // not selectable
+					wTemplate.selectedTitlebarButtonIndex = -1;
+					this.currentState = "resultsList";
+				}
+			}
+			
+			
+			private function getIssuesects(e:AppEvent):void{
+				if((e.data.key != "GetIssuesectsByUserInfo")||(e.data.data == null)){
+					arrayCollection = null;
+					return;
+				}
+				
+				arrayCollection = e.data.data as ArrayCollection;
+				queryFeatures();
+			}
+			
+			private function zoomEndHandler( event:ZoomEvent ):void {
+				if ( _scaleSymbols.length == 0 )
+					return;
+				
+				if ( mapScaleValid( map.scale ) ) {
+					for each ( var gra:Graphic in graphicsLayer.graphicProvider ) {
+						var keyValue:String = gra.attributes.status;
+						gra.symbol = getSymbol( map.scale, keyValue ).resultMarkerSymbol;
+					}
+					graphicsLayer.refresh();
+					graphicsLayer.visible = true;
+				}
+				else {
+					if ( graphicsLayer )
+						graphicsLayer.visible = false;
+				}
+				
+				function mapScaleValid( scale:Number ):Boolean {
+					for each ( var scaleSymbol:Object in _scaleSymbols ) {
+						var maxScale:Number = scaleSymbol.maxScale;
+						var minScale:Number = scaleSymbol.minScale;
+						if ( minScale <= scale && scale <= maxScale ) {
+							return true;
+						}
+					}
+					return false;
+				}
+			}
+			
+			private function widgetCreated( event:AppEvent ):void {
+				var id:Number = event.data as Number;
+				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
+					//最小化图例widget
+					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+					//请求数据
+					if ( remoteData && remoteData != "" ) {
+						if ( remoteData == "GetIssuesectsByUserInfo" )
+							AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED , getIssuesects );
+						AppEvent.dispatch( AppEvent.REFRESH_REMOTE_DATA, { type: remoteData } );
+					}
+					else {
+						queryFeatures();
+					}
+				}
+			}
+			
+			private function getSymbol( scale:Number, keyValue:String ):QueryResultSymbol {
+				for each ( var scaleSymbol:Object in _scaleSymbols ) {
+					var maxScale:Number = scaleSymbol.maxScale;
+					var minScale:Number = scaleSymbol.minScale;
+					if ( minScale <= scale && scale <= maxScale ) {
+						for each ( var symbol:QueryResultSymbol in scaleSymbol.rankSymbols ) {
+							if ( symbol.keyValue == keyValue ) {
+								return symbol;
+							}
+						}
+					}
+				}
+				return null;
+			}
+			
+			private function getRankSymbol( keyValue:String ):QueryResultSymbol {
+				for each ( var symbol:QueryResultSymbol in _rankSymbols ) {
+					if ( symbol.keyValue == keyValue )
+						return symbol;
+				}
+				return null;
+			}
+			
+			private var infoTemplate:IInfowindowTemplate;
+			
+			private function infoReady(event:AppEvent):void {
+				var id:Number = Number(event.data.id);
+				if (id == this.widgetId) {
+					infoTemplate = event.data.infoWidget;
+					
+					createAndStartWidgetTimer();
+				}
+			}
+			
+			private function infoError(event:ModuleEvent):void {
+				this.showMessage(event.errorText, true);
+			}
+			
+			//create and start widget timer
+			private function createAndStartWidgetTimer():void {
+				if ( queryRefreshRate && queryRefreshRate > 0 ) {
+					if (!timer) {
+						var seconds:Number = queryRefreshRate;
+						var rate:Number = seconds * 1000;
+						timer = new Timer(rate);
+						timer.addEventListener(TimerEvent.TIMER, timerTick);
+					}
+					timer.start();
+				}
+			}
+			
+			//stop widget timer
+			private function stopWidgetTimer():void {
+				if (timer && timer.running) {
+					timer.stop();
+				}
+			}
+			
+			//start widget timer
+			private function startWidgetTimer():void {
+				if (timer && !timer.running) {
+					timer.start();
+				}
+			}
+			
+			//timer tick
+			private function timerTick(event:TimerEvent):void {
+				queryFeatures();
+				if(refreshratetype!="" && refreshratetype != null){
+					var layerarray:Array = map.layerIds ;
+					var layer:ArrayCollection = map.layers as ArrayCollection;
+					
+					
+					for (var i:int = 0; i < layerarray.length; i++) 
+					{
+						if(layerarray[i] == refreshratetype){
+							layer[i].refresh();
+							trace(layerarray[i]);
+						}
+						
+					}
+					
+					
+					
+					
+					//if(layer);				
+				}
+			}
+			
+			
+			
+			//query features
+			private function queryFeatures():void {
+				if (queryLayer) {
+					var queryTask:QueryTask = new QueryTask(queryLayer);
+					if (useProxy && configData.proxyUrl) {
+						queryTask.proxyURL = configData.proxyUrl;
+					}
+					queryTask.disableClientCaching = timer != null; // turn on only if using a refresh timer
+					
+					var query:Query = new Query();
+					if (allFields) {
+						query.outFields = [ "*" ];
+					}
+					else {
+						query.outFields = [];
+						for each (var fieldXML:XML in fields) {
+							if (fieldXML.@name[0]) {
+								query.outFields.push(fieldXML.@name[0]);
+							}
+						}
+					}
+					query.returnGeometry = true;
+					queryTask.useAMF = false; // TODO: remove when a better solution (for checking 9.3 vs 10 AGS) is ready
+					query.where = queryExpr;
+					//                    query.outSpatialReference = map.spatialReference;
+					
+					queryTask.execute(query, new AsyncResponder(onResult, onFault));
+					showMessage(loadingLabel, true);
+					
+					// on result
+					function onResult(featureSet:FeatureSet, token:Object = null):void {
+						try {
+							queryResultAC = createQueryResults(featureSet);
+							addSharedData(widgetTitle, queryResultAC);
+							
+							clearMessage();
+							if (queryResultAC.length < 1) {
+								showMessage(noResultLabel, false);
+							}
+						}
+						catch (error:Error) {
+							showError( error.message );
+						}
+						
+					}
+					
+					//on fault
+					function onFault(info:Object, token:Object = null):void {
+						Alert.show( info.toString());
+						showError( info.toString() );
+					}
+				}
+				/*if (isShowCheckWid&&checkTable.size>0) 
+				{
+				getcheckContainer(checkTable);
+				}*/
+			}
+			
+			//create queryrresults
+			private function createQueryResults(featureSet:FeatureSet):ArrayCollection {
+				graphicsLayer.clear();
+				countnum=0;
+				for each ( var sym:QueryResultSymbol in _rankSymbols ) {
+					sym.count = 0;
+				}
+				
+				var result:ArrayCollection = new ArrayCollection();
+				
+				if (!queryTitleField) {
+					queryTitleField = featureSet.displayFieldName;
+				}
+				
+				for each (var graphic:Graphic in featureSet.features) {
+					var value:String = "";
+					var title:String = "";
+					var id:String = "";
+					var content:String = "";
+					var link:String = "";
+					var keyValue:String = "";
+					var show:Boolean;
+					var keyTable:Hashtable = new Hashtable();
+					if (allFields) {
+						// requires ArcGIS Server 10.0+
+						if (featureSet.fields) { 
+							for each (var field:Field in featureSet.fields) {
+								if (field.name in graphic.attributes) {
+									displayFields(field.name, getFieldXML(field.name), field);
+								}
+							}
+						}
+						else {
+							for (var fieldName:String in graphic.attributes) {
+								displayFields(fieldName, getFieldXML(fieldName), null);
+							}
+						}
+					}
+					else {
+						// display the fields in the same order as specified
+						for each (var fieldXML:XML in fields)  { 
+							if (fieldXML.@name[0] in graphic.attributes) {
+								displayFields(fieldXML.@name[0], fieldXML, getField(fieldXML.@name[0], featureSet));
+							}
+						}
+					}
+					
+					function displayFields(fieldName:String, fields:XML, field:Field):void {
+						
+						value = graphic.attributes[fieldName] ? String(graphic.attributes[fieldName]) : "";
+						/*if (isShowCheckWid) 
+						{
+						for each (var fieldXML:XML in CheckWindow) 
+						{
+						if (fieldXML.@name==fieldName) 
+						{
+						var key:String = fieldXML.@alias;
+						var hashtable:Hashtable = new Hashtable();
+						hashtable.add( value,value);
+						checkTable.add(key,hashtable);
+						}
+						}
+						}
+						*/
+						
+						for each (var type:String in checkValue.getKeySet()) 
+						{
+							if (fieldName==type) 
+							{
+								keyTable.add( type,value );
+							}
+						}
+						
+						if ( fieldName == "FSTR_CFMSTATE" ) {
+							switch ( value) {
+								case "free":
+									value = "畅通";
+									break;
+								case "crowd":
+									value = "缓慢";
+									break;
+								case "jam":
+									value = "拥堵";
+									break;
+								default:
+									value = "未知";
+							}
+						}
+						if ( fieldName == "FFLT_AVGSPEED" && value ) {
+							value += "km/h";
+						}
+						show = String( fieldXML.@show ) == "false" ? false : true;
+						
+						if (value) {
+							var isDateField:Boolean;
+							var dateFormat:String;
+							if (fieldXML) {
+								dateFormat = fieldXML.@dateformat[0];
+								if (dateFormat) {
+									isDateField = true;
+								}
+							}
+							if (!isDateField && field) {
+								isDateField = field.type == Field.TYPE_DATE;
+							}
+							if (isDateField) {
+								var dateMS:Number = Number(value);
+								if (!isNaN(dateMS)) {
+									value = msToDate(dateMS, dateFormat);
+								}
+							}
+						}
+						
+						if ( fieldName.toUpperCase() == queryIdField.toUpperCase() ) {
+							id = value;
+						}
+						
+						if ( fieldName.toUpperCase() == queryTypeField.toUpperCase() ) {
+							type = value;
+						}
+						
+						if ( fieldName.toUpperCase() == keyField.toUpperCase() )
+							keyValue = value;
+						
+						if (fieldName.toUpperCase() == queryTitleField.toUpperCase()) {
+							title = value;
+							if (!title) {
+								title = "";
+							}
+						}
+						else if (fieldName.toUpperCase() == queryLinkField.toUpperCase()) {
+							link = value;
+						}
+						else if ( show && fieldName.toUpperCase() != "SHAPE_LENGTH" && fieldName.toUpperCase() != "SHAPE_AREA") {
+							if (fieldXML && fieldXML.@alias[0]) {
+								content += "<b>" + fieldXML.@alias[0] + "</b>";
+							}
+							else {
+								content += "<b>" + featureSet.fieldAliases[fieldName] + "</b>";
+							}
+							content += ": " + value + "\n";
+						}
+					}
+					
+					
+					
+					
+					
+					graphic.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
+					graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
+					graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+					var queryResult:QueryResult = new QueryResult();
+					queryResult.title = title;
+					queryResult.id = id;
+					queryResult.type = type;
+					queryResult.content = content;
+					queryResult.point = getGeomCenter(graphic);
+					queryResult.link = link ? link : null;
+					queryResult.geometry = graphic.geometry;
+					queryResult.keyTable = keyTable;
+					if(arrayCollection != null)
+						if(isContainsId(arrayCollection,id))
+							queryResult.buttons = buttonArray;
+					queryResult.status = keyValue;
+					
+					//根据keyValue设置symbol
+					var symbol:QueryResultSymbol = getSymbol( map.scale, keyValue );
+					var rankSymbol:QueryResultSymbol = getRankSymbol( keyValue );
+					setGraphicSymbol( graphic, symbol );
+					if ( rankSymbol ) {
+						
+						graphic.visible = rankSymbol.visible;
+						rankSymbol.count++;
+					}
+					else {								
+						var defaultSymbol:QueryResultSymbol = getSymbol( map.scale, "default" );
+						var defaultRankSymbol:QueryResultSymbol = getRankSymbol( "default" );
+						setGraphicSymbol( graphic, defaultSymbol );
+						queryResult.status = "default";
+						if ( defaultRankSymbol ) {
+							graphic.visible = defaultRankSymbol.visible;
+							defaultRankSymbol.count++;
+						}
+					}
+					queryResult.symbol = graphic.symbol;
+					graphic.attributes = queryResult;
+					
+					// make sure it is a valid point
+					var hideflag:Boolean = true;				
+					for (var j:int = 0; j < hidekeyvalueAarray.length; j++) 
+					{
+						
+						if(keyValue==hidekeyvalueAarray[j]){
+							hideflag = false;
+							break;}
+					}
+					
+					if(hideflag)
+					{
+						if (queryResult.point && !isNaN(queryResult.point.x) && !isNaN(queryResult.point.y)) 
+						{
+							result.addItem(queryResult);
+							/* if ( graphic.geometry.type == Geometry.POLYLINE ) {
+							graphic.symbol = new SimpleLineSymbol( "solid", 0x277cd9, 0.3, 10 );
+							} */
+							addToGraphLayer(graphic);
+						}
+					}
+					
+				}
+				
+				for each ( var wTitle:String in _relateWidgetTitleList ) {
+					AppEvent.dispatch( AppEvent.DATA_PUBLISH, { key: wTitle, data: _rankSymbols } );
+				}
+				return result;
+			}
+			
+			private function isContainsId(ac:ArrayCollection,id:String):Boolean{
+				var result:Boolean = false;
+				for(var i:int = 0; i < ac.length; i++){
+					if(ac.getItemAt(i) as String == id)
+						result = true;
+				}
+				return result;
+			}
+			
+			private function setGraphicSymbol( graphic:Graphic, rankSymbol:QueryResultSymbol ):void {
+				switch (graphic.geometry.type) {
+					case Geometry.POLYLINE: {
+						if ( rankSymbol && rankSymbol.resultLineSymbol )
+							graphic.symbol = rankSymbol.resultLineSymbol;
+						else
+							graphic.symbol = _defaultLineSymbol;
+						break;
+					}
+					case Geometry.POLYGON: {
+						if ( rankSymbol && rankSymbol.resultFillSymbol )
+							graphic.symbol = rankSymbol.resultFillSymbol;
+						else
+							graphic.symbol = _defaultFillSymbol;
+						break;
+					}
+					case Geometry.MAPPOINT: {
+						if ( rankSymbol && rankSymbol.resultMarkerSymbol )
+							graphic.symbol = rankSymbol.resultMarkerSymbol;
+						else
+							graphic.symbol = _defaultMarkSymbol;
+						break;
+					}
+				}
+			}
+			
+			private function getFieldXML(fieldName:String):XML {
+				var result:XML;
+				
+				for each (var fieldXML:XML in fields) {
+					if (fieldName == fieldXML.@name[0]) {
+						result = fieldXML;
+						break;
+					}
+				}
+				
+				return result;
+			}
+			
+			private function getField(fieldName:String, featureSet:FeatureSet):Field {
+				var result:Field;
+				
+				for each (var field:Field in featureSet.fields) {
+					if (fieldName == field.name) {
+						result = field;
+						break;
+					}
+				}
+				
+				return result;
+			}
+			
+			private function msToDate(ms:Number, dateFormat:String):String {
+				var date:Date = new Date(ms);
+				// workaround for REST bug
+				if (date.milliseconds == 999) {
+					date.milliseconds++;
+				}
+				
+				if (dateFormat) {
+					dateFormatter.formatString = dateFormat;
+					var result:String = dateFormatter.format(date);
+					if (result) {
+						return result;
+					}
+					else {
+						return dateFormatter.error;
+					}
+				}
+				else {
+					return date.toLocaleString();
+				}
+			}
+			
+			//get geom center
+			private function getGeomCenter(gra:Graphic):MapPoint {
+				var pt:MapPoint;
+				switch (gra.geometry.type) {
+					case Geometry.MAPPOINT: {
+						pt = gra.geometry as MapPoint;
+						break;
+					}
+					case Geometry.MULTIPOINT: {
+						const multipoint:Multipoint = gra.geometry as Multipoint;
+						pt = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
+						break;
+					}
+					case Geometry.POLYLINE: {
+						const pl:Polyline = gra.geometry as Polyline;
+						const pathCount:Number = pl.paths.length;
+						const pathIndex:int = pathCount % 2 == 0 || pathCount == 1 ? pathCount / 2 : pathCount / 2 + 1;
+						const midPath:Array = pl.paths[pathIndex];
+						const ptCount:Number = midPath.length;
+						const ptIndex:int = ptCount % 2 == 0 || ptCount == 1 ? ptCount / 2 : ptCount / 2 + 1;
+						pt = pl.getPoint(pathIndex, ptIndex);
+						break;
+					}
+					case Geometry.POLYGON: {
+						const poly:Polygon = gra.geometry as Polygon;
+						pt = poly.extent.center;
+						break;
+					}
+				}
+				return pt;
+			}
+			
+			//mouse click graphic
+			private function mouseClickGraphic(event:MouseEvent):void {
+				
+				
+				var gra:Graphic = event.currentTarget as Graphic;
+				var result:QueryResult = gra.attributes as QueryResult;
+				if(eventTypeFlag == "openDevice"){
+					AppEvent.dispatch( AppEvent.OPEN_DEVICE, 
+						{ type: result.type, id: result.id, desc: result.title } );
+				}else if(eventTypeFlag == "reportDevice"){
+					AppEvent.dispatch( AppEvent.REPORT_DEVICE, result.id );
+				}else if(eventTypeFlag == "externalCall"){
+					var paramXMl:XMLList = configXML.eventType.params.param;
+					var functionName:String = paramXMl[0].attribute("value");
+					var tempArray:Array = new Array();
+					for(var i:int=1; i<paramXMl.length();i++){
+						tempArray.push(paramXMl[i].attribute("value"));
+					}
+					AppEvent.dispatch( AppEvent.EXTERNAL_CALL, { functionName: functionName, params:tempArray });
+				}
+			}
+			
+			private function mouseOverGraphic( event:MouseEvent ):void {
+				//Alert.show("mouseOverGraphic");
+				var gra:Graphic = event.currentTarget as Graphic;
+				if ( gra.geometry.type == Geometry.POLYGON || gra.geometry.type == Geometry.POLYLINE ) {
+					var localPt:Point = new Point( event.stageX, event.stageY );
+					var mapPt:MapPoint = map.toMap( localPt );
+					gra.attributes.point = mapPt;
+				}
+				
+				if ( hinttimeout > 0 )
+					hitimer = setTimeout( showInfoWindow, hinttimeout, gra.attributes );
+				else
+					showInfoWindow(gra.attributes);
+			}
+			
+			private function mouseOutGraphic( event:MouseEvent ):void {
+				//Alert.show("mouseOutGraphic");
+				if ( hitimer != 0 )
+					clearTimeout( hitimer );
+				//				showInfoWindow( null );
+			}
+			
+			override public function showInfoWindow(infoData:Object):void {
+				if (infoData) {
+					map.infoWindow.content = infoTemplate as UIComponent;
+					map.infoWindow.label = infoData.title || "";
+					infoTemplate.data = infoData;
+					map.infoWindow.show(infoData.point);
+				}
+				else {
+					map.infoWindow.hide();
+				}
+			}
+			
+			private var hitimer:uint;
+			
+			private function mouseOverQueryResult(event:Event):void {
+				clearTimeout(hitimer);
+				hitimer = setTimeout(showHighlight, 800, [ ItemRenderer(event.target).data as QueryResult ]);
+			}
+			
+			private function mouseOutQueryResult(event:Event):void {
+				clearTimeout(hitimer);
+			}
+			
+			private function clickQueryResult(event:Event):void {
+				var queryResult:QueryResult = ItemRenderer(event.target).data as QueryResult;
+				if (map.scale > zoomScale) {
+					map.scale = zoomScale;
+				}
+				map.centerAt(queryResult.point as MapPoint);
+			}
+			
+			
+			
+			private function showHighlight(params:Array):void {
+				var infoData:Object = params[0];
+				var pt:MapPoint = infoData.point;
+				showInfoWindow(params[0]);
+			}
+			
+			private function showMessage(msg:String, swfVisible:Boolean):void {
+				txtMessage.text = msg;
+				swfMessage.visible = swfVisible;
+				msgVisible = true;
+			}
+			
+			private function clearMessage():void {
+				msgVisible = false;
+			}
+			
+			
+			
+			private function toggleFilterPanel():void {
+				this.currentState = "filterInput";
+			}
+			
+			private function doFilter():void {
+				if (txtFilter.text) {
+					ArrayCollection(graphicsLayer.graphicProvider).filterFunction = filterGraphicLayer;
+					queryResultAC.filterFunction = filterDataList;
+				}
+				else {
+					ArrayCollection(graphicsLayer.graphicProvider).filterFunction = null;
+					queryResultAC.filterFunction = null;
+				}
+				ArrayCollection(graphicsLayer.graphicProvider).refresh();
+				queryResultAC.refresh();
+				
+				// change it back to show the results
+				wTemplate.selectedTitlebarButtonIndex = -1;
+				this.currentState = "resultsList";
+				if (queryResultAC.length < 1) {
+					showMessage(noResultLabel, false);
+				}
+				else {
+					clearMessage();
+				}
+			}
+			
+			private function doClear():void {
+				wTemplate.selectedTitlebarButtonIndex = -1;
+				txtFilter.text = '';
+				doFilter();
+			}
+			
+			private function filterGraphicLayer(item:Object):Boolean {
+				return Graphic(item).attributes["content"].match(new RegExp(txtFilter.text, 'gi'));
+			}
+			
+			private function filterDataList(item:Object):Boolean {
+				return item.content.match(new RegExp(txtFilter.text, 'i'));
+			}
+			
+			private function findDevice( event:AppEvent ):void {
+				var type:String = event.data.name;
+				var id:String = event.data.id;
+				if ( type != widgetTitle )
+					return;
+				
+				for each ( var gra:Graphic in graphicsLayer.graphicProvider ) {
+					var result:QueryResult = gra.attributes as QueryResult;
+					if ( id == result.id ) {
+						var pt:MapPoint = result.point;
+						map.centerAt( pt );
+						if ( map.scale > zoomScale )
+							map.scale =zoomScale;
+						showInfoWindow( result );
+					}
+				}
+			}
+			
+			private function legendItemVisibleChanged( event:AppEvent ):void {
+				var widgetTitle:String = event.data.widgetTitle;
+				if ( _relateWidgetTitleList.indexOf( widgetTitle ) == -1 )
+					return;
+				
+				var rankValue:String = event.data.rankValue;
+				var visible:Boolean = event.data.visible;
+				var symbol:QueryResultSymbol = getRankSymbol( rankValue );
+				symbol.visible = visible;
+				
+				for each ( var gra:Graphic in graphicsLayer.graphicProvider ) {
+					var attr:QueryResult = gra.attributes as QueryResult;
+					var status:String = attr.status;
+					if ( status == rankValue ) {
+						gra.visible = visible;
+					}
+				}
+			} 
+			
+			
+			
+			private function wTemplate_OpenedHandler(event:Event):void {
+				wTemplate.resizable = false;
+				if (_height!=0&&_width!=0) 
+				{
+					wTemplate.widgetHeight = _height;
+					wTemplate.widgetWidth = _width;
+				}
+				if (graphicsLayer) {
+					graphicsLayer.visible = true;
+				}
+				if ( zoomScale && map.scale > zoomScale ) {
+					map.scale = zoomScale;
+				}
+				if ( centerPoint ) {
+					map.centerAt( centerPoint );
+				}
+				
+				startWidgetTimer();
+				map.addEventListener( ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
+				for each ( var title:String in _relateWidgetTitleList ) {
+					openWidget( title );
+				} 
+			}
+			
+			
+			protected function wTemplate_closedHandler(event:Event):void {
+				if ( graphicsLayer )
+					graphicsLayer.visible = false;
+				for each ( var title:String in _relateWidgetTitleList ) {
+					closeWidget( title );
+				} 
+				map.removeEventListener( ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
+				stopWidgetTimer();
+				showInfoWindow(null);
+				
+			}
+			
+			
+			private function getcheckContainer():void
+			{
+				/*var keyArray:Array = checkTable.getKeySet();
+				for each (var key:String in keyArray) 
+				{
+				var keytable:Hashtable = checkTable.find(key);
+				var checkBoxArray:Array = keytable.getKeySet();
+				getCheckBox(key,checkBoxArray);
+				}*/
+				
+				for each (var FieldXml:XML in CheckWindow) 
+				{
+					//var name:String = FieldXml.@name;
+					var showXml:XMLList = FieldXml.children();
+					var key:String = FieldXml.@name;
+					var alias:String = FieldXml.@alias;
+					var fieldObj:Array = new Array();
+					fieldObj.push({ keyvalue:"all",	alias : "全部",type:key });
+					for each (var field:XML in showXml) 
+					{
+						var obj:Object = {
+							keyvalue:field.@keyvalue,
+								alias : field.@alias,
+								type : key
+						}
+						fieldObj.push( obj );
+						
+					}
+					
+					var queryTileGroup:QueryCheckGroup = new QueryCheckGroup();
+					queryTileGroup.id=key;
+					queryTileGroup.label.text = alias;
+					checkContainer.addElement( queryTileGroup );
+					getCheckBox( key,fieldObj );
+					
+				}
+			}
+			
+			private function getCheckBox(type:String,checkBoxArray:Array ):void
+			{
+				// TODO Auto Generated method stub
+				var queryTileGroup:QueryCheckGroup;
+				var tileGroup:TileGroup;
+				if (isShowCheckWid) 
+				{
+					for (var i:int = 0; i < checkContainer.numElements; i++) 
+					{
+						var obj1:Object = checkContainer.getElementAt( i );
+						if (obj1.id == type) 
+						{
+							queryTileGroup = obj1 as QueryCheckGroup;
+						}
+					}
+					
+					tileGroup = queryTileGroup.tileGroup;
+				}
+				if (checkBoxArray&&checkBoxArray.length>=0) 
+				{
+					for each (var obj:Object in checkBoxArray) 
+					{
+						var checkBox:QueryCheckBox;
+						checkBox = new QueryCheckBox();
+						checkBox.label = obj.alias;
+						checkBox.id = obj.keyvalue;
+						checkBox.type = obj.type;
+						if (obj.keyvalue=="all") 
+						{
+							checkBox.selected = true;
+							
+							checkValue.add(obj.type,obj.keyvalue);
+						}
+						checkBox.addEventListener(MouseEvent.CLICK, checkBox_clickFunction );
+						tileGroup.addElement( checkBox );
+						
+					}
+					
+				}
+				
+				
+			}
+			
+			protected function checkBox_clickFunction(event:MouseEvent):void
+			{
+				var type:String = event.target.type;
+				var id:String = event.target.id;
+				var select:Boolean = event.target.selected;
+				trace(type);
+				// TODO Auto-generated method stub
+				var queryTileGroup:QueryCheckGroup;
+				for (var i:int = 0; i < checkContainer.numElements; i++) 
+				{
+					var obj1:Object = checkContainer.getElementAt( i );
+					if (obj1.id == type) 
+					{
+						queryTileGroup = obj1 as QueryCheckGroup;
+					}
+				}
+				//var tileGroup:TileGroup = queryTileGroup.tileGroup;
+				if (select&&queryTileGroup!=null) 
+				{
+					
+					for (var j:int = 0; j < queryTileGroup.tileGroup.numElements; j++) 
+					{
+						var checkBox:QueryCheckBox = queryTileGroup.tileGroup.getElementAt( j ) as QueryCheckBox;
+						if (checkBox.id == id) 
+						{
+							checkValue.remove(type);
+							checkValue.add(type,id);
+							queryFeatures();
+							countnum=0;
+							
+						}else{
+							checkBox.selected =false;
+						}
+					}
+					
+				}else{
+					var checkBox1:QueryCheckBox = event.target as QueryCheckBox;
+					checkBox1.selected = true;
+					checkValue.add(type,id); ;
+				}
+				
+			}
+			
+			
+			private function addToGraphLayer(graphic:Graphic):void{
+				if (isShowCheckWid) 
+				{
+					if (checkValue.size>0) 
+					{
+						var typeFields:Array = checkValue.getKeySet();
+						var keytable:Hashtable = graphic.attributes.keyTable;
+						var flag:int = 0;
+						
+						for each (var type:String in typeFields) 
+						{
+							if (keytable.find(type)==checkValue.find(type)||checkValue.find(type)=="all") 
+							{
+								flag++;
+							}
+						}
+						if (flag==checkValue.size) 
+						{
+							graphicsLayer.add( graphic );
+							countnum++;
+						}
+					}
+					
+				}else{
+					graphicsLayer.add( graphic );
+				}
+			}
+			
+			protected function wTemplate_minimizedHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				_width = wTemplate.width;
+				_height = wTemplate.height;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<viewer:WidgetTemplate id="wTemplate" 
+						   visible="{isShowCheckWid}" 
+						   width="100%" height="100%" 
+						   closed="wTemplate_closedHandler(event)"
+						   open="wTemplate_OpenedHandler(event)"
+						   enableCloseButton="false"
+						   fontFamily="微软雅黑"
+						   minimized="wTemplate_minimizedHandler(event)"
+						   >
+		<s:BorderContainer id="checkContainer" name="选择框容器" width="100%" height="100%" backgroundAlpha="0">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="5" paddingRight="5"/>
+			</s:layout>
+			<s:HGroup paddingTop="5" paddingRight="5" horizontalAlign="left">
+				<s:Label id="countname"   text="数量：" />
+				<s:Label id="count"   text="{countnum}" />
+			</s:HGroup>
+		</s:BorderContainer>
+		
+		<!--<s:VGroup height="100%">
+		<s:Line width="100%">
+		<s:stroke>
+		<s:SolidColorStroke color="0"/>
+		</s:stroke>
+		</s:Line>
+		<s:Scroller id="scrlCheckGroup" width="160" height="80%"  
+		visible="false" includeInLayout="false">
+		<s:TileGroup id="tlCheckGroup" paddingLeft="5" paddingTop="5"  />
+		</s:Scroller>
+		<s:Line width="100%">
+		<s:stroke>
+		<s:SolidColorStroke color="0"/>
+		</s:stroke>
+		</s:Line>
+		<s:HGroup paddingLeft="5">
+		<s:Label id="countname"   text="数量："/>
+		<s:Label id="count"   text="{countnum}"/>
+		</s:HGroup>
+		</s:VGroup>
+		-->
+		<s:Group id="resultsList"
+				 width="1" height="1"
+				 visible="false"
+				 visible.resultsList="true">
+			<s:layout>
+				<s:VerticalLayout gap="1"/>
+			</s:layout>
+			<s:HGroup id="boxMessage"
+					  width="1"
+					  includeInLayout="{msgVisible}"
+					  visible="{msgVisible}">
+				<mx:Image id="swfMessage"
+						  source="assets/images/loader.swf"
+						  visible="false"/>
+				<s:Label id="txtMessage"
+						 width="90%"
+						 text=""/>
+			</s:HGroup>
+			<s:Scroller width="1" height="1">
+				<Query:QueryResultDataGroup id="queryResultDG"
+											queryResultClick="clickQueryResult(event)"
+											queryResultMouseOut="mouseOutQueryResult(event)"
+											queryResultMouseOver="mouseOverQueryResult(event)">
+					<Query:layout>
+						<s:VerticalLayout gap="2"
+										  horizontalAlign="justify"
+										  useVirtualLayout="true"/>
+					</Query:layout>
+				</Query:QueryResultDataGroup>
+			</s:Scroller>
+		</s:Group>
+		<s:Group id="filterInput"
+				 width="1" height="1"
+				 visible="false"
+				 visible.filterInput="true">
+			<s:layout>
+				<s:VerticalLayout gap="4" horizontalAlign="center"/>
+			</s:layout>
+			<s:Label text="{filterFieldAlias} : "/>
+			<s:TextInput id="txtFilter"
+						 width="1"
+						 enter="doFilter()"/>
+			<s:HGroup width="1" horizontalAlign="center">
+				<s:Button click="doFilter()" label="{filterButtonLabel}"/>
+				<s:Button click="doClear()" label="{clearButtonLabel}"/>
+			</s:HGroup>
+		</s:Group>
+	</viewer:WidgetTemplate>
+	
+</viewer:BaseWidget>

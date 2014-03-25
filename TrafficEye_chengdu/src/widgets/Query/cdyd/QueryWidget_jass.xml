@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/9</layer>
+	<titlefield>name</titlefield>
+	<idfield>ID</idfield>
+	<type>JASS</type>
+	<linkfield></linkfield>
+	<isShowCheckWid>true</isShowCheckWid>
+	<widIconUrl>assets/images/event/light_red.png</widIconUrl>
+	<fields all="false">
+		<field name="name" alias="设备位置" />
+		<field name="desc_" alias="设备描述" />
+		<field name="type" alias="设备类型" />
+		<field name="flag" show="false" />
+	</fields>
+	<eventType flag="openDevice" />
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>10</refreshrate>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>flag</keyfield>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="y" alias="信号机(圆)">
+			<picturemarkersymbol url="assets/images/device/xhj20_4.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="j" alias="信号机(箭头)">
+			<picturemarkersymbol url="assets/images/device/xhj20_0.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="bx" alias="标线">
+			<picturemarkersymbol url="assets/images/device/marking.gif"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="bz" alias="标志">
+			<picturemarkersymbol url="assets/images/device/shgzbp.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
+</configuration>
+
+ 
