@@ -1,0 +1,9 @@
+<configuration>
+	<find>
+		<url>http://20.0.56.14:8399/arcgis/rest/services/cd_search/MapServer</url>
+		<fields>name</fields>
+	</find>
+	<defaultsymbols>
+    	<picturemarkersymbol url="assets/flash/Red_glow.swf" height="30" width="30" />
+    </defaultsymbols>
+</configuration>

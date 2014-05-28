@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<configuration>
+	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>	
+	<hinttimeout>0</hinttimeout>
+	<layer enable="false">
+		<url>http://[serverip]/arcgis/rest/services/cd_device/MapServer/3</url>
+		<namefield>SentryName</namefield>
+		<idfield>SentryID</idfield>
+	</layer>
+	<symbols>
+		<picturemarkersymbol url="assets/images/i_police_16.png" height="16" width="16"/>
+	</symbols>
+</configuration>

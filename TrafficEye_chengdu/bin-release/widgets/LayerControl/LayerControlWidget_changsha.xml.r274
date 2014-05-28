@@ -1,0 +1,60 @@
+<configuration>
+	<colnum>2</colnum>
+	<groups>
+		<group title="设施设备">
+			<item id="摄像机" tooltip="摄像机" initstate="disable"
+				imageenable="assets/images/device/cctv30.png" imagedisable="assets/images/device/cctv30_b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="摄像机"/>
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+			<item id="电子警察" tooltip="电子警察" initstate="disable"
+				imageenable="assets/images/dzjc.png" imagedisable="assets/images/device/cctv_sanhuan30_b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="电子警察"/>
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+			
+			<item id="车检器" tooltip="车检器" initstate="disable"
+				imageenable="assets/images/icon-vd.png" imagedisable="assets/images/icon-vd-b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="车检器"/>
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+			
+			<item id="诱导板" tooltip="诱导板" initstate="disable"
+				imageenable="assets/images/icon-m.png" imagedisable="assets/images/icon-m-b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="诱导板"/>
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+			
+			<item id="scats" tooltip="scats" initstate="disable"
+				imageenable="assets/images/icon-t.png" imagedisable="assets/images/icon-t-b.png">
+				<clickfunctions>
+					<clickfunction name="openwidget">
+						<params>
+							<param name="widgetname" value="scats"/>
+						</params>
+					</clickfunction>
+				</clickfunctions>
+			</item>
+		</group>
+	</groups>
+</configuration>

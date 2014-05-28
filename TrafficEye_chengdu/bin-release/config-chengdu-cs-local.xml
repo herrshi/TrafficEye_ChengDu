@@ -1,0 +1,169 @@
+<?xml version="1.0" ?>
+<configuration>
+	<title>ArcGIS Viewer for Flex</title>
+	<subtitle>... using ArcGIS</subtitle>
+	<logo>assets/images/logo.png</logo>
+	<!--textColor,backgroundColor,rolloverColor,selectionColor,titleColor,applicationBackgroundColor -->
+	<stylecolors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444</stylecolors> <!-- Sky Blue -->
+	<stylealpha>0.8</stylealpha>
+
+	<!-- UI elements -->
+	<widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml"
+		url="widgets/Navigation/NavigationWidget.swf" />
+	<widget right="-2" bottom="-2"
+		config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<!--widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" 
+		url="widgets/MapSwitcher/MapSwitcherWidget.swf"/> <widget left="0" top="0" 
+		config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/ -->
+	<!--widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" 
+		url="widgets/Coordinate/CoordinateWidget.swf"/ -->
+
+	<!--gis服务器地址 -->
+	<map initialextent="103.962 30.5946 104.2024 30.7335" serverip="128.64.25.61:8399">
+		<basemaps>
+			<layer label="基础图层" type="tiled" visible="true"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_base_nolabel/MapServer" />
+		</basemaps>
+		<operationallayers>
+			<layer label="注记" type="dynamic" visible="true"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_anno/MapServer" />
+			<layer label="透明图层" type="dynamic" visible="true" alpha="0.5"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_transperant/MapServer" />
+			<layer label="发布段" type="dynamic" visible="true"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_fbd/MapServer" />
+			<layer label="设备图层" type="dynamic" visible="true"
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer" />
+		</operationallayers>
+	</map>
+
+	<!-- widgets organized into widget containers that manage close/open etc -->
+	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+
+	<widgetcontainer layout="float">
+		<widget label="preloadQueryWidget" preload="open"
+			url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="警情管理图层" icon="assets/images/event/case30.png"
+			url="widgets/EventManager/EventManagerLayerWidget.swf" config="widgets/EventManager/EventManagerWidget.xml" />
+
+		<widget label="警员管理图层" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget.xml" />
+
+		<widget label="协警管理图层" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget_assistant.xml" />
+
+		<widget label="领导管理图层" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget_leader.xml" />
+
+		<widget label="情报板" icon="assets/images/device/qbb30.png"
+			config="widgets/Query/chengdu/QueryWidget_qbb_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="摄像机" icon="assets/images/device/cctv30.png"
+			config="widgets/Query/chengdu/QueryWidget_sxj_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="信号机" icon="assets/images/device/xhj30.png"
+			config="widgets/Query/chengdu/QueryWidget_xhj_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="信号灯" config="widgets/Query/chengdu/QueryWidget_xhd_local.xml"
+			url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="提示牌" config="widgets/Query/chengdu/QueryWidget_tsp_local.xml"
+			url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="三环管制摄像机" config="widgets/Query/QueryWidget_sxj_shgz_local.xml"
+			url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="电子警察"
+			config="widgets/Query/chengdu/QueryWidget_dzjc_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="三环管制标牌"
+			config="widgets/Query/chengdu/QueryWidget_shgzbp_local.xml" url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="管制点" config="widgets/Query/chengdu/QueryWidget_gzd.xml"
+			url="widgets/Query/QueryWidget.swf" />
+	</widgetcontainer>
+
+	<widgetcontainer layout="horizontal">
+		<widget label="警情管理面板" icon="assets/images/event/case30.png"
+			url="widgets/EventManager/EventManagerPanelWidget.swf" />
+
+		<widget label="警员管理面板" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManagePanelWidget.swf" config="widgets/PoliceManageNew/PoliceManagePanelWidget.xml" />
+
+		<widget label="数量统计" icon="assets/images/statistics30.png"
+			url="widgets/Statistics/StatisticsWidget.swf" config="widgets/Statistics/StatisticsWidget.xml" />
+
+		<widget label="警力部署" icon="assets/images/i_police.png"
+			url="widgets/PoliceDeployment_CD/PoliceDeploymentWidget.swf" config="widgets/PoliceDeployment_CD/PoliceDeploymentWidget.xml" />
+
+		<widget label="警员数量" icon="assets/images/policeStatus/police30.png"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="协警数量" icon="assets/images/policeStatus/police30.png"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="领导数量" icon="assets/images/policeStatus/police30.png"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="摄像机数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="信号机数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="信号灯数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="情报板数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="警情数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="管制点数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+
+		<widget label="三环管制标牌数量"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+	</widgetcontainer>
+
+	<widgetcontainer layout="vertical">
+		<widget label="功能" preload="open"
+			url="widgets/LayerControl/LayerControlWidget.swf" config="widgets/LayerControl/LayerControlWidget_chengdu_cs.xml" />
+
+		<widget label="地图搜索" config="widgets/MapSearch/MapSearchWidget.xml"
+			url="widgets/MapSearch/MapSearchWidget.swf" />
+
+		<widget label="占道施工"
+			config="widgets/ConstructionPoint/ConstructionPointWidget.xml" 
+			url="widgets/ConstructionPoint/ConstructionPointWidget.swf" />
+			
+		<widget label="预案管理"
+			url="widgets/Plan/PlanWidget.swf" />
+	</widgetcontainer>
+
+	<widgetcontainer layout="fix">
+		<widget label="真实图交通状态图例" bottom="10" right="10"
+			url="widgets/StaticImage/StaticImageWidget.swf" 
+			config="widgets/StaticImage/StaticImageWidget_Legend_real.xml" />
+	</widgetcontainer>
+
+	<remoteobjects
+		endpoint="http://128.64.151.13:8081/chengdu-webapp/messagebroker/amf">
+		<remoteobject name="PoliceManager" enable="true"
+			destination="GPSInfoService" refreshrate="30" />
+		<remoteobject name="EventManager" enable="true"
+			destination="caseInfoService" refreshrate="30" />
+		<remoteobject name="PoliceDeployment" enable="true"
+			destination="layoutServiceImpl" />
+		<remoteobject name="ConstructionPoint" enable="true"
+			destination="constructionPointServiceImpl" />
+	</remoteobjects>
+
+	<webservices>
+		<webservice name="CaseService"
+			wsdl="http://128.64.151.12:10000/dispatch/services/CaseService?wsdl"
+			service="CaseServiceService" port="CaseService" />
+	</webservices>
+</configuration>
+
