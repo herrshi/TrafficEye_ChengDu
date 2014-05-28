@@ -50,6 +50,10 @@
 	<widgetcontainer layout="float">
 		<widget label="preloadQueryWidget" preload="open"
 			url="widgets/Query/QueryWidget.swf" />
+		
+		<widget label="警员Overlay" preload="open"
+			url="widgets/Overlay/PointOverlayWidget.swf" 
+			config="widgets/Overlay/ChengDu/PointOverlayWidget-police.xml"/>
 
 		<widget label="警情管理图层" icon="assets/images/event/case30.png"
 			url="widgets/EventManager/EventManagerLayerWidget.swf" config="widgets/EventManager/EventManagerWidget.xml" />

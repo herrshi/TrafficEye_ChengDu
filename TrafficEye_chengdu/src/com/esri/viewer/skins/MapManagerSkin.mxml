@@ -27,18 +27,19 @@
 			
 			
 			protected function btnTest1_clickHandler(event:MouseEvent):void {
-				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "新增安保方案", visible: true } );
+				AppEvent.dispatch( AppEvent.ADD_POINTS, '{"type":"police","points":[{"fields":{"duty":"民警","policeCode":"071333","policeGpsCode":"8008429","policeName":"阮闽","deptCode":"00","deptGpsCode":"00","deptName":"交通管理局","teamCode":"DPT00-02","teamGpsCode":"DPT00-02","teamName":"勤务处","status":"0"},"id":"071333","x":103.95958,"y":30.58108},{"fields":{"duty":"民警","policeCode":"004789","policeGpsCode":"8011139","policeName":"刘洪明","deptCode":"01","deptGpsCode":"01","deptName":"一分局","teamCode":"DPT01-01","teamGpsCode":"DPT01-01","teamName":"一大队","status":"0"},"id":"004789","x":104.03952,"y":30.59808}]}' );
+//				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "新增安保方案", visible: true } );
 				
 			}
 			
 			protected function btnTest2_clickHandler(event:MouseEvent):void {
-				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "显示安保方案", visible: true } );
+//				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "显示安保方案", visible: true } );
 				
 			}
 			
 			protected function btnTest3_clickHandler(event:MouseEvent):void {
-				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "新增安保方案", visible: false } );
-				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "显示安保方案", visible: false } );
+//				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "新增安保方案", visible: false } );
+//				AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: "显示安保方案", visible: false } );
 
 			}
 			
@@ -64,9 +65,11 @@
 		<esri:Map id="map" width="0" height="0" zoomSliderVisible="false"
 				  left.resized="{hostComponent.mapLeft}" right.resized="{hostComponent.mapRight}"
 				  top.resized="{hostComponent.mapTop}" bottom.resized="{hostComponent.mapBottom}"/>
-		    	<!--	<s:Button id="btnTest1" label="1" right="100" bottom="10" click="btnTest1_clickHandler(event)"/>	
-					<s:Button id="btnTest2" label="2" right="200" bottom="10" click="btnTest2_clickHandler(event)"/>
-					<s:Button id="btnTest3" label="3" right="10" bottom="10" click="btnTest3_clickHandler(event)"/>-->
 	</s:Group>
 	
+	<s:HGroup right="10" bottom="10" visible="true">
+		<s:Button id="btnTest1" label="test1" click="btnTest1_clickHandler(event)"/>
+		<s:Button id="btnTest2" label="test2" click="btnTest2_clickHandler(event)"/>
+		<s:Button id="btnTest3" label="test3" click="btnTest3_clickHandler(event)"/>
+	</s:HGroup>
 </s:Skin>

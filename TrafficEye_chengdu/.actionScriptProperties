@@ -68,6 +68,7 @@
     <module application="src/index.mxml" destPath="widgets/DrawBasic/DrawBasic.swf" optimize="true" sourcePath="src/widgets/DrawBasic/DrawBasic.mxml"/>
     <module application="src/index.mxml" destPath="widgets/InfoTemplates/GridInfoPopupWidget.swf" optimize="true" sourcePath="src/widgets/InfoTemplates/GridInfoPopupWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/MapSearch/MultiLayerSearchWidget.swf" optimize="true" sourcePath="src/widgets/MapSearch/MultiLayerSearchWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/PointOverlayWidget.swf" optimize="true" sourcePath="src/widgets/Overlay/PointOverlayWidget.mxml"/>
   </modules>
   <workers/>
   <buildCSSFiles/>

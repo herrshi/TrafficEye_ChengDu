@@ -16,8 +16,6 @@ import com.esri.viewer.managers.EventBus;
 
 import flash.events.Event;
 
-import widgets.Bookmark.Bookmark;
-
 /**
  * AppEvent is used within the application to send messages among components
  * through the EventBus. All event driven messaging in the Flex Viewer is
@@ -410,6 +408,92 @@ public class AppEvent extends Event
 	public static const ADDPOINTS:String = "addPoints";
 	public static const DELETEPOINTS:String = "deletePoints";
 	public static const DELETEALLPOINTS:String = "deleteAllPoints";
+	
+	/**
+	 * 提供在地图上增加图标的接口。显示样式由flash配置文件指定。
+	 * 参数: json字符串
+	 * */
+	public static const ADD_POINTS:String = "addPoints";
+	
+	/**
+	 * 提供在地图上删除全部图标的接口。
+	 * 参数: 无
+	 * */
+	public static const DELETE_ALL_POINTS:String = "deleteAllPoints";
+	
+	/**
+	 * 提供在地图上删除指定图标的接口。
+	 * 参数: json字符串
+	 * */
+	public static const DELETE_POINTS:String = "deletePoints";
+	
+	/**
+	 * 通知Overlay组件进入移动状态
+	 * <listing>
+	 * var data:Object = 
+	 *   {
+	 *     var type:String，组件的type。
+	 *     var ids:[]，要移动的grahpic的id数组。为空则所有graphic都可以移动
+	 *   }
+	 * </listing>
+	 * */
+	public static const START_MOVE_OVERLAY:String = "startEditOverlay";
+	
+	/**
+	 * 通知Overlay组件进入新增状态
+	 * <listing>
+	 * var type:String
+	 * </listing>
+	 * */
+	public static const START_ADD_OVERLAY:String = "startAddOverlay";
+	
+	/**
+	 * 通知Overlay组件结束编辑状态
+	 * <listing>
+	 * var type:String
+	 * </listing>
+	 * */
+	public static const STOP_EDIT_OVERLAY:String = "stopEditOverlay";
+	
+	/**
+	 * 通知Overlay组件结束新增状态
+	 * <listing>
+	 * var type:String
+	 * </listing>
+	 * */
+	public static const STOP_ADD_OVERLAY:String = "stopAddOverlay";
+	
+	/**
+	 * 通知页面删除点位
+	 * <listing>
+	 * var data:Object = 
+	 *   {
+	 *     var type:String，组件的type。
+	 *     var ids:[]，要删除的grahpic的id数组。
+	 *   }
+	 * </listing>
+	 * */
+	public static const DELETE_POINTS_BY_MAP:String = "deletePointsByMap";
+	
+	/**
+	 * 点击编辑工具栏的后退按钮触发的事件。移动Overlay时回到上一次的位置。
+	 * */
+	public static const EDITORTOOBAR_UNDO:String = "editorToolbarUnDo";
+	
+	/**
+	 * 点击编辑工具栏的重做按钮触发的事件。
+	 * */
+	public static const EDITORTOOBAR_REDO:String = "editorToolbarReDo";
+	
+	/**
+	 * 点击编辑工具栏的提交按钮触发的事件。向页面提交本次修改。
+	 * */
+	public static const EDITORTOOBAR_COMMIT:String = "editorToolbarCommit";
+	
+	/**
+	 * 点击编辑工具栏的取消按钮触发的事件。结束编辑状态，回到初始位置。
+	 * */
+	public static const EDITORTOOBAR_CANCEL:String = "editorToolbarCancel";
 
     //--------------------------------------------------------------------------
     //
