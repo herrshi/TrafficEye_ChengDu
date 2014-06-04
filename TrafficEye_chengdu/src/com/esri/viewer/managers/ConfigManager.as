@@ -994,7 +994,7 @@ public class ConfigManager extends EventDispatcher
             }
             configData.widgetContainers = configWContainers;
 			
-			var applicationBackgroundAlpha:String = configXML.applicationbackgroudalpha;
+			var applicationBackgroundAlpha:String = configXML.style.applicationbackgroudalpha;
 			if ( applicationBackgroundAlpha ) {
 				configData.applicationBackgroundAlpha = Number( applicationBackgroundAlpha );
 			}

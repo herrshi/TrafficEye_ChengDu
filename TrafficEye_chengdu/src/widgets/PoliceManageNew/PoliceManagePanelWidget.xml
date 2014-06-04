@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <configuration>
 	<geometryservice>http://[serverip]/arcgis/rest/services/Geometry/GeometryServer</geometryservice>
-	<bufferdistance>0.001</bufferdistance>
+	<bufferdistance>0.002</bufferdistance>
 	
 	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>
 	<!--数据类型，警员or协警 -->

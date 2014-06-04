@@ -11,9 +11,9 @@
 			<field keyvalue="三环" alias="三环" />
 			<field keyvalue="成温高架" alias="成温高架" />
 			<field keyvalue="成温路面" alias="成温地面" />
-			<field keyvalue="红星射线" alias="红星射线" />
 			<field keyvalue="二环路面" alias="二环地面" />
 			<field keyvalue="二环高架" alias="二环高架" />
+			<field keyvalue="红星射线" alias="红星射线" />
 			<field keyvalue="城区" alias="城区" />
 		</showField>
 		<showField name="FSTR_STATE" alias="设备状态">

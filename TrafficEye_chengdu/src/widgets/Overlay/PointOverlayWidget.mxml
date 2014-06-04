@@ -18,26 +18,36 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
 			import com.esri.ags.events.EditEvent;
 			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.portal.PopUpRenderer;
 			import com.esri.ags.renderers.IRenderer;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tools.DrawTool;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
 			import com.esri.viewer.utils.Hashtable;
 			import com.esri.viewer.utils.PopUpInfoParser;
 			import com.esri.viewer.utils.RendererParser;
+			import com.esri.viewer.utils.SymbolParser;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
+			import mx.utils.UIDUtil;
 			
 			
 			
 			private var _pointOverylayLayer:GraphicsLayer;
+			
+			/**
+			 * 是否使用WebMercatorMapPoint
+			 * */
+			private var _useWebMercator:Boolean;
 			
 			private var _pointType:String;
 			
@@ -60,10 +70,24 @@
 			private var _movedGeometryTable:Hashtable;
 			
 			/**
+			 * 新增点位时使用的symbol
+			 * */
+			private var _drawSymbol:Symbol;
+			
+			/**
 			 * 弹出窗样式。 
 			 * 编辑模式时禁用弹出窗，非编辑模式时启动弹出窗
 			 * */
 			private var _popUpRenderer:ClassFactory;
+			
+			/**
+			 * 当前模式
+			 * move/add
+			 * */
+			private var _currentMode:String;
+			private const MODE_MOVE:String = "move";
+			private const MODE_ADD:String = "add";
+			private const MODE_NORMAL:String = "normal";
 			
 			protected function creationCompleteHandler(event:FlexEvent):void
 			{
@@ -73,7 +97,7 @@
 				_pointOverylayLayer.name = widgetTitle;
 				map.addLayer( _pointOverylayLayer );
 				//移到最上层
-//				map.reorderLayer( _pointOverylayLayer.id, map.layerIds.length - 1 );
+				map.reorderLayer( _pointOverylayLayer.id, map.layerIds.length - 1 );
 				
 				AppEvent.addListener( AppEvent.WIDGET_RUN, appevent_WidgetRunHandler );
 				AppEvent.addListener( AppEvent.WIDGET_CLOSE, appevent_WidgetCloseHandler );
@@ -97,6 +121,8 @@
 			{
 				if ( configXML )
 				{
+					_useWebMercator = ( configXML.webmercator == "true" ? true : false );
+					
 					//type
 					_pointType = configXML.type;
 					
@@ -118,6 +144,21 @@
 					var rendererParser:RendererParser = new RendererParser;
 					var renderer:IRenderer = rendererParser.parseRenderer( configXML );
 					_pointOverylayLayer.renderer = renderer;
+					
+					//drawSymbol
+					if ( configXML.drawsymbol[0] )
+					{
+						var symbolParser:SymbolParser = new SymbolParser();
+						_drawSymbol = symbolParser.parseSymbol( configXML.drawsymbol[0] );
+					}
+					
+					//启动时的状态add/move/normal
+					var initMode:String = configXML.initmode;
+					if ( initMode == "add" )
+					{
+						_currentMode = MODE_ADD;
+						AppEvent.dispatch( AppEvent.START_ADD_OVERLAY, _pointType );
+					}
 					
 					_widgetRunNotifyFunctionName = configXML.widgetrunnotify;
 					_widgetCloseNotifyFunctionName = configXML.widgetclosenotify;
@@ -163,7 +204,6 @@
 						);
 					}
 				}
-				
 			}
 			
 			private function appevent_AddPointsHandler( event:AppEvent ):void
@@ -189,8 +229,7 @@
 					if ( isNaN( x ) || isNaN( y ) || !id || id == "" )
 						continue;
 					
-					var mapPoint:MapPoint = new MapPoint( x, y );
-					var graphic:Graphic = new Graphic( mapPoint );
+					var graphic:Graphic = new Graphic( new MapPoint( x, y ) );
 					graphic.id = id;
 					
 					//去掉id重复的点
@@ -274,6 +313,8 @@
 					return;
 				}
 				
+				_currentMode = MODE_MOVE;
+				
 				//编辑状态时不显示infoWindow
 				_pointOverylayLayer.infoWindowRenderer = null;
 				
@@ -314,6 +355,8 @@
 					return;
 				}
 				
+				_currentMode = "";
+				
 				editTool.deactivate();
 				_pointOverylayLayer.removeEventListener( MouseEvent.CLICK, pointOverlayLayer_ClickHandler );
 				_pointOverylayLayer.infoWindowRenderer = _popUpRenderer;
@@ -326,6 +369,26 @@
 				{
 					return;
 				}
+				
+				_currentMode = MODE_ADD;
+				
+				AppEvent.dispatch( AppEvent.WIDGET_RUN, "编辑工具栏" );
+				
+				setMapAction( DrawTool.MAPPOINT, null, _drawSymbol, map_drawEndHandler );
+			}
+			
+			private function map_drawEndHandler( event:DrawEvent ):void
+			{
+				//显示
+				var drawGraphic:Graphic = event.graphic;
+				drawGraphic.id = UIDUtil.createUID();
+				_movedGeometryTable.add( drawGraphic.id, [ drawGraphic.geometry ] );
+				_pointOverylayLayer.add( drawGraphic );
+				_selectedGraphic = drawGraphic;
+				
+				//设置移动
+				drawGraphic.filters = [ glowFilter ];
+				editTool.activate( EditTool.MOVE, [ drawGraphic ] );
 			}
 			
 			private function appevent_StopAddOverlayHandler( event:AppEvent ):void
@@ -335,6 +398,8 @@
 				{
 					return;
 				}
+				
+				_currentMode = "";
 			}
 			
 			private var _selectedGraphic:Graphic;
@@ -435,41 +500,81 @@
 			{
 				if ( event.detail == Alert.YES )
 				{
+					var dataObj:Object;
+					var dataString:String;
+					
 					//清除glow效果
 					_selectedGraphic.filters = [];
 					
-					var pointArray:Array = [];
-					for each ( var graphicId:String in _movedGeometryTable.getKeySet() )
+					switch( _currentMode )
 					{
-						var geometryArray:Array = _movedGeometryTable.find( graphicId );
-						//获取最新的geometry
-						var latestGeometry:Geometry = geometryArray[ geometryArray.length - 1 ];
-						var pointObj:Object = 
-							{ 
-								id: graphicId, 
-								geometry: latestGeometry 
-							};
-						pointArray.push( pointObj );
+						//当前处于移动状态
+						case MODE_MOVE:
+						{
+							var pointArray:Array = [];
+							for each ( var graphicId:String in _movedGeometryTable.getKeySet() )
+							{
+								var geometryArray:Array = _movedGeometryTable.find( graphicId );
+								//获取最新的geometry
+								var latestGeometry:Geometry = geometryArray[ geometryArray.length - 1 ];
+								var pointObj:Object = 
+									{ 
+										id: graphicId, 
+										geometry: latestGeometry 
+									};
+								pointArray.push( pointObj );
+							}
+							
+							dataObj = 
+								{ 
+									type: _pointType, 
+									geometries: pointArray 
+								};
+							dataString = JSON.stringify( dataObj );
+							AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+								{ 
+									functionName: "editPointGeometry", 
+									params: [ dataString ] 
+								} 
+							);
+							
+							//停止编辑
+							editTool.deactivate();
+							_pointOverylayLayer.infoWindowRenderer = _popUpRenderer;
+							//清除历史数据
+							_movedGeometryTable.clear();
+							break;
+						}
+							
+							//当前处于新增状态
+						case MODE_ADD:
+						{
+							if ( _selectedGraphic )
+							{
+								dataObj = 
+									{ 
+										type: _pointType, 
+										id: _selectedGraphic.id, 
+											geometry: _selectedGraphic.geometry 
+									};
+								dataString = JSON.stringify( dataObj );
+								AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+									{ 
+										functionName: "addPointGeometry", 
+										params: [ dataString ] 
+									} 
+								);
+								
+								//进入新增状态，新增下一个点
+								setMapAction( DrawTool.MAPPOINT, null, _drawSymbol, map_drawEndHandler );
+								//清除历史数据
+								_movedGeometryTable.clear();
+							}
+							
+							break;
+						}
+							
 					}
-					
-					var dataObj:Object = 
-						{ 
-							type: _pointType, 
-							geometries: pointArray 
-						};
-					var dataString:String = JSON.stringify( dataObj );
-					AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
-						{ 
-							functionName: "editPointGeometry", 
-							params: [ dataString ] 
-						} 
-					);
-					
-					//停止编辑
-					editTool.deactivate();
-					_pointOverylayLayer.infoWindowRenderer = _popUpRenderer;
-					//清除历史数据
-					_movedGeometryTable.clear();
 				}
 			}
 			
@@ -492,6 +597,15 @@
 					var geometryArray:Array = _movedGeometryTable.find( graphicId );
 					var graphic:Graphic = getGraphicById( graphicId );
 					graphic.geometry = geometryArray[ 0 ];
+					
+					//如果是新增模式，要把新增的点删掉
+					if ( _currentMode == MODE_ADD )
+					{
+						_pointOverylayLayer.remove( graphic );
+						//进入新增状态，新增下一个点
+						setMapAction( DrawTool.MAPPOINT, null, _drawSymbol, map_drawEndHandler );
+					}
+					
 				}
 				//清除历史数据
 				_movedGeometryTable.clear();

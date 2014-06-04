@@ -68,6 +68,7 @@
     <module application="src/index.mxml" destPath="widgets/Print/PrintWidget.swf" optimize="true" sourcePath="src/widgets/Print/PrintWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" optimize="true" sourcePath="src/widgets/PoliceManageNew/PoliceManageLayerWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/RVPUB/RvPub.swf" optimize="true" sourcePath="src/widgets/RVPUB/RvPub.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/EditorToolbar/EditorToolbarWidget.swf" optimize="true" sourcePath="src/widgets/EditorToolbar/EditorToolbarWidget.mxml"/>
   </modules>
   <workers/>
   <buildCSSFiles/>

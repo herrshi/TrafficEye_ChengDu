@@ -25,9 +25,9 @@
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 		<buttons>
-			<button label="呼叫" action="openDevice" type="sendMessage" idfield="policeId" />
-			<button label="短信" action="openDevice" type="callPda" idfield="pdaCode" />
-			<button label="刷新" action="openDevice" type="callInterphone" idfield="interphoneCode" />
+			<button label="呼叫" action="openDevice" type="callPerson" idfield="policeCode" />
+			<button label="短信" action="openDevice" type="sendMessage" idfield="policeCode" />
+			<button label="刷新" action="openDevice" type="RefreshPerson" idfield="policeCode" />
 		</buttons>
 	</popup>
 	<simplerenderer>

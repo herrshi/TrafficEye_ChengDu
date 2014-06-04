@@ -13,6 +13,7 @@
 		<![CDATA[
 			import com.esri.ags.Graphic;
 			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.FindEvent;
 			import com.esri.ags.events.IdentifyEvent;
 			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
@@ -26,6 +27,7 @@
 			import com.esri.ags.symbols.SimpleMarkerSymbol;
 			import com.esri.ags.symbols.Symbol;
 			import com.esri.ags.tasks.GeometryServiceSingleton;
+			import com.esri.ags.tasks.supportClasses.FindResult;
 			import com.esri.ags.tasks.supportClasses.IdentifyResult;
 			import com.esri.ags.tools.DrawTool;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
@@ -43,6 +45,8 @@
 			import mx.rpc.events.FaultEvent;
 			
 			import spark.components.Image;
+			
+			
 			
 			
 			
@@ -123,7 +127,37 @@
 							};
 						_popUpRendererTable.add( layerName, popUpRenderer );
 					}
+					
+					var showGraphicSearch:Boolean = configXML.showgraphicsearch == "false" ? false : true;
+					if ( showGraphicSearch )
+					{
+						wTemplate.addTitlebarButton( "assets/images/i_searchgraphical.png", 
+							"图形搜索", showStateGraphicalSearch );
+						showStateGraphicalSearch();
+						
+					}
+					
+					var showTextSearch:Boolean = configXML.showtextsearch == "false" ? false : true;
+					if ( showTextSearch )
+					{
+						wTemplate.addTitlebarButton( "assets/images/i_searchtext.png", 
+							"文字搜索", showStateTextSearch);
+						if ( !showGraphicSearch )
+						{
+							showStateTextSearch();
+						}
+					}
 				}
+			}
+			
+			private function showStateGraphicalSearch():void
+			{
+				this.currentState = "graphicalInput";
+			}
+			
+			private function showStateTextSearch():void
+			{
+				this.currentState = "textInput";
 			}
 			
 			private function activateDrawTool(event:MouseEvent):void
@@ -364,6 +398,62 @@
 				showError( strInfo );
 			}
 			
+			protected function txtKeyWord_keyDownHandler(event:KeyboardEvent):void
+			{
+				if ( event.keyCode == 13 )
+				{
+					btnFind.dispatchEvent( new MouseEvent( MouseEvent.CLICK ) );
+				}
+			}
+			
+			protected function btnFind_clickHandler(event:MouseEvent):void
+			{
+				_searchResultLayer.clear();
+				_treeDataSource.removeAll();
+				
+				var searchTextArray:Array = txtKeyWord.text.split( " " );
+				for each ( var searchText:String in searchTextArray )
+				{
+					findParam.searchText = searchText;
+					
+					CursorManager.setBusyCursor();
+					findTask.execute( findParam );
+				}
+				
+			}
+			
+			protected function findTask_executeCompleteHandler(event:FindEvent):void
+			{
+				CursorManager.removeBusyCursor();
+				
+				for each ( var findResult:FindResult in event.findResults )
+				{
+					var label:String = findResult.value;
+					var graphic:Graphic = findResult.feature;
+					var layerName:String = findResult.layerName;
+					
+					graphic.attributes.layerName = layerName;
+					
+					var layerNode:Object = getLayerNode( layerName );
+					var children:ArrayCollection = layerNode.children;
+					children.addItem( 
+						{ 
+							label:label, 
+							graphic:graphic, 
+							state: CheckTreeItemRenderer.STATE_CHECKED 
+						} 
+					);
+					
+					var popUpRenderer:ClassFactory = _popUpRendererTable.find( layerName );
+					if ( !popUpRenderer )
+					{
+						popUpRenderer = _popUpRendererTable.find( "default" );
+					}
+					graphic.infoWindowRenderer = popUpRenderer;
+					_searchResultLayer.add( graphic );
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -395,6 +485,17 @@
 								 layerIds="{_searchLayerIdArray}"
 								 width="{map.width}" height="{map.height}" 
 								 mapExtent="{map.extent}" spatialReference="{map.spatialReference}"/>
+		
+		<esri:FindTask id="findTask"
+					   url="{_searchUrl}"
+					   executeComplete="findTask_executeCompleteHandler(event)" 
+					   fault="faultEventHandler(event)"/>
+		
+		<esri:FindParameters id="findParam" 
+							 contains="true" 
+							 layerIds="{_searchLayerIdArray}" 
+							 searchFields="{_searchFieldArray}"
+							 returnGeometry="true"/>
 	</fx:Declarations>
 	
 		<fx:Style>
@@ -429,7 +530,7 @@
 		
 		<s:Group id="grpInput" width="100%">
 			<s:Group id="graphicInput" width="100%" height="80" 
-					 visible="true" visible.graphicalInput="true">
+					 visible="false" visible.graphicalInput="true">
 				<s:layout>
 					<s:VerticalLayout gap="0" 
 									  paddingTop="5" paddingBottom="5" 
@@ -480,6 +581,24 @@
 					<s:RadioButton id="rdbtnBufferDistance1000" label="1000米"
 								   group="{rdgrpBufferDistance}" 
 								   value="1000"/>
+				</s:HGroup>
+			</s:Group>
+			
+			<s:Group id="textInput"
+					 width="100%" height="50"
+					 visible="false"
+					 visible.textInput="true">
+				<s:layout>
+					<s:VerticalLayout gap="2" paddingTop="10" paddingLeft="10" 
+									  paddingRight="10" paddingBottom="5"/>
+				</s:layout>
+				
+				<s:HGroup width="100%" height="30" verticalAlign="middle">
+					<s:Label text="关键字: "/>
+					<s:TextInput id="txtKeyWord" width="100%"
+								 keyDown="txtKeyWord_keyDownHandler(event)"/>
+					<s:Button id="btnFind" label="搜索" width="50"
+							  click="btnFind_clickHandler(event)"/>
 				</s:HGroup>
 			</s:Group>
 		</s:Group>

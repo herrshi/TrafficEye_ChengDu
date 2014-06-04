@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 	<colnum>2</colnum>
-	<isShow>true</isShow>
+	<isShow>false</isShow>
 	<groups>
 		<group title="专题">
 			<!-- <item id="警员管理图层" tooltip="显示警员位置" initstate="disable" -->

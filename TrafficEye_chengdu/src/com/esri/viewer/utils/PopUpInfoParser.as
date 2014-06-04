@@ -60,10 +60,10 @@ public final class PopUpInfoParser
             popUpInfo.showRelatedRecords = (popUpXML.showrelatedrecords == "true");
         }*/
 
-        /*if (popUpXML.showzoomtobutton[0])
+        if (popUpXML.showzoomtobutton[0])
         {
             popUpInfo.showZoomToButton = (popUpXML.showzoomtobutton == "true");
-        }*/
+        }
 		
 		if ( popUpXML.buttons[0] )
 		{

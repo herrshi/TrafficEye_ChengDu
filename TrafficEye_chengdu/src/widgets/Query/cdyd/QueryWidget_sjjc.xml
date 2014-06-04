@@ -11,6 +11,7 @@
 			<field keyvalue="城区隧道" alias="城区隧道" />
 			<field keyvalue="二环桥下" alias="二环地面" />
 			<field keyvalue="二环桥上" alias="二环高架" />
+			<field keyvalue="2.5环" alias="2.5环" />
 		</showField>
 		<showField name="STATE" alias="设备状态">
 			<field keyvalue="1" alias="设备正常" />

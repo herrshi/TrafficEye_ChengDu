@@ -1,0 +1,33 @@
+<configuration>
+	<showgraphicsearch>false</showgraphicsearch>
+	<showtextsearch>true</showtextsearch>
+	<sendresult>false</sendresult>
+	
+	<layerinfo>
+		<url>http://[serverip]/arcgis/rest/services/cd_search/MapServer</url>
+		<layerids>7,8</layerids>
+		<fields>Name</fields>
+
+		<uniquevaluerenderer field="layerName">
+			<picturemarkersymbol url="assets/images/i_pushpin_centered.png" />
+			
+			<uniquevalueinfo value="主要道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+			
+			<uniquevalueinfo value="次要道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+		</uniquevaluerenderer>
+
+		<popups>
+			<popup layername="default">
+				<title>{DES}</title>
+				<fields>
+					<field name="DES" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+		</popups>
+	</layerinfo>
+</configuration>

@@ -30,7 +30,7 @@
 			import com.esri.viewer.WidgetStates;
 			import com.esri.viewer.utils.Hashtable;
 			
-			import flash.utils.setTimeout;
+			import flash.utils.Timer;
 			
 			import mx.core.IVisualElement;
 			import mx.core.UIComponent;
@@ -444,7 +444,15 @@
 
             private function onRunWidget(event:AppEvent):void
             {
-                var id:Number = event.data as Number;
+				var id:Number;
+				if ( event.data is Number )
+					id = event.data as Number;
+				else if ( event.data is String )
+					id = getWidgetId( event.data as String );
+				
+				if ( isNaN(id) )
+					return;
+				
                 var idx:Object = configData.widgetIndex[id];
 
                 var wgtContainer:IWidgetContainer = configData.widgetContainers[idx.container].container.obj;
@@ -722,7 +730,11 @@
 
             private function widgetCloseHandler(event:AppEvent):void
             {
-                var widgetId:Number = event.data as Number;
+				var widgetId:Number;
+				if ( event.data is Number )
+					widgetId = event.data as Number;
+				else if ( event.data is String )
+					widgetId = getWidgetId( event.data as String );
 
                 var idx:Object = configData.widgetIndex[widgetId];
 

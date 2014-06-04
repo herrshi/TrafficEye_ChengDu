@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:viewer="com.esri.viewer.*"  
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   layout="absolute" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.viewer.AppEvent;
+			
+			protected function btnUndo_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EDITORTOOBAR_UNDO );
+			}
+			
+			protected function btnRedo_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EDITORTOOBAR_REDO );
+			}
+			
+			protected function btnCommit_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EDITORTOOBAR_COMMIT );
+			}
+			
+			protected function btnCancel_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EDITORTOOBAR_CANCEL );
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:HGroup horizontalAlign="left" verticalAlign="middle">
+		<s:Button id="btnUndo" label="后退" 
+				  width="50" height="20"
+				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
+				  click="btnUndo_clickHandler(event)"/>
+		<s:Button id="btnRedo" label="重做" 
+				  width="50" height="20" 
+				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
+				  click="btnRedo_clickHandler(event)"/>
+		<s:Button id="btnCommit" label="提交" 
+				  width="50" height="20" 
+				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
+				  click="btnCommit_clickHandler(event)"/>
+		<s:Button id="btnCancel" label="放弃" 
+				  width="50" height="20" 
+				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
+				  click="btnCancel_clickHandler(event)"/>
+	</s:HGroup>
+</viewer:BaseWidget>
