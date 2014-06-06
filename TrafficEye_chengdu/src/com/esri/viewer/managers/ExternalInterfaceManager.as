@@ -59,6 +59,8 @@ package com.esri.viewer.managers
 			
 			ExternalInterface.addCallback( "openWidget", dispatchOpenWidgetEvent );
 			ExternalInterface.addCallback( "closeWidget", dispatchCloseWidgetEvent );
+			
+			ExternalInterface.addCallback( "setSearchText", dispatchSetSearchTextEvent );
 
 			AppEvent.addListener( AppEvent.OPEN_DEVICE, openDevice );
 			AppEvent.addListener( AppEvent.REPORT_DEVICE, reportDevice );
@@ -67,6 +69,11 @@ package com.esri.viewer.managers
 			AppEvent.addListener( AppEvent.PLAN_DATA_READY, dataReady );
 			AppEvent.addListener( AppEvent.GET_PLAN_ID, getPlanId );
 			AppEvent.addListener( AppEvent.SEND_RESERVEPLAN_DATA_NEW, sendPlanInfo);
+		}
+		
+		private function dispatchSetSearchTextEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.SET_SEARCH_TEXT, param );
 		}
 		
 		private function dispatchOpenWidgetEvent( param:String ):void

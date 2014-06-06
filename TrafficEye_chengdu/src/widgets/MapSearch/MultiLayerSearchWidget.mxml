@@ -80,6 +80,8 @@
 			
 			protected function this_creationCompleteHandler(event:FlexEvent):void
 			{
+				AppEvent.addListener( AppEvent.SET_SEARCH_TEXT, appevent_setSearchTextHandler );
+				
 				_popUpRendererTable = new Hashtable();
 				_treeDataSource = new ArrayCollection();
 				_searchOverlayerInfoArray = new Array();
@@ -164,7 +166,6 @@
 						wTemplate.addTitlebarButton( "assets/images/i_searchgraphical.png", 
 							"图形搜索", showStateGraphicalSearch );
 						showStateGraphicalSearch();
-						
 					}
 					
 					var showTextSearch:Boolean = configXML.showtextsearch == "false" ? false : true;
@@ -188,6 +189,12 @@
 			private function showStateTextSearch():void
 			{
 				this.currentState = "textInput";
+			}
+			
+			private function appevent_setSearchTextHandler( event:AppEvent ):void
+			{
+				var searchText:String = event.data as String;
+				txtKeyWord.text = searchText;
 			}
 			
 			private function activateDrawTool(event:MouseEvent):void

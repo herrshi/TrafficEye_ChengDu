@@ -13,7 +13,7 @@
 	<geometryservice url="http://[serverip]/arcgis/rest/services/Geometry/GeometryServer" />
 	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="20.0.56.14:8399">
 		<basemaps>
-			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_base_nolabel/MapServer" />
+			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_base_0606/MapServer" />
 		</basemaps>
 		<operationallayers>
 			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />

@@ -57,48 +57,72 @@
 				<title>{name}</title>
 				<fields>
 					<field name="name" />
+					<field name="deviceid"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="YDB" idfield="deviceid"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="匝控">
 				<title>{desc_}</title>
 				<fields>
 					<field name="name" />
+					<field name="deviceid"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="zk" idfield="deviceid"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="电子警察">
 				<title>{name}</title>
 				<fields>
 					<field name="name" />
+					<field name="deviceid"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="DZJC" idfield="deviceid"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="事件检测">
 				<title>{name}</title>
 				<fields>
 					<field name="name" />
+					<field name="ip"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SJJC" idfield="ip"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="视频监控">
 				<title>{name}</title>
 				<fields>
 					<field name="name" />
+					<field name="channelid"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SPJK" idfield="channelid"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="视频采集">
 				<title>{name}</title>
 				<fields>
 					<field name="name" />
+					<field name="ip"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SPCJ" idfield="ip"/>
+				</buttons>
 			</popup>
 			
 			<popup layername="PoliceOverlay">

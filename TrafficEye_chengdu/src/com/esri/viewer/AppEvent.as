@@ -509,6 +509,12 @@ public class AppEvent extends Event
 	 * */
 	public static const EDITORTOOBAR_CANCEL:String = "editorToolbarCancel";
 	
+	/**
+	 * 设置MultiLayerSearch组件的查询条件
+	 * 新增警情等点位时页面可以输入地址
+	 * */
+	public static const SET_SEARCH_TEXT:String = "setSearchText";
+	
     //--------------------------------------------------------------------------
     //
     //  Constructor
