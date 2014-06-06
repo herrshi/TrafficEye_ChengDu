@@ -428,6 +428,20 @@ public class AppEvent extends Event
 	public static const DELETE_POINTS:String = "deletePoints";
 	
 	/**
+	 * 提供在地图上增加polyline的接口
+	 * */
+	public static const ADD_LINES:String = "addLines";
+	public static const DELETE_ALL_LINES:String = "deleteAllLines";
+	public static const DELETE_LINES:String = "deleteLines";
+	
+	/**
+	 * 提供在地图上增加缓冲区的接口
+	 * */
+	public static const ADD_BUFFERS:String = "addBuffers";
+	public static const DELETE_BUFFERS:String = "deleteBuffers";
+	public static const DELETE_ALL_BUFFERS:String = "deleteAllBuffers";
+	
+	/**
 	 * 通知Overlay组件进入移动状态
 	 * <listing>
 	 * var data:Object = 
@@ -494,7 +508,7 @@ public class AppEvent extends Event
 	 * 点击编辑工具栏的取消按钮触发的事件。结束编辑状态，回到初始位置。
 	 * */
 	public static const EDITORTOOBAR_CANCEL:String = "editorToolbarCancel";
-
+	
     //--------------------------------------------------------------------------
     //
     //  Constructor

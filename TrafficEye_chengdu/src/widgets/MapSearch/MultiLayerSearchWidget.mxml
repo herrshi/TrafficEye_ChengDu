@@ -30,6 +30,7 @@
 			import com.esri.ags.tasks.supportClasses.FindResult;
 			import com.esri.ags.tasks.supportClasses.IdentifyResult;
 			import com.esri.ags.tools.DrawTool;
+			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
 			import com.esri.viewer.components.checkTree.CheckTreeItemRenderer;
 			import com.esri.viewer.utils.Hashtable;
@@ -46,18 +47,6 @@
 			
 			import spark.components.Image;
 			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
 			private var _selectedDrawingIcon:Image;
 			
 			[Bindable] 
@@ -72,23 +61,41 @@
 			private var _drawLayer:GraphicsLayer;
 			private var _searchResultLayer:GraphicsLayer;
 			
+			private var _pointSymbol:SimpleMarkerSymbol;
+			private var _polylineSymbol:SimpleLineSymbol;
+			private var _polygonSymbol:SimpleFillSymbol;
+			
 			private var _popUpRendererTable:Hashtable;
 			
+			/**
+			 * 搜索结果
+			 * */
 			[Bindable]
-			private var _treeDataSource:ArrayCollection = new ArrayCollection();
+			private var _treeDataSource:ArrayCollection;
+			
+			/**
+			 * Overlay相关配置
+			 * */
+			private var _searchOverlayerInfoArray:Array;
 			
 			protected function this_creationCompleteHandler(event:FlexEvent):void
 			{
 				_popUpRendererTable = new Hashtable();
+				_treeDataSource = new ArrayCollection();
+				_searchOverlayerInfoArray = new Array();
 				
-//				_selectionColor = getStyle( "selectionColor" );
-				_selectionColor = 0x3E6FBC;
+				_selectionColor = getStyle( "selectionColor" );
 				
 				_drawLayer = new GraphicsLayer();
 				map.addLayer( _drawLayer );
 				
 				_searchResultLayer = new GraphicsLayer();
 				map.addLayer( _searchResultLayer );
+				
+				_pointSymbol = new SimpleMarkerSymbol( SimpleMarkerSymbol.STYLE_CIRCLE, 10, _selectionColor );
+				_polylineSymbol = new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 );
+				_polygonSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, _selectionColor, 0.2, 
+					new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 ) );
 				
 				geometryService.url = GeometryServiceSingleton.instance.url;
 				geometryService.token = GeometryServiceSingleton.instance.token;
@@ -126,6 +133,29 @@
 								popUpInfo: popUpInfo
 							};
 						_popUpRendererTable.add( layerName, popUpRenderer );
+					}
+					
+					//overlay
+					if ( configXML.overlays[0] )
+					{
+						for each ( var overlayXML:XML in configXML.overlays[0].overlay )
+						{
+							var name:String = overlayXML.@name;
+							var label:String = overlayXML.@label;
+							var titleField:String = overlayXML.@titlefield;
+							var idField:String = overlayXML.@idfield;
+							var selected:Boolean = overlayXML.@defaultselected == "false" ? false : true;
+							
+							_searchOverlayerInfoArray.push( 
+								{ 
+									name: name,
+									label: label,
+									titleField: titleField,
+									idField: idField,
+									selected: selected
+								} 
+							);
+						}
 					}
 					
 					var showGraphicSearch:Boolean = configXML.showgraphicsearch == "false" ? false : true;
@@ -171,17 +201,16 @@
 				switch( drawName )
 				{
 					case DrawTool.MAPPOINT:
-						drawSymbol = new SimpleMarkerSymbol( SimpleMarkerSymbol.STYLE_CIRCLE, 10, _selectionColor );
+						drawSymbol = _pointSymbol;
 						break;
 						
 					case DrawTool.POLYLINE:
-						drawSymbol = new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 );
+						drawSymbol = _polylineSymbol;
 						break;
 					
 					case DrawTool.EXTENT:
 					case DrawTool.POLYGON:
-						drawSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, _selectionColor, 0.2, 
-							new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 ) );
+						drawSymbol = _polygonSymbol;
 						break;
 				}
 				setMapAction( drawName, "", drawSymbol, searchDrawEnd );
@@ -199,10 +228,19 @@
 				if ( distance == 0 )
 				{
 					executeIdentify( drawGraphic.geometry );
+					searchOverlay( drawGraphic.geometry );
 				}
 				else
 				{
 					bufferParam.geometries = [ drawGraphic.geometry ];
+					//10.0中没有测地线选项
+					//对点做buffer，单位是米，对线、面做buffer，单位是角度
+					//10.1中设置bufferParam.geodesic=true，单位不用转换
+					if ( drawGraphic.geometry.type != Geometry.MAPPOINT && 
+						drawGraphic.geometry.type != Geometry.MULTIPOINT )
+					{
+						distance = distance / 6378137.0 * 180.0 / Math.PI;
+					}
 					bufferParam.distances = [ distance ];
 //					geometryService.buffer( bufferParam );
 					geometryService.buffer( bufferParam, 
@@ -370,9 +408,10 @@
 				for ( var i:uint = 0; i < bufferResultArray.length; i++ )
 				{
 					var bufferPolygon:Polygon = bufferResultArray[i] as Polygon;
-					trace( bufferPolygon.extent.xmin, bufferPolygon.extent.xmax, bufferPolygon.extent.ymin, bufferPolygon.extent.ymax )
-					bufferPolygon.spatialReference = map.spatialReference;
-					_drawLayer.add( new Graphic( bufferPolygon ) );
+					var bufferGraphic:Graphic = new Graphic( bufferPolygon, _polygonSymbol );
+					_drawLayer.add( bufferGraphic );
+					executeIdentify( bufferGraphic.geometry );
+					searchOverlay( bufferGraphic.geometry );
 				}
 			}
 			
@@ -454,6 +493,100 @@
 				}
 			}
 			
+			protected function imageClear_clickHandler(event:MouseEvent):void
+			{
+				_drawLayer.clear();
+				_searchResultLayer.clear();
+				_treeDataSource.removeAll();
+			}
+			
+			private function searchOverlay( geom:Geometry ):void
+			{
+				//请求所有数据，筛选其中需要的Overlay数据
+				AppEvent.dispatch( AppEvent.DATA_FETCH_ALL, null, dataAllFetchedHandler );
+				
+				function dataAllFetchedHandler( dataTable:Hashtable ):void
+				{
+					var overlayGeometryArray:Array = [];
+					var overlayGraphicArray:Array = [];
+					
+					for each ( var overlayObj:Object in _searchOverlayerInfoArray )
+					{
+						var overlayName:String = overlayObj.name;
+						var graphicProvider:ArrayCollection = dataTable.find( overlayName ) as ArrayCollection;
+						if ( graphicProvider && graphicProvider.length > 0 )
+						{
+							for each ( var graphic:Graphic in graphicProvider )
+							{
+								graphic.geometry.spatialReference = map.spatialReference;
+								graphic.attributes.overlayName = overlayName;
+								graphic.attributes.overlayLabel = overlayObj.label;
+								graphic.attributes.titleField = overlayObj.titleField;
+								overlayGraphicArray.push( graphic );
+								overlayGeometryArray.push( graphic.geometry );
+							}
+						}
+					}
+					
+					if ( overlayGeometryArray.length > 0 )
+					{
+						relationParams.geometries1 = overlayGeometryArray;
+						relationParams.geometries2 = [geom];
+						geometryService.relation( 
+							relationParams, 
+							new AsyncResponder( geometryService_relationCompleteHandler, 
+								faultHandler, overlayGraphicArray ) 
+						);
+					}
+				}
+			}
+			
+			private function geometryService_relationCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var result:Array = item as Array;
+				var graphicArray:Array = token as Array;
+				
+				for each (var obj:Object in result)
+				{
+					var resultPoint:MapPoint = obj.geometry1 as MapPoint;
+					var overlayGraphic:Graphic = new Graphic( resultPoint );
+					
+					for each ( var graphic:Graphic in graphicArray )
+					{
+						var overlayPoint:MapPoint = graphic.geometry as MapPoint;
+						if ( resultPoint.x == overlayPoint.x && resultPoint.y == overlayPoint.y )
+						{
+							var overlayName:String = graphic.attributes.overlayName;
+							var overlayLabel:String = graphic.attributes.overlayLabel;
+							var titleField:String = graphic.attributes.titleField;
+							
+							overlayGraphic.attributes = graphic.attributes;
+							overlayGraphic.attributes.layerName = overlayName;
+							overlayGraphic.id = graphic.id;
+							
+							var layerNode:Object = getLayerNode( overlayLabel );
+							var children:ArrayCollection = layerNode.children;
+							children.addItem( 
+								{ 
+									label:graphic.attributes[titleField], 
+									graphic:overlayGraphic, 
+									state: CheckTreeItemRenderer.STATE_CHECKED 
+								} 
+							);
+							
+							var popUpRenderer:ClassFactory = _popUpRendererTable.find( overlayName );
+							if ( !popUpRenderer )
+							{
+								popUpRenderer = _popUpRendererTable.find( "default" );
+							}
+							overlayGraphic.infoWindowRenderer = popUpRenderer;
+							_searchResultLayer.add( overlayGraphic );
+							break;
+						}
+					} 
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -470,7 +603,6 @@
 		
 		<esri:BufferParameters id="bufferParam"
 							   unit="{GeometryService.UNIT_METER}" 
-							   geodesic="true"
 							   bufferSpatialReference="{map.spatialReference}"
 							   outSpatialReference="{map.spatialReference}"/>
 		
@@ -496,6 +628,9 @@
 							 layerIds="{_searchLayerIdArray}" 
 							 searchFields="{_searchFieldArray}"
 							 returnGeometry="true"/>
+		
+		<esri:RelationParameters id="relationParams" 
+								 spatialRelationship="{RelationParameters.SPATIAL_REL_WITHIN}"/>
 	</fx:Declarations>
 	
 		<fx:Style>
@@ -539,30 +674,36 @@
 				
 				<s:HGroup id="imageGroup" width="100%" height="50" gap="10" 
 						  horizontalAlign="center" verticalAlign="middle">
-					<s:Image name="{DrawTool.MAPPOINT}" 
+					<s:Image name="{DrawTool.MAPPOINT}" toolTip="点"
 							 source="assets/images/i_draw_point.png"
-							 useHandCursor="true"
+							 useHandCursor="true" buttonMode="true"
 							 rollOut="iconRollOutHandler(event)"
 							 rollOver="iconRollOverHandler(event)"
 							 click="activateDrawTool(event)"/>
-					<s:Image name="{DrawTool.POLYLINE}" 
+					<s:Image name="{DrawTool.POLYLINE}" toolTip="折线"
 							 source="assets/images/i_draw_line.png"
-							 useHandCursor="true"
+							 useHandCursor="true" buttonMode="true"
 							 rollOut="iconRollOutHandler(event)"
 							 rollOver="iconRollOverHandler(event)"
 							 click="activateDrawTool(event)"/>
-					<s:Image name="{DrawTool.EXTENT}" 
+					<s:Image name="{DrawTool.EXTENT}" toolTip="矩形"
 							 source="assets/images/i_draw_rect.png" 
-							 useHandCursor="true"
+							 useHandCursor="true" buttonMode="true"
 							 rollOut="iconRollOutHandler(event)"
 							 rollOver="iconRollOverHandler(event)"
 							 click="activateDrawTool(event)"/>
-					<s:Image name="{DrawTool.POLYGON}" 
+					<s:Image name="{DrawTool.POLYGON}" toolTip="多边形"
 							 source="assets/images/i_draw_poly.png" 
-							 useHandCursor="true"
+							 useHandCursor="true" buttonMode="true"
 							 rollOut="iconRollOutHandler(event)"
 							 rollOver="iconRollOverHandler(event)"
 							 click="activateDrawTool(event)"/>
+					<s:Image id="imgClear" toolTip="清除"
+							 source="assets/images/i_clear.png" 
+							 useHandCursor="true" buttonMode="true"
+							 rollOut="iconRollOutHandler(event)"
+							 rollOver="iconRollOverHandler(event)"
+							 click="imageClear_clickHandler(event)"/>
 				</s:HGroup>
 				
 				<s:HGroup width="100%" height="30" 

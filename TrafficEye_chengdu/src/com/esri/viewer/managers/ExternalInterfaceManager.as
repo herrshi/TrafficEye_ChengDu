@@ -12,8 +12,6 @@ package com.esri.viewer.managers
 	import flash.net.URLRequest;
 	import flash.net.navigateToURL;
 	
-	import mx.controls.Alert;
-	
 	
 	public class ExternalInterfaceManager extends EventDispatcher
 	{
@@ -44,6 +42,23 @@ package com.esri.viewer.managers
 			
 			ExternalInterface.addCallback("setPlanInfo",setPlanInfo);
 			
+			ExternalInterface.addCallback( "addPoints", dispatchAddPointsEvent );
+			ExternalInterface.addCallback( "deleteAllPoints", dispatchDeleteAllPointsEvent );
+			ExternalInterface.addCallback( "deletePoints", dispatchDeletePointsEvent );
+			
+			ExternalInterface.addCallback( "addLines", dispatchAddLinesEvent );
+			ExternalInterface.addCallback( "deleteAllLines", dispatchDeleteAllLinesEvent );
+			ExternalInterface.addCallback( "deleteLines", dispatchDeleteLines );
+			
+			ExternalInterface.addCallback( "addBuffers", dispatchAddBuffersEvent );
+			ExternalInterface.addCallback( "deleteBuffers", dispatchDeleteBuffersEvent );
+			ExternalInterface.addCallback( "deleteAllBuffers", dispatchDeleteAllBuffersEvent );
+			
+			ExternalInterface.addCallback( "startEditGeometry", dispatchStartEditEvent );
+			ExternalInterface.addCallback( "startAdd", dispatchStartAddEvent );
+			
+			ExternalInterface.addCallback( "openWidget", dispatchOpenWidgetEvent );
+			ExternalInterface.addCallback( "closeWidget", dispatchCloseWidgetEvent );
 
 			AppEvent.addListener( AppEvent.OPEN_DEVICE, openDevice );
 			AppEvent.addListener( AppEvent.REPORT_DEVICE, reportDevice );
@@ -52,6 +67,71 @@ package com.esri.viewer.managers
 			AppEvent.addListener( AppEvent.PLAN_DATA_READY, dataReady );
 			AppEvent.addListener( AppEvent.GET_PLAN_ID, getPlanId );
 			AppEvent.addListener( AppEvent.SEND_RESERVEPLAN_DATA_NEW, sendPlanInfo);
+		}
+		
+		private function dispatchOpenWidgetEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.WIDGET_RUN, param );
+		}
+		
+		private function dispatchCloseWidgetEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.WIDGET_CLOSE, param );
+		}
+		
+		private function dispatchAddBuffersEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.ADD_BUFFERS, param );
+		}
+		
+		private function dispatchDeleteBuffersEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_BUFFERS, param );
+		}
+		
+		private function dispatchDeleteAllBuffersEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_ALL_BUFFERS, param );
+		}
+		
+		private function dispatchStartAddEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.START_ADD_OVERLAY, param );
+		}
+		
+		private function dispatchStartEditEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.START_MOVE_OVERLAY, param );
+		}
+		
+		private function dispatchAddPointsEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.ADD_POINTS, param );
+		}
+		
+		private function dispatchDeleteAllPointsEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_ALL_POINTS, param );
+		}
+		
+		private function dispatchDeletePointsEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_POINTS, param );
+		}
+		
+		private function dispatchAddLinesEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.ADD_LINES, param );
+		}
+		
+		private function dispatchDeleteAllLinesEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_ALL_LINES, param );
+		}
+		
+		private function dispatchDeleteLines( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_LINES, param );
 		}
 		
 		private function getPlanId(event:AppEvent):void

@@ -51,6 +51,11 @@ public class DataManager extends EventDispatcher
     private function fetchAllData(event:AppEvent):void
     {
         AppEvent.dispatch(AppEvent.DATA_SENT, dataTable);
+		var callback:Function = event.callback as Function;
+		if ( callback != null )
+		{
+			callback( dataTable );
+		}
     }
 
     private function fetchData(event:AppEvent):void
@@ -69,7 +74,7 @@ public class DataManager extends EventDispatcher
         var key:String = event.data.key;
         if (key)
         {
-            var dataCollection:Object = event.data.data;
+            var dataCollection:Object = event.data.collection;
             if (dataTable.containsKey(key))
             {
                 dataTable.remove(key);

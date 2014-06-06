@@ -83,3 +83,10 @@ esri|PopUpRenderer
 {
 	skinClass: ClassReference("com.esri.viewer.skins.MyPopUpRendererSkin");
 }
+
+esri|ContentNavigator
+{
+	headerColor: #FFFFFF;
+	headerBackgroundAlpha: 1.0;
+	headerBackgroundColor: #6D0010;
+}

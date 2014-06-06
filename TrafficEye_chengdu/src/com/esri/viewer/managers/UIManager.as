@@ -271,6 +271,14 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationPopUpRendererLink.setStyle("linkHoverColor", titleColor);
             topLevelStyleManager.setStyleDeclaration("com.esri.ags.portal.PopUpRenderer", cssStyleDeclarationPopUpRendererLink, false);
         }
+		
+		var cssStyleDeclarationContentNavigator:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.ContentNavigator");
+		if (numberOfStyleColors > 4)
+		{
+			cssStyleDeclarationContentNavigator.setStyle("headerBackgroundColor", backgroundColor);
+			cssStyleDeclarationContentNavigator.setStyle("headerColor", textColor);
+		}
+		cssStyleDeclarationContentNavigator.setStyle("headerBackgroundAlpha", styleAlpha);
 
         //Style Banner title and WidgetTitle
         var cssStyleDeclarationWidgetTitle:CSSStyleDeclaration = new CSSStyleDeclaration(".WidgetTitle");

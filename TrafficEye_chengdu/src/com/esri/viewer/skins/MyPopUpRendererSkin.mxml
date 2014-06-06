@@ -322,14 +322,6 @@
 						footerLine.includeInLayout = footerLine.visible = false;
 					}
                 }
-				else
-				{
-					
-					
-					
-				}
-				
-				
             }
 
             private function setTextFlow(textComp:RichEditableText, htmlText:String):void

@@ -214,6 +214,15 @@ public class ConfigManager extends EventDispatcher
                     size: int(styleSubTitleFontSize)
                 };
             configData.subTitleFont = subTitleFont;
+			
+			//================================================
+			//layoutDirection configuration
+			//================================================
+			var layoutDirection:String = configXML.layoutdirection;
+			if (layoutDirection)
+			{
+				configData.layoutDirection = layoutDirection;
+			}
 
             //================================================
             //user interface

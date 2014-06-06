@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*"  
+				   xmlns:checkTree="com.esri.viewer.components.checkTree.*"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   layout="absolute" 
+				   creationComplete="this_creationCompleteHandler(event)" 
+				   widgetConfigLoaded="this_widgetConfigLoadedHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleFillSymbol;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.tasks.GeometryService;
+			import com.esri.ags.tasks.GeometryServiceSingleton;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.utils.SymbolParser;
+			
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			
+			
+			
+			private var _bufferOverlayLayer:GraphicsLayer;
+			private var _bufferType:String;
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				geometryService.url = GeometryServiceSingleton.instance.url;
+				geometryService.token = GeometryServiceSingleton.instance.token;
+				geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+				
+				_bufferOverlayLayer = new GraphicsLayer();
+				_bufferOverlayLayer.name = widgetTitle;
+				map.addLayer( _bufferOverlayLayer );
+				
+				AppEvent.addListener( AppEvent.ADD_BUFFERS, appevent_addBuffersHandler );
+				AppEvent.addListener( AppEvent.DELETE_BUFFERS, appevent_deleteBuffersHandler );
+				AppEvent.addListener( AppEvent.DELETE_ALL_BUFFERS, appevent_deleteAllBuffersHandler );
+			}
+			
+			protected function this_widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_bufferType = configXML.type;
+					
+					var symbolParser:SymbolParser = new SymbolParser();
+					var drawSymbol:Symbol = symbolParser.parseSymbol( configXML );
+					if ( !drawSymbol )
+					{
+						var selectionColor:Number = getStyle( "selectionColor" );
+						drawSymbol = new SimpleFillSymbol( "solid", selectionColor, 0.2, 
+							new SimpleLineSymbol( "solid", selectionColor, 1, 2 ) );
+					}
+					_bufferOverlayLayer.symbol = drawSymbol;
+				}
+				
+			}
+			
+			private function appevent_addBuffersHandler( event:AppEvent ):void
+			{
+				var params:String = event.data as String;
+				var paramObj:Object = JSON.parse( params );
+				var type:String = paramObj.type;
+				if ( !type || type.toLowerCase() != _bufferType.toLowerCase() )
+					return;
+				
+				var bufferId:String = paramObj.id;
+				var distance:Number = paramObj.distance;
+				var centerGeometry:Geometry = Geometry.fromJSON( paramObj.geometry );
+				centerGeometry.spatialReference = map.spatialReference;
+				
+				//10.0中没有测地线选项
+				//对点做buffer，单位是米，对线、面做buffer，单位是角度
+				//10.1中设置bufferParam.geodesic=true，单位不用转换
+				if ( centerGeometry.type != Geometry.MAPPOINT && 
+					centerGeometry.type != Geometry.MULTIPOINT )
+				{
+					distance = distance / 6378137.0 * 180.0 / Math.PI;
+				}
+				
+				bufferParam.geometries = [ centerGeometry ];
+				bufferParam.distances = [ distance ];
+				geometryService.buffer( bufferParam, 
+					new AsyncResponder( geometryService_bufferCompleteHandler, faultHandler, bufferId ) );
+			}
+			
+			private function geometryService_bufferCompleteHandler( item:Object, token:Object = null ):void
+			{
+				var bufferResultArray:Array = item as Array;
+				for ( var i:uint = 0; i < bufferResultArray.length; i++ )
+				{
+					var bufferPolygon:Polygon = bufferResultArray[i] as Polygon;
+					bufferPolygon.spatialReference = map.spatialReference;
+					var bufferGraphic:Graphic = new Graphic( bufferPolygon );
+					bufferGraphic.id = token as String;
+					_bufferOverlayLayer.add( bufferGraphic );
+				}
+			}
+			
+			private function faultHandler( fault:Fault, token:Object ):void
+			{
+				var strInfo: String = "Error: ";
+				strInfo += "Fault Code: " + fault.faultCode + "\n";
+				strInfo += "Fault Info: " + fault.faultString + "\n";
+				strInfo += "Fault Detail: " + fault.faultDetail;
+				showError( strInfo );
+			}
+			
+			private function appevent_deleteAllBuffersHandler( event:AppEvent ):void
+			{
+				var type:String = event.data as String;
+				if ( type && ( type.toLowerCase() == _bufferType.toLowerCase() ) )
+				{
+					_bufferOverlayLayer.clear();
+				}
+			}
+			
+			private function appevent_deleteBuffersHandler( event:AppEvent ):void
+			{
+				var params:String = event.data as String;
+				var paramObj:Object = JSON.parse( params );
+				
+				var type:String = paramObj.type;
+				if ( !type || ( type.toLowerCase() != _bufferType.toLowerCase() ) )
+					return;
+				
+				var idArray:Array = paramObj.ids;
+				for each ( var id:String in idArray )
+				{
+					for each ( var graphic:Graphic in _bufferOverlayLayer.graphicProvider )
+					{
+						if ( id == graphic.id )
+						{
+							_bufferOverlayLayer.remove( graphic );
+							break;
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<esri:GeometryService id="geometryService"/>
+		
+		<esri:BufferParameters id="bufferParam" 
+							   unit="{GeometryService.UNIT_METER}" 
+							   outSpatialReference="{map.spatialReference}"
+							   geodesic="true"/>
+	</fx:Declarations>
+</viewer:BaseWidget>

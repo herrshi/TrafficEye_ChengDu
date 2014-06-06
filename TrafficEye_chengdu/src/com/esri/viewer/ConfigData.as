@@ -36,6 +36,7 @@ public class ConfigData
     public var bingKey:String;
     public var proxyUrl:String;
     public var webMapLayers:ArrayCollection;
+	public var layoutDirection:String;
 	
 	
 	public var applicationBackgroundAlpha:Number;

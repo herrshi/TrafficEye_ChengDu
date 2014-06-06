@@ -22,9 +22,9 @@
 
 		<popups>
 			<popup layername="default">
-				<title>{DES}</title>
+				<title>{Name}</title>
 				<fields>
-					<field name="DES" />
+					<field name="Name" />
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
 			</popup>
