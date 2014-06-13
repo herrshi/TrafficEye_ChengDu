@@ -217,7 +217,7 @@
 				}
 				
 				CursorManager.removeAllCursors();
-				generateTestData();
+//				generateTestData();
 			}
 			
 			private function widgetCreated( event:AppEvent ):void {

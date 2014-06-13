@@ -161,6 +161,10 @@
 						_currentMode = MODE_ADD;
 						AppEvent.dispatch( AppEvent.START_ADD_OVERLAY, _pointType );
 					}
+					else
+					{
+						_currentMode = MODE_NORMAL;
+					}
 					
 					_widgetRunNotifyFunctionName = configXML.widgetrunnotify;
 					_widgetCloseNotifyFunctionName = configXML.widgetclosenotify;

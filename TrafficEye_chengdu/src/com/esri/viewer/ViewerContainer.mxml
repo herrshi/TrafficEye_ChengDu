@@ -270,7 +270,7 @@
 
             private function errorHandler(event:AppEvent):void
             {
-				if ( configData.showErrow ) {
+				if ( !configData || configData.showErrow ) {
 					var errorWindow:ErrorWindow = ErrorWindow(PopUpManager.createPopUp(this, ErrorWindow, true));
 					
 					// Add title to the title bar.
