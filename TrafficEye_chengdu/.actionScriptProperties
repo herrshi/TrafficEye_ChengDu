@@ -71,6 +71,8 @@
     <module application="src/index.mxml" destPath="widgets/MapSearch/MapSearchWidget.swf" optimize="true" sourcePath="src/widgets/MapSearch/MapSearchWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Time/TimeWidget.swf" optimize="true" sourcePath="src/widgets/Time/TimeWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Query/QueryWidget.swf" optimize="true" sourcePath="src/widgets/Query/QueryWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/CarTrack/CarTrackWidget.swf" optimize="true" sourcePath="src/widgets/CarTrack/CarTrackWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/SimulationMovePoint/SimulationMovePointWidget.swf" optimize="true" sourcePath="src/widgets/SimulationMovePoint/SimulationMovePointWidget.mxml"/>
   </modules>
   <workers/>
   <buildCSSFiles/>

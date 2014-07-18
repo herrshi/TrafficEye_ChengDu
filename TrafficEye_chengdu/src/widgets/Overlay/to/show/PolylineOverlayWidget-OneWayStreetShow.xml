@@ -6,22 +6,14 @@
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onOneWayStreetShowOverlayClose</widgetclosenotify>
 	<popup>
-		<title>{id}</title>
+		<title>{roadName}</title>
 		<fields>
-			<field name="id" alias="编号" visible="true" />
-			<field name="name" alias="名称" visible="true" />
-			<field name="address" alias="地址" visible="true" />
-			<field name="parkingCount" alias="泊车数" visible="true" />
-			<field name="areaId" alias="所属区域" visible="true" />
-			<field name="timePeriod" alias="泊车时间段" visible="true" />	
-			<field name="enabledTime" alias="启动时间" visible="true" />
-			<field name="parkTypeId" alias="停车场类型" visible="true" />
-			<field name="natureId" alias="停车场性质" visible="true"/>
-			<field name="admin" alias="状管理员" visible="true"/>
-			<field name="contactPhone" alias="联系电话" visible="true" />
-			<field name="isToll" alias="是否收费" visible="true"/>
-			<field name="logitude" alias="经度" visible="true"/>
-			<field name="latitude" alias="纬度" visible="true"/>
+			<field name="roadName" alias="道路名称" visible="false" />
+			<field name="code" alias="编号" visible="true" />
+			<field name="lineLength" alias="长度" visible="true" />
+			<field name="belongSuboffice" alias="分局" visible="true" />
+			<field name="enableTime" alias="启用日期" visible="true" />
+			<field name="enableTime" alias="时段" visible="true" />
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>

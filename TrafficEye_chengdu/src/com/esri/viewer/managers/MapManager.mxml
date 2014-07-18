@@ -164,6 +164,8 @@
 				AppEvent.addListener( AppEvent.MAPREFRESH, mapRefresh );
 
 				map.addEventListener( MouseEvent.CLICK, mapClickHandler );
+				
+
             }
 			
 			
@@ -174,11 +176,16 @@
 				for each (var layer:Layer in layers) 
 				{
 					layer.refresh();
+					
 				}
 				
 				
 				
 			}
+			
+			
+			
+			
 			private function setMapCenter( event:AppEvent ):void {
 				var x:Number=event.data.x;
 				var y:Number= event.data.y;

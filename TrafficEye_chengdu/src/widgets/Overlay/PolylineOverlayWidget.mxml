@@ -9,9 +9,13 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
+			import com.esri.ags.components.ContentNavigator;
 			import com.esri.ags.events.DrawEvent;
 			import com.esri.ags.events.EditEvent;
 			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.geometry.Polygon;
 			import com.esri.ags.geometry.Polyline;
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.portal.PopUpRenderer;
@@ -27,10 +31,12 @@
 			import com.esri.viewer.utils.RendererParser;
 			import com.esri.viewer.utils.SymbolParser;
 			
+			import mx.collections.ArrayList;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			import mx.utils.UIDUtil;
+			
 			
 			
 			
@@ -95,6 +101,8 @@
 				
 				_movedGeometryTable = new Hashtable();
 				
+				AppEvent.addListener( AppEvent.FIND_DEVICE, appevent_findDeviceHandler );
+				
 				AppEvent.addListener( AppEvent.WIDGET_RUN, appevent_WidgetRunHandler );
 				AppEvent.addListener( AppEvent.WIDGET_CLOSE, appevent_WidgetCloseHandler );
 				
@@ -103,15 +111,15 @@
 				AppEvent.addListener( AppEvent.DELETE_LINES, appevent_DeleteLinesHandler );
 				
 				AppEvent.addListener( AppEvent.START_ADD_OVERLAY, appevent_StartAddOverlayHandler );
-				
+				AppEvent.addListener( AppEvent.STOP_ADD_OVERLAY, appevent_StopAddOverlayHandler );
+				AppEvent.addListener( AppEvent.START_MOVE_OVERLAY, appevent_StartMoveOverlayHandler );
+				AppEvent.addListener( AppEvent.STOP_EDIT_OVERLAY, appevent_StopEditOverlayHandler );
 				
 				AppEvent.addListener( AppEvent.EDITORTOOBAR_UNDO, appevent_editorToolbarUndoHandler );
 				AppEvent.addListener( AppEvent.EDITORTOOBAR_REDO, appevent_editorToolbarRedoHandler );
 				AppEvent.addListener( AppEvent.EDITORTOOBAR_COMMIT, appevent_editorToolbarCommitHandler );
 				AppEvent.addListener( AppEvent.EDITORTOOBAR_CANCEL, appevent_editorToolbarCancelHandler );
 			}
-			
-			
 			
 			protected function this_widgetConfigLoadedHandler(event:Event):void
 			{
@@ -129,6 +137,18 @@
 					{
 						var symbolParser:SymbolParser = new SymbolParser();
 						_drawSymbol = symbolParser.parseSymbol( configXML.drawsymbol[0] );
+					}
+					
+					//启动时的状态add/move/normal
+					var initMode:String = configXML.initmode;
+					if ( initMode == "add" )
+					{
+						_currentMode = MODE_ADD;
+						AppEvent.dispatch( AppEvent.START_ADD_OVERLAY, _lineType );
+					}
+					else
+					{
+						_currentMode = MODE_NORMAL;
 					}
 					
 					//popup
@@ -297,7 +317,7 @@
 				setMapAction( DRAW_MODE, null, _drawSymbol, map_drawEndHandler );
 			}
 			
-			private function appevent_StopEditOverlayHandler( event:AppEvent ):void
+			private function appevent_StopAddOverlayHandler( event:AppEvent ):void
 			{
 				var type:String = event.data as String;
 				if ( type != _lineType )
@@ -307,8 +327,10 @@
 				
 				_currentMode = MODE_NORMAL;
 				closeWidget( "编辑工具栏" );
-				
+				setMapAction( null, null, null, null );
 				editTool.deactivate();
+				
+				_lineOverlayLayer.infoWindowRenderer = _popUpRenderer;
 			}
 			
 			private function map_drawEndHandler( event:DrawEvent ):void
@@ -323,6 +345,69 @@
 				//设置移动
 				drawGraphic.filters = [ editHighlightGlowFilter ];
 				editTool.activate( EditTool.EDIT_VERTICES, [ drawGraphic ] );
+			}
+			
+			private function appevent_StartMoveOverlayHandler( event:AppEvent ):void
+			{
+				var params:String = event.data as String;
+				var paramObj:Object = JSON.parse( params );
+				var type:String = paramObj.type;
+				var idArray:Array = paramObj.ids;
+				
+				if ( type != _lineType )
+				{
+					return;
+				}
+				
+				//打开编辑栏
+				openWidget( "编辑工具栏" );
+				
+				_currentMode = MODE_MOVE;
+				
+				//编辑状态时不显示infoWindow
+				_lineOverlayLayer.infoWindowRenderer = null;
+				
+				//没有指定id时，所有graphic都可以移动
+				if ( !idArray || idArray.length == 0 )
+				{
+					//给graphicLayer增加点击事件，点击到的graphic可以移动
+					//					_pointOverylayLayer.addEventListener( MouseEvent.CLICK, pointOverlayLayer_ClickHandler );
+				}
+					//只有指定的graphic可以移动
+				else
+				{
+					//找到id对应的graphic
+					var graphics:Array = [];
+					for each ( var id:String in idArray )
+					{
+						var graphic:Graphic = getGraphicById( id );
+						if ( graphic )
+						{
+							graphic.filters = [ editHighlightGlowFilter ];
+							graphics.push( graphic );
+							//保存初始位置
+							_movedGeometryTable.add( graphic.id, [ graphic.geometry ] );
+							_currentGeometryIndex = 0;
+							_selectedGraphic = graphic;
+						}
+					}
+					//激活编辑工具
+					editTool.activate( EditTool.EDIT_VERTICES, graphics );
+				}
+			}
+			
+			private function appevent_StopEditOverlayHandler( event:AppEvent ):void
+			{
+				var type:String = event.data as String;
+				if ( type != _lineType )
+				{
+					return;
+				}
+				
+				_currentMode = MODE_NORMAL;
+				closeWidget( "编辑工具栏" );
+				
+				editTool.deactivate();
 			}
 			
 			/**
@@ -523,13 +608,81 @@
 				return null;
 			}
 			
+			private function getGeomCenter(gra:Graphic):MapPoint 
+			{
+				if ( !gra.geometry )
+					return null;
+				
+				var pt:MapPoint;
+				switch (gra.geometry.type) 
+				{
+					case Geometry.MAPPOINT: 
+					{
+						pt = gra.geometry as MapPoint;
+						break;
+					}
+					case Geometry.MULTIPOINT: 
+					{
+						const multipoint:Multipoint = gra.geometry as Multipoint;
+						pt = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
+						break;
+					}
+					case Geometry.POLYLINE: 
+					{
+						const pl:Polyline = gra.geometry as Polyline;
+						const pathCount:Number = pl.paths.length;
+						const pathIndex:int = pathCount % 2 == 0 || pathCount == 1 ? pathCount / 2 : pathCount / 2 + 1;
+						const midPath:Array = pl.paths[pathIndex];
+						const ptCount:Number = midPath.length;
+						const ptIndex:int = ptCount % 2 == 0 || ptCount == 1 ? ptCount / 2 : ptCount / 2 + 1;
+						pt = pl.getPoint(pathIndex, ptIndex);
+						break;
+					}
+					case Geometry.POLYGON: 
+					{
+						const poly:Polygon = gra.geometry as Polygon;
+						pt = poly.extent.center;
+						break;
+					}
+				}
+				return pt;
+			}
+			
+			
+			private function appevent_findDeviceHandler( event:AppEvent ):void
+			{
+				var type:String = event.data.type;
+				var id:String = event.data.id;
+				var showInfo:Boolean = event.data.showInfo;
+				
+				if ( type != _lineType )
+				{
+					return;
+				}
+				
+				for each ( var graphic:Graphic in _lineOverlayLayer.graphicProvider )
+				{
+					if ( graphic.id == id )
+					{
+						var centerPoint:MapPoint = getGeomCenter( graphic );
+						map.centerAt( centerPoint );
+						//处于新增、编辑模式时不显示弹出框
+						if ( _currentMode == MODE_NORMAL && showInfo )
+						{
+							var contentNavigator:ContentNavigator = new ContentNavigator();
+							contentNavigator.dataProvider = new ArrayList([ graphic ]);
+							map.infoWindowContent = contentNavigator;
+							map.infoWindow.show( centerPoint );
+						}
+						break;
+					}
+				}
+			}
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<!-- 编辑已有元素 -->
 		<esri:EditTool id="editTool" map="{map}"
-					   vertexAdd="editTool_actionStopHandler(event)" 
-					   vertexDelete="editTool_actionStopHandler(event)" 
 					   vertexMoveStop="editTool_actionStopHandler(event)"/>
 		
 		<!-- 高亮显示当前在编辑的元素 -->

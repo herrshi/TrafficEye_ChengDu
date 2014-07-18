@@ -8,22 +8,39 @@
 	</teamlayer>
 	<symbols>
 		<symbol keyvalue="01">
-			<simplefillsymbol color="0x00A9E6" />
+			<simplefillsymbol color="0xFFBEBE" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
+		
 		<symbol keyvalue="02">
-			<simplefillsymbol color="0xFFA77F" />
+			<simplefillsymbol color="0xE9FFBE" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
+		
 		<symbol keyvalue="03">
-			<simplefillsymbol color="0xFFFF73" />
+			<simplefillsymbol color="0xFFBEE8" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
+		
 		<symbol keyvalue="04">
-			<simplefillsymbol color="0xFF0000" />
+			<simplefillsymbol color="0xD3FFBE" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
+		
 		<symbol keyvalue="05">
-			<simplefillsymbol color="0xFFEBAF" />
+			<simplefillsymbol color="0xBED2FF" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
+		
 		<symbol keyvalue="06">
-			<simplefillsymbol color="0xA3FF73" />
+			<simplefillsymbol color="0xBED2FF" alpha="0.5">
+				<outline color="0x000000" width="2" alpha="1"/>
+			</simplefillsymbol>
 		</symbol>
 	</symbols>
 </configuration>

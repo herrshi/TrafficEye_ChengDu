@@ -1,7 +1,7 @@
-<!--三环管制标牌 -->
+﻿<!--三环管制标牌 -->
 <?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/1</layer>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/1</layer>
 	<titlefield>电子警察.name</titlefield>
 	<idfield>电子警察.deviceid</idfield>
 	<type>DZJC</type>

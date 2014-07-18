@@ -361,20 +361,22 @@
 				_prevDeptList = _deptList.concat();
 				_deptList.length = 0;
 				
-				for ( var i:uint = 0; i < policeAC.length; i++ ) {
-					var police:Police = getPoliceFromDeptList( policeAC[i] );
+				for each (var pobj:Object in policeAC) 
+				{
+					var police:Police = getPoliceFromDeptList( pobj );
 					if ( police ) {
-						police.Longitude = policeAC[i].longitude;
-						police.Latitude = policeAC[i].latitude;
-						police.timeStr = policeAC[i].fdtTimeStr || "";
-						police.status = policeAC[i].status || "";
-						police.postName = policeAC[i].postName || "";
-						police.timePeriod = policeAC[i].timePeriod || "";
+						police.Longitude = pobj.longitude;
+						police.Latitude = pobj.latitude;
+						police.timeStr = pobj.fdtTimeStr || "";
+						police.status = pobj.status || "";
+						police.postName = pobj.postName || "";
+						police.timePeriod = pobj.timePeriod || "";
 						police.timePeriod = StringUtil.trim( police.timePeriod );
 						police.treeVisible = getPoliceVisible( police.policeCode );
 					}
-				}	
+				}
 				
+			
 				//				removeUnexistPolice( policeAC );
 				drawPolice();
 			}
@@ -479,9 +481,10 @@
 								policeGra.addEventListener( MouseEvent.ROLL_OUT, mouseOutPolice );
 								_policeLayer.add( policeGra );
 							}
-							
 						}
 					}
+					
+					addSharedData(  widgetTitle, _policeLayer.graphicProvider as ArrayCollection );
 				}				
 				for each ( var wTitle:String in _relateWidgetTitleList ) {
 					AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
@@ -494,7 +497,7 @@
 				for each ( var scaleSymbol:Object in _scaleSymbols ) {
 					var maxScale:Number = scaleSymbol.maxScale;
 					var minScale:Number = scaleSymbol.minScale;
-					if ( minScale <= scale && scale <= maxScale ) {
+					if ( minScale < scale && scale <= maxScale ) {
 						for each ( var symbol:QueryResultSymbol in scaleSymbol.rankSymbols ) {
 							if ( symbol.keyValue == keyValue ) {
 								return symbol;
@@ -633,7 +636,7 @@
 			}
 			
 			private function findDeviceHandler( event:AppEvent ):void {
-				var type:String = event.data.name;
+				var type:String = event.data.type;
 				var id:String = event.data.id;
 				if ( type != widgetTitle )
 					return;

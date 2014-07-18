@@ -74,7 +74,7 @@ public class DataManager extends EventDispatcher
         var key:String = event.data.key;
         if (key)
         {
-            var dataCollection:Object = event.data.collection;
+            var dataCollection:Object = event.data.data||event.data.collection;
             if (dataTable.containsKey(key))
             {
                 dataTable.remove(key);

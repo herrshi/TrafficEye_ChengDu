@@ -16,19 +16,15 @@
 			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_base_0606/MapServer" />
 		</basemaps>
 		<operationallayers>
-			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />
-			<layer label="透明图层" type="dynamic" visible="true" alpha="0.5" url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
-			<layer label="设备图层" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" />
-			<layer label="路段状态" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
-			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer" />
+			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/cd_base_bz_0606/MapServer" />
 		</operationallayers>
 	</map>
 	<widgetcontainer layout="float">
 		<widget label="CaseAccidentLocateOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/ards/locate/PointOverlayWidget-CaseAccident.xml"/>
-		<widget label="CaseAccidentBuffer" preload="open" url="widgets/Overlay/BufferOverlayWidget.swf" config="widgets/Overlay/ChengDu/BufferOverlayWidget-case.xml"/>
+		<widget label="CaseAccidentBuffer" preload="open" url="widgets/Overlay/BufferOverlayWidget.swf" config="widgets/Overlay/ards/locate/BufferOverlayWidget-CaseAccident.xml"/>
 		<widget label="编辑工具栏" left="80" top="10" url="widgets/EditorToolbar/EditorToolbarWidget.swf"/>
 	</widgetcontainer>
 	<widgetcontainer layout="horizontal">
-		<widget label="地图搜索" preload="minimized" icon="assets/images/i_search_s.png" config="widgets/MapSearch/ChengDu/MultiLayerSearchWidget-RoadAndPoi-WithName.xml" url="widgets/MapSearch/MultiLayerSearchWidget.swf" />
+		<widget label="地图搜索" preload="open" icon="assets/images/i_search.png" config="widgets/MapSearch/ChengDu/MultiLayerSearchWidget-RoadAndPoi-WithName.xml" url="widgets/MapSearch/MultiLayerSearchWidget.swf" />
 	</widgetcontainer>
 </configuration>

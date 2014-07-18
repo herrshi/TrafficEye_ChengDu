@@ -96,12 +96,12 @@
 					</clickfunction>
 				</clickfunctions>
 			</item>
-			<item id="policeArea" tooltip="警务区" initstate="disable"
+			<item id="警务区" tooltip="警务区" initstate="disable"
 				imageenable="assets/images/i_policestation.png" imagedisable="assets/images/i_policestation_b.png">
 				<clickfunctions>
 					<clickfunction name="openlayer">
 						<params>
-							<param name="servicename" value="透明图层" />
+							<param name="servicename" value="警务区" />
 							<param name="layerindex" value="0" />
 						</params>
 					</clickfunction>
@@ -166,7 +166,7 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="发布段程序" />
+							<param name="widgetname" value="发布段" />
 						</params>
 					</clickfunction>
 					<clickfunction name="openlayer">

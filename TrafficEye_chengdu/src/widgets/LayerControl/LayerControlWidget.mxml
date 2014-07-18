@@ -157,6 +157,10 @@
 				}
 			}
 			
+			private function setLayerVisible(event:AppEvent):void{
+					
+			}
+			
 			private function openLayer( serviceName:String, layerIndex:int, layerState:String ):void {
 				var visible:Boolean = layerState == "enable" ? true : false;
 				//改变服务可见性
@@ -192,7 +196,7 @@
 	</fx:Script>
 	
 	<viewer:WidgetTemplate id="wTemplate" height="100%" width="100%"
-						   enableMinimizeButton="true" enableCloseButton="false" enableIcon="false"   >
+						   enableMinimizeButton="true" enableCloseButton="false" enableIcon="false"  visible="true" >
 		<viewer:layout>
 			<s:HorizontalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" />
 		</viewer:layout>

@@ -212,8 +212,9 @@ package com.esri.viewer.managers
 		
 		private function policeManagerRTInfoHandler( event:ResultEvent ):void {
 			var policeAC:ArrayCollection = event.result as ArrayCollection;
+
 			
-				AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
+			AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
 					{ key: "PoliceManagerRTInfo", data: policeAC } );
 		}
 		

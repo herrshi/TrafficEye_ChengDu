@@ -22,17 +22,11 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
-			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.IInfowindowTemplate;
-			import com.esri.viewer.ViewerContainer;
 			
 			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
-			import mx.managers.PopUpManager;
-			import mx.utils.StringUtil;
-			
-			import flashx.textLayout.factory.StringTextLineFactory;
 			
 			private var _graphic:Graphic;
 //			private var _layer:GraphicsLayer;

@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>busParkShow</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onBusParkShowOverlayLoad</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onBusParkShowOverlayClose</widgetclosenotify>
+	
+	<popup>
+		<title>{id}</title>
+		<fields>
+			<field name="id" alias="编号" visible="true" />
+			<field name="name" alias="名称" visible="true" />
+			<field name="areaId" alias="所属区域" visible="true" />
+			<field name="company" alias="所属公司" visible="true" />
+			<field name="parkTypeId" alias="停车场类型" visible="true" />
+			<field name="parkingCount" alias="泊车数" visible="true" />
+			<field name="constructTime" alias="建设时间" visible="true"/>
+			<field name="parkStartTime" alias="停车开始时间" visible="true" />
+			<field name="parkEndTime" alias="停车结束时间" visible="true"/>
+			<field name="logitude" alias="经度" visible="true"/>
+			<field name="latitude" alias="纬度" visible="true"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<uniquevaluerenderer field="company">
+    	<picturemarkersymbol url="assets/images/mapIcons/BadWeather-grey.png" yoffset="13"/>
+    	
+		<uniquevalueinfo value="成都公交集团">
+			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-blue.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="成都公交第二集团">
+			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-red.png" yoffset="13"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<drawsymbol>
+		<picturemarkersymbol url="assets/images/mapIcons/BadWeather-grey.png" yoffset="13"/>
+	</drawsymbol>
+</configuration>

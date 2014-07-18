@@ -182,7 +182,7 @@
 			private function dataSentHandler( event:AppEvent ):void {
 				var dataTable:Hashtable = event.data as Hashtable;
 				_policeAC = dataTable.find( _dataType ); 
-				if ( _policeAC ) 
+				if ( _policeAC &&_policeAC!=null) 
 					setRTInfo();
 				else
 					refreshData();
@@ -276,6 +276,7 @@
 				var key:String = event.data.key;
 				if ( key == "PoliceManagerRTInfo" ) {
 					_policeAC = event.data.data;
+					if ( _policeAC &&_policeAC!=null) 
 					setRTInfo();
 				}		
 			}
@@ -483,15 +484,18 @@
 				_deptList.length = 0;
 				
 				
-				for ( var i:uint = 0; i < _policeAC.length; i++ ) {
-					var police:Police = getPoliceFromDeptList( _policeAC[i] );
+				
+				
+				for each (var pobj:Object in _policeAC) 
+				{
+					var police:Police = getPoliceFromDeptList( pobj );
 					if ( police ) {
-						police.Longitude = _policeAC[i].longitude;
-						police.Latitude = _policeAC[i].latitude;
-						police.timeStr = _policeAC[i].fdtTimeStr || "";
-						police.status = _policeAC[i].status || "";
-						police.postName = _policeAC[i].postName || "";
-						police.timePeriod = _policeAC[i].timePeriod || "";
+						police.Longitude = pobj.longitude;
+						police.Latitude = pobj.latitude;
+						police.timeStr = pobj.fdtTimeStr || "";
+						police.status = pobj.status || "";
+						police.postName = pobj.postName || "";
+						police.timePeriod = pobj.timePeriod || "";
 						police.timePeriod = StringUtil.trim( police.timePeriod );
 						
 						if (police.teamCode =="DPT05-00") 
@@ -507,7 +511,8 @@
 							//trace('treeVisible '+police.treeVisible+' legendVisible '+police.legendVisible);
 						}
 					}
-				}	
+				}
+				
 				
 			removeUnexistPolice( _policeAC );
 				drawPolice();
@@ -644,6 +649,7 @@
 							
 						}
 					}
+					addSharedData(  widgetTitle, _policeLayer.graphicProvider as ArrayCollection );
 				}				
 				for each ( var wTitle:String in _relateWidgetTitleList ) {
 					AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
@@ -656,7 +662,7 @@
 				for each ( var scaleSymbol:Object in _scaleSymbols ) {
 					var maxScale:Number = scaleSymbol.maxScale;
 					var minScale:Number = scaleSymbol.minScale;
-					if ( minScale <= scale && scale <= maxScale ) {
+					if ( minScale < scale && scale <= maxScale ) {
 						for each ( var symbol:QueryResultSymbol in scaleSymbol.rankSymbols ) {
 							if ( symbol.keyValue == keyValue ) {
 								return symbol;
@@ -835,7 +841,7 @@
 			
 			}
 			private function findDeviceHandler( event:AppEvent ):void {
-				var type:String = event.data.name;
+				var type:String = event.data.type;
 				var id:String = event.data.id;
 				if ( type != widgetTitle )
 					return;

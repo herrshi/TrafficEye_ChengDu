@@ -19,17 +19,13 @@
 		<![CDATA[
 			import com.esri.ags.FeatureSet;
 			import com.esri.ags.Graphic;
-			import com.esri.ags.events.MapMouseEvent;
-			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
 			import com.esri.ags.layers.GraphicsLayer;
-			import com.esri.ags.symbols.MarkerSymbol;
 			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.tasks.QueryTask;
 			import com.esri.ags.tasks.supportClasses.Query;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.IInfowindowTemplate;
-			import com.esri.viewer.ViewerContainer;
 			import com.esri.viewer.WidgetStates;
 			
 			import flash.utils.clearTimeout;
@@ -37,9 +33,6 @@
 			
 			import mx.collections.ArrayCollection;
 			import mx.core.UIComponent;
-			import mx.events.FlexEvent;
-			import mx.formatters.DateFormatter;
-			import mx.managers.CursorManager;
 			import mx.rpc.AsyncResponder;
 			import mx.utils.StringUtil;
 			
@@ -387,7 +380,7 @@
 					queryResult.content = content;
 					queryResult.point = pt;
 					queryResult.geometry = pt;
-					queryResult.plusInfo = gpsCodeArr+"@"+policeIds;
+					queryResult.plusInfo = gpsCodes+"@"+policeIds;
 					queryResult.buttons = _buttonArray;
 					
 					var rankSymbol:QueryResultSymbol = new QueryResultSymbol();

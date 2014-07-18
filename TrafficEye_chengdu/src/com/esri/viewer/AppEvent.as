@@ -211,6 +211,7 @@ public class AppEvent extends Event
      */
     public static const WIDGET_RUN:String = "widgetRunRequested";
 
+	
     /**
      * used to send message to widget to change its state such as close, min and max
      * var data:Object {
@@ -514,6 +515,14 @@ public class AppEvent extends Event
 	 * 新增警情等点位时页面可以输入地址
 	 * */
 	public static const SET_SEARCH_TEXT:String = "setSearchText";
+	
+	public static const SIM_MOVE_POINT_START:String = "startSimMovePoint";
+	public static const SIM_MOVE_POINT_PAUSE:String = "pauseSimMovePoint";
+	public static const SIM_MOVE_POINT_RESUME:String = "resumeSimMovePoint";
+	public static const SIM_MOVE_POINT_STOP:String = "stopSimMovePoint";
+	public static const SIM_MOVE_POINT_SET_SPEED:String = "setSimMovePointSpeed";
+	public static const GET_SIM_MOVE_POINT_CURRENT_POINT:String = "getSimMovePointCurrentPoint";
+	public static const SET_SIM_MOVE_POINT_CURRENT_POINT:String = "setSimMovePointCurrentPoint";
 	
     //--------------------------------------------------------------------------
     //

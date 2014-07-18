@@ -175,15 +175,11 @@
 						var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
 						rankSymbol.keyValue = symbolList[i].@keyvalue;
 						
-						var resultFillSymbolColor:uint =  symbolList[i].simplefillsymbol.@color || 0xFF0000;
-						var resultFillSymbolAlpha:Number = ( symbolList[i].simplefillsymbol.@alpha[0] != null) ?  
-							symbolList[i].simplefillsymbol.@alpha : 0.5;
-						var resultFillSymbolOutlineColor:uint =  symbolList[i].simplefillsymbol.outline.@color || 
-							resultFillSymbolColor;
-						var resultFillSymbolOutlineAlpha:Number = ( symbolList[i].simplefillsymbol.outline.@alpha[0] != null) ?  
-							symbolList[i].simplefillsymbol.outline.@alpha : 1;
-						var resultFillSymbolOutlineWidth:Number = ( symbolList[i].simplefillsymbol.outline.@width[0] != null) ?  
-							symbolList[i].simplefillsymbol.outline.@width : 3;
+						var resultFillSymbolColor:uint =  symbolList[i].simplefillsymbol.@color;
+						var resultFillSymbolAlpha:Number = symbolList[i].simplefillsymbol.@alpha;
+						var resultFillSymbolOutlineColor:uint =  symbolList[i].simplefillsymbol.outline[0].@color;
+						var resultFillSymbolOutlineAlpha:Number = symbolList[i].simplefillsymbol.outline[0].@alpha;
+						var resultFillSymbolOutlineWidth:Number = symbolList[i].simplefillsymbol.outline[0].@width;
 						rankSymbol.resultFillSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, 
 							resultFillSymbolColor, 
 							resultFillSymbolAlpha, 
@@ -233,7 +229,7 @@
 			private function dataSentHandler( event:AppEvent ):void {
 				var dataTable:Hashtable = event.data as Hashtable;
 				_policeAC = dataTable.find( _dataType ); 
-				if ( _policeAC ) 
+				if ( _policeAC&&_policeAC!=null ) 
 					setRTInfo();
 				else
 					refreshData();
@@ -488,8 +484,24 @@
 				
 				_deptList.length = 0;
 				_policeList.removeAll();
+
+				for each (var policeObj:Object in _policeAC) 
+				{
+					//加入_deptList
+					var police:Police = getPoliceFromDeptList( policeObj );
+					//警员已存在，刷新坐标信息
+					if ( police ) {
+						police.elevation =policeObj.elevation;
+						police.Longitude =policeObj.longitude;
+						police.Latitude =policeObj.latitude;
+						police.x = policeObj.x;
+						police.y =policeObj.y;
+						police.timeStr = policeObj.fdtTimeStr;
+						police.status =policeObj.status;
+				}
 				
-				for ( var i:uint = 0; i < _policeAC.length; i++ ) {
+			}
+				/*for ( var i:uint = 0; i < _policeAC.length; i++ ) {
 					//加入_deptList
 					var police:Police = getPoliceFromDeptList( _policeAC[i] );
 					//警员已存在，刷新坐标信息
@@ -502,7 +514,7 @@
 						police.timeStr = _policeAC[i].fdtTimeStr;
 						police.status = _policeAC[i].status;
 					} 
-				}
+				}*/
 			//removeUnexistPolice( _policeAC );
 				//if ( !policeTree.depList )
 					policeTree.depList = _deptList;
@@ -808,11 +820,16 @@
 						}
 					}
 				}
-				var relationParam:RelationParameters = new RelationParameters();
-				relationParam.geometries1 = visiblePoliceArray;
-				relationParam.geometries2 = [ geom ];
-				relationParam.spatialRelationship = RelationParameters.SPATIAL_REL_WITHIN;
-				_geometryService.relation( relationParam );
+				
+				if ( visiblePoliceArray.length > 0 )
+				{
+					var relationParam:RelationParameters = new RelationParameters();
+					relationParam.geometries1 = visiblePoliceArray;
+					relationParam.geometries2 = [ geom ];
+					relationParam.spatialRelationship = RelationParameters.SPATIAL_REL_WITHIN;
+					_geometryService.relation( relationParam );
+				}
+				
 				//根据hashtable中policeTree节点visible 判断是否在地图上显示
 				/*for each ( var _deptItem:TreePoliceDeptItem in policeTree.rootNode ) 
 				{
@@ -935,8 +952,8 @@
 				
 				_drawLayer.clear();
 				_policeGraphicList.removeAll();
-				lblSearchCount.text = "";
-				lblSearchCount.visible = lblSearchCount.includeInLayout = false;
+				/*lblSearchCount.text = "";
+				lblSearchCount.visible = lblSearchCount.includeInLayout = false;*/
 			}
 			
 			//图形搜索过滤列表
@@ -1206,7 +1223,7 @@
 					}
 //					showInfoWindow( null );
 					AppEvent.dispatch( AppEvent.FIND_DEVICE, 
-						{ name: wName, id: personItem.person.policeCode } );
+						{ type: wName, id: personItem.person.policeCode } );
 				}				
 			}
 			
@@ -1316,7 +1333,7 @@
 				
 				
 				
-				AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: wName, id: police.policeCode } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: wName, id: police.policeCode } );
 			}
 			
 			
@@ -1484,36 +1501,35 @@
 											  paddingTop="5"  paddingBottom="5" paddingLeft="5" paddingRight="5"/>
 						</s:layout>
 						<s:HGroup width="100%"
-							gap="5"
-							horizontalAlign="center">
-						<!--<mx:Image width="40" height="40"
-							buttonMode="true"
-							source="assets/images/i_draw_circle.png" 
-							toolTip="圆形区域"
-							useHandCursor="true" 
-							click="{activateSearchTool(DrawTool.CIRCLE)}"/>	-->			
-						<mx:Image width="40" height="40"
-							buttonMode="true"
-							source="assets/images/i_draw_rect.png" 
-							toolTip="矩形区域"
-							useHandCursor="true"
-							click="{activateSearchTool(DrawTool.EXTENT)}"/>
-						<s:Image buttonMode="true" useHandCursor="true"
-								 source="assets/images/i_draw_line.png" 
-								 toolTip="折线" 
-								 click="{activateSearchTool(DrawTool.POLYLINE)}"/>
-						<!--<mx:Image width="40" height="40"
-							buttonMode="true"
-							source="assets/images/i_draw_poly.png" 
-							toolTip="多边形区域"
-							useHandCursor="true"
-							click="{activateSearchTool(DrawTool.POLYGON)}"/>-->
-						<mx:Image id="imgClear" width="40" height="40"
-							buttonMode="true"
-							source="assets/images/i_clear.png"
-							toolTip="清除搜索结果"
-							useHandCursor="true"
-							click="imgClear_clickHandler(event)"/>
+								  gap="5" horizontalAlign="center">
+							<s:Image buttonMode="true" useHandCursor="true"
+									 source="assets/images/i_draw_line.png" 
+									 toolTip="折线" 
+									 click="{activateSearchTool(DrawTool.POLYLINE)}"/>
+							<mx:Image width="40" height="40"
+									  buttonMode="true"
+									  source="assets/images/i_draw_circle.png" 
+									  toolTip="圆形区域"
+									  useHandCursor="true" 
+									  click="{activateSearchTool(DrawTool.CIRCLE)}"/>				
+							<mx:Image width="40" height="40"
+									  buttonMode="true"
+									  source="assets/images/i_draw_rect.png" 
+									  toolTip="矩形区域"
+									  useHandCursor="true"
+									  click="{activateSearchTool(DrawTool.EXTENT)}"/>
+							<mx:Image width="40" height="40"
+									  buttonMode="true"
+									  source="assets/images/i_draw_poly.png" 
+									  toolTip="多边形区域"
+									  useHandCursor="true"
+									  click="{activateSearchTool(DrawTool.POLYGON)}"/>
+							<mx:Image id="imgClear" width="40" height="40"
+									  buttonMode="true"
+									  source="assets/images/i_clear.png"
+									  toolTip="清除搜索结果"
+									  useHandCursor="true"
+									  click="imgClear_clickHandler(event)"/>
 						</s:HGroup>
 						<s:Label id="lblSearchCount" text="" width="100%" visible="false" includeInLayout="false"/>
 						<mx:AdvancedDataGrid id="adgGraphicSearchResult" height="100%" width="100%"

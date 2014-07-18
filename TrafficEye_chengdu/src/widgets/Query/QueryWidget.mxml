@@ -1009,7 +1009,7 @@
 			}
 			
 			private function findDevice( event:AppEvent ):void {
-				var type:String = event.data.name;
+				var type:String = event.data.type;
 				var id:String = event.data.id;
 				if ( type != widgetTitle )
 					return;

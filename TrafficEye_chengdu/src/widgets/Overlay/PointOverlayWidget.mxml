@@ -221,7 +221,7 @@
 				var type:String = paramObj.type;
 				if ( !type || type.toLowerCase() != _pointType.toLowerCase() )
 					return;
-				//				Alert.show( params, type );
+//				Alert.show( params );
 				
 				//点集
 				var pointArray:Array = paramObj.points;
@@ -410,6 +410,8 @@
 				
 				_currentMode = MODE_NORMAL;
 				closeWidget( "编辑工具栏" );
+				setMapAction( null, null, null, null );
+				editTool.deactivate();
 				
 				_pointOverlayLayer.removeEventListener( MouseEvent.CLICK, pointOverlayLayer_ClickHandler );
 				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
@@ -569,7 +571,7 @@
 									{ 
 										type: _pointType, 
 										id: _selectedGraphic.id, 
-											geometry: _selectedGraphic.geometry 
+										geometry: _selectedGraphic.geometry 
 									};
 								dataString = JSON.stringify( dataObj );
 								AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
@@ -629,8 +631,10 @@
 			
 			private function appevent_findDeviceHandler( event:AppEvent ):void
 			{
-				var type:String = event.data.name;
+				var type:String = event.data.type;
 				var id:String = event.data.id;
+				var showInfo:Boolean = event.data.showInfo || true;
+				
 				if ( type != _pointType )
 				{
 					return;
@@ -642,7 +646,7 @@
 					{
 						map.centerAt( graphic.geometry as MapPoint );
 						//处于新增、编辑模式时不显示弹出框
-						if ( _currentMode == MODE_NORMAL )
+						if ( _currentMode == MODE_NORMAL && showInfo )
 						{
 							var contentNavigator:ContentNavigator = new ContentNavigator();
 							contentNavigator.dataProvider = new ArrayList([ graphic ]);

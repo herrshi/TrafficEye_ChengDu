@@ -12,6 +12,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.esri.ags.Graphic;
+			import com.esri.ags.components.ContentNavigator;
 			import com.esri.ags.events.DrawEvent;
 			import com.esri.ags.events.FindEvent;
 			import com.esri.ags.events.IdentifyEvent;
@@ -31,6 +32,7 @@
 			import com.esri.ags.tasks.supportClasses.IdentifyResult;
 			import com.esri.ags.tools.DrawTool;
 			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.WidgetStates;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
 			import com.esri.viewer.components.checkTree.CheckTreeItemRenderer;
 			import com.esri.viewer.utils.Hashtable;
@@ -38,14 +40,17 @@
 			import com.esri.viewer.utils.RendererParser;
 			
 			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
 			import mx.events.FlexEvent;
 			import mx.events.ListEvent;
 			import mx.managers.CursorManager;
 			import mx.rpc.AsyncResponder;
 			import mx.rpc.Fault;
 			import mx.rpc.events.FaultEvent;
+			import mx.utils.StringUtil;
 			
-			import spark.components.Image;
+//			import widgets.PoliceManagePDA.Police;
+//			import widgets.PoliceManagePDA.PolicePoint;
 			
 			private var _selectedDrawingIcon:Image;
 			
@@ -82,17 +87,22 @@
 			{
 				AppEvent.addListener( AppEvent.SET_SEARCH_TEXT, appevent_setSearchTextHandler );
 				
+//				AppEvent.addListener( AppEvent.WIDGET_RUN, appevent_WidgetRunHandler );
+//				AppEvent.addListener( AppEvent.WIDGET_CLOSE, appevent_WidgetCloseHandler );
+				AppEvent.addListener( AppEvent.WIDGET_STATE_CHANGED, appevent_WidgetStateChangedHandler );
+				
 				_popUpRendererTable = new Hashtable();
 				_treeDataSource = new ArrayCollection();
 				_searchOverlayerInfoArray = new Array();
 				
 				_selectionColor = getStyle( "selectionColor" );
 				
-				_drawLayer = new GraphicsLayer();
-				map.addLayer( _drawLayer );
-				
 				_searchResultLayer = new GraphicsLayer();
 				map.addLayer( _searchResultLayer );
+				
+				_drawLayer = new GraphicsLayer();
+				map.addLayer( _drawLayer );
+				map.reorderLayer( _drawLayer.id, 1 );
 				
 				_pointSymbol = new SimpleMarkerSymbol( SimpleMarkerSymbol.STYLE_CIRCLE, 10, _selectionColor );
 				_polylineSymbol = new SimpleLineSymbol( SimpleLineSymbol.STYLE_SOLID, _selectionColor, 1, 2 );
@@ -102,6 +112,26 @@
 				geometryService.url = GeometryServiceSingleton.instance.url;
 				geometryService.token = GeometryServiceSingleton.instance.token;
 				geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+			}
+			
+			private function appevent_WidgetStateChangedHandler( event:AppEvent ):void
+			{
+				if ( ( event.data.id == widgetId ) )
+				{
+					if ( event.data.state == WidgetStates.WIDGET_CLOSED )
+					{
+						_drawLayer.clear();
+						map.removeLayer( _drawLayer );
+						_searchResultLayer.clear();
+						map.removeLayer( _searchResultLayer );
+					}
+					else if ( event.data.state == WidgetStates.WIDGET_OPENED )
+					{
+						map.addLayer( _drawLayer );
+						map.addLayer( _searchResultLayer );
+//						map.reorderLayer( _drawLayer.id, 1 );
+					}
+				}
 			}
 			
 			protected function this_widgetConfigLoadedHandler(event:Event):void
@@ -234,8 +264,16 @@
 				var distance:Number = Number( rdgrpBufferDistance.selectedValue );
 				if ( distance == 0 )
 				{
-					executeIdentify( drawGraphic.geometry );
-					searchOverlay( drawGraphic.geometry );
+					if ( _searchUrl && _searchUrl != "" )
+					{
+						executeIdentify( drawGraphic.geometry );
+					}
+					
+					if ( _searchOverlayerInfoArray && _searchOverlayerInfoArray.length > 0 )
+					{
+						searchOverlay( drawGraphic.geometry );
+					}
+					
 				}
 				else
 				{
@@ -299,13 +337,18 @@
 						var centerPoint:MapPoint = getGeomCenter( graphic );
 						map.centerAt( centerPoint );
 						
-						var popUpRendererClassFactory:ClassFactory = graphic.infoWindowRenderer as ClassFactory;
+						var contentNavigator:ContentNavigator = new ContentNavigator();
+						contentNavigator.dataProvider = new ArrayList([ graphic ]);
+						map.infoWindowContent = contentNavigator;
+						map.infoWindow.show( centerPoint );
+						
+						/*var popUpRendererClassFactory:ClassFactory = graphic.infoWindowRenderer as ClassFactory;
 						_popUpRenderer.popUpInfo = popUpRendererClassFactory.properties.popUpInfo;
 						_popUpRenderer.graphic = graphic;
 						
 						map.infoWindow.content = _popUpRenderer;
 						map.infoWindow.contentOwner = graphic;
-						map.infoWindow.show( centerPoint );
+						map.infoWindow.show( centerPoint );*/
 					}
 				}
 				
@@ -520,17 +563,43 @@
 					for each ( var overlayObj:Object in _searchOverlayerInfoArray )
 					{
 						var overlayName:String = overlayObj.name;
+						var overlayLabel:String = overlayObj.label;
+						var overlayTitleField:String = overlayObj.titleField;
+						
 						var graphicProvider:ArrayCollection = dataTable.find( overlayName ) as ArrayCollection;
 						if ( graphicProvider && graphicProvider.length > 0 )
 						{
 							for each ( var graphic:Graphic in graphicProvider )
 							{
-								graphic.geometry.spatialReference = map.spatialReference;
-								graphic.attributes.overlayName = overlayName;
-								graphic.attributes.overlayLabel = overlayObj.label;
-								graphic.attributes.titleField = overlayObj.titleField;
-								overlayGraphicArray.push( graphic );
-								overlayGeometryArray.push( graphic.geometry );
+								if ( overlayLabel.indexOf( "警员" ) > -1 )
+								{
+									var policeGraphic:Graphic = new Graphic( graphic.geometry );
+									policeGraphic.geometry.spatialReference = map.spatialReference;
+									policeGraphic.attributes = 
+										{  
+											deptName: graphic.attributes.policeInfo.deptName,
+											teamName: graphic.attributes.policeInfo.teamName,
+											postName: graphic.attributes.policeInfo.postName,
+											timePeriod: graphic.attributes.policeInfo.timePeriod,
+											policeName: graphic.attributes.policeInfo.policeName,
+											policeGpsCode: graphic.attributes.policeInfo.policeGpsCode,
+											status: graphic.attributes.policeInfo.status,
+											overlayName: overlayName,
+											overlayLabel: overlayLabel,
+											titleField: overlayTitleField
+										};
+									overlayGraphicArray.push( policeGraphic );
+									overlayGeometryArray.push( policeGraphic.geometry );
+								}
+								else
+								{
+									graphic.geometry.spatialReference = map.spatialReference;
+									graphic.attributes.overlayName = overlayName;
+									graphic.attributes.overlayLabel = overlayLabel;
+									graphic.attributes.titleField = overlayTitleField;
+									overlayGraphicArray.push( graphic );
+									overlayGeometryArray.push( graphic.geometry );
+								}
 							}
 						}
 					}
@@ -575,7 +644,7 @@
 							var children:ArrayCollection = layerNode.children;
 							children.addItem( 
 								{ 
-									label:graphic.attributes[titleField], 
+									label: StringUtil.trim( graphic.attributes[titleField] ), 
 									graphic:overlayGraphic, 
 									state: CheckTreeItemRenderer.STATE_CHECKED 
 								} 
@@ -592,6 +661,13 @@
 						}
 					} 
 				}
+			}
+			
+			protected function btnClear_clickHandler(event:MouseEvent):void
+			{
+				_drawLayer.clear();
+				_searchResultLayer.clear();
+				_treeDataSource.removeAll();
 			}
 			
 		]]>
@@ -664,7 +740,7 @@
 		</s:Transition>
 	</viewer:transitions>
 	
-	<viewer:WidgetTemplate id="wTemplate" 
+	<viewer:WidgetTemplate id="wTemplate" enableCloseButton="false"
 						   width="300" height="400">
 		<viewer:layout>
 			<s:VerticalLayout gap="0"/>
@@ -747,6 +823,8 @@
 								 keyDown="txtKeyWord_keyDownHandler(event)"/>
 					<s:Button id="btnFind" label="搜索" width="50"
 							  click="btnFind_clickHandler(event)"/>
+					<s:Button id="btnClear" label="清除" width="50" 
+							  click="btnClear_clickHandler(event)"/>
 				</s:HGroup>
 			</s:Group>
 		</s:Group>

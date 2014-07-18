@@ -134,15 +134,11 @@
 						var rankSymbol:QueryResultSymbol = new QueryResultSymbol();
 						rankSymbol.keyValue = symbolList[i].@keyvalue;
 						
-						var resultFillSymbolColor:uint =  symbolList[i].simplefillsymbol.@color || 0xFF0000;
-						var resultFillSymbolAlpha:Number = ( symbolList[i].simplefillsymbol.@alpha[0] != null) ?  
-							symbolList[i].simplefillsymbol.@alpha : 0.5;
-						var resultFillSymbolOutlineColor:uint =  symbolList[i].simplefillsymbol.outline.@color || 
-							resultFillSymbolColor;
-						var resultFillSymbolOutlineAlpha:Number = ( symbolList[i].simplefillsymbol.outline.@alpha[0] != null) ?  
-							symbolList[i].simplefillsymbol.outline.@alpha : 1;
-						var resultFillSymbolOutlineWidth:Number = ( symbolList[i].simplefillsymbol.outline.@width[0] != null) ?  
-							symbolList[i].simplefillsymbol.outline.@width : 3;
+						var resultFillSymbolColor:uint =  symbolList[i].simplefillsymbol.@color;
+						var resultFillSymbolAlpha:Number = symbolList[i].simplefillsymbol.@alpha;
+						var resultFillSymbolOutlineColor:uint =  symbolList[i].simplefillsymbol.outline[0].@color;
+						var resultFillSymbolOutlineAlpha:Number = symbolList[i].simplefillsymbol.outline[0].@alpha;
+						var resultFillSymbolOutlineWidth:Number = symbolList[i].simplefillsymbol.outline[0].@width;
 						rankSymbol.resultFillSymbol = new SimpleFillSymbol( SimpleFillSymbol.STYLE_SOLID, 
 							resultFillSymbolColor, 
 							resultFillSymbolAlpha, 
@@ -301,7 +297,25 @@
 					_deptList.length = 0;
 					_policeList.removeAll();
 					
+				
+					for each (var pobj:Object in _policeAC) 
+					{
+						//加入_deptList
+						var police:Police = getPoliceFromDeptList( pobj );
+						//警员已存在，刷新坐标信息
+						if ( police ) {
+							
+							police.elevation = pobj.elevation;
+							police.Longitude = pobj.longitude;
+							police.Latitude = pobj.latitude;
+							police.x = pobj.x;
+							police.y = pobj.y;
+							police.timeStr = pobj.fdtTimeStr;
+							police.status = pobj.status;
+						} 
+					}
 					
+			/*		
 				for ( var i:uint = 0; i < _policeAC.length; i++ ) {
 					//加入_deptList
 					var police:Police = getPoliceFromDeptList( _policeAC[i] );
@@ -316,7 +330,7 @@
 						police.timeStr = _policeAC[i].fdtTimeStr;
 						police.status = _policeAC[i].status;
 					} 
-				}
+				}*/
 //				removeUnexistPolice( _policeAC );
 //				if ( !policeTree.depList )
 					getpolicecount();
@@ -785,7 +799,7 @@
 					}
 //					showInfoWindow( null );
 					AppEvent.dispatch( AppEvent.FIND_DEVICE, 
-						{ name: wName, id: personItem.person.policeCode } );
+						{ type: wName, id: personItem.person.policeCode } );
 				}				
 			}
 			
@@ -866,18 +880,18 @@
 				var police:Police = ( adg.dataProvider as ArrayCollection )[idx];
 				if(police.policeType=="deptLeader")
 				{
-					AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: "分局领导PDA管理图层", id: police.policeCode } );
+					AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "分局领导PDA管理图层", id: police.policeCode } );
 				}
 				else if(police.policeType=="groupLeader")
 				{
-					AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: "大队领导PDA管理图层", id: police.policeCode } );
+					AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "大队领导PDA管理图层", id: police.policeCode } );
 				}
 				else if(police.policeType=="police")
 				{
-					AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: "警员PDA管理图层", id: police.policeCode } );
+					AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "警员PDA管理图层", id: police.policeCode } );
 				}else
 				{
-				AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: "警员PDA管理图层", id: police.policeCode } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "警员PDA管理图层", id: police.policeCode } );
 				}
 			}
 			

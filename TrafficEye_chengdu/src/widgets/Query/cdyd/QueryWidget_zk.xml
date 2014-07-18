@@ -1,6 +1,6 @@
 ﻿<!--诱导板 -->
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/4</layer>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/4</layer>
 	<titlefield>匝控.name</titlefield>
 	<idfield>匝控.deviceid</idfield>
 	<type>zk</type>

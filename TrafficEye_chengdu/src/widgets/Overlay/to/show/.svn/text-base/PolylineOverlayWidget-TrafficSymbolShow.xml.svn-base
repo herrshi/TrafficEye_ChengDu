@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>trafficSymbolShow</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onTrafficSymbolShowOverlayLoad</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onTrafficSymbolShowOverlayClose</widgetclosenotify>
+	<popup>
+		<title>{id}</title>
+		<fields>
+			<field name="id" alias="ID" visible="true" />
+				<field name="code" alias="编号" visible="true" />
+			<field name="name" alias="名称" visible="true" />
+			<field name="parkTypeId" alias="类别" visible="true" />
+			<field name="occupyRoadLength" alias="占道长度" visible="true" />
+			<field name="belongSuboffice" alias="所属分局" visible="true" />
+			<field name="belongTeam" alias="所属大队" visible="true" />
+			<field name="isUse" alias="是否启用" visible="true" />
+			<field name="areaId" alias="所属区域" visible="true" />
+			<field name="road" alias="所属道路" visible="true" />
+			<field name="roadTypeId" alias="道路类型" visible="true" />
+			<field name="parkingCount" alias="泊车数" visible="true" />
+			<field name="chargeRate" alias="收费率" visible="true" />
+			<field name="constructTime" alias="建设时间" visible="true"/>
+			<field name="doBusinessStartTime" alias="营业开始时间" visible="true" />
+			<field name="doBusinessEndTime" alias="营业结束时间" visible="true"/>
+			<field name="logitude" alias="经度" visible="false"/>
+			<field name="latitude" alias="纬度" visible="false"/>
+			<field name="remark" alias="备注" visible="true"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+		
+	</popup>
+	<uniquevaluerenderer field="road">
+    	<picturemarkersymbol url="assets/images/mapIcons/BadWeather--grey.png" yoffset="13"/>
+		<uniquevalueinfo value="机动车道">
+			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-blue.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="非机动车道">
+			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-red.png" yoffset="13"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+</configuration>

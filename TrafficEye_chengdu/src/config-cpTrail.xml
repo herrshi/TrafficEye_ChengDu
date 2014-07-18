@@ -20,6 +20,8 @@
 		url="widgets/Coordinate/CoordinateWidget.swf"/ -->
 
 	<!--gis服务器地址 -->
+	<geometryservice url="http://[serverip]/arcgis/rest/services/Geometry/GeometryServer" />
+	
 	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0"
 		serverip="20.0.56.14:8399">
 		<basemaps>
@@ -36,8 +38,21 @@
 	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
 
 	<widgetcontainer layout="float">
-		<widget label="car" preload="open"
-			url="widgets/TracePlayback/TracePlayback.swf" config="widgets/TracePlayback/TracePlayback.xml" />
+		<widget label="单车轨迹" preload="open"
+				config="widgets/CarTrack/ChengDu/CarTrackWidget.xml"
+				url="widgets/CarTrack/CarTrackWidget.swf"/>
+		
+		<widget label="轨迹线" preload="open"
+				config="widgets/Overlay/ChengDu/PolylineOverlayWidget-carTrack.xml"
+				url="widgets/Overlay/PolylineOverlayWidget.swf" />
+		
+			<widget label="卡口点图标" preload="open"
+				config="widgets/Overlay/ChengDu/PointOverlayWidget-carTrack.xml"
+				url="widgets/Overlay/PointOverlayWidget.swf" />
+		
+		<widget label="模拟移动" preload="open"
+				config="widgets/SimulationMovePoint/ChengDu/SimulationMovePointWidget-carTrack.xml"
+				url="widgets/SimulationMovePoint/SimulationMovePointWidget.swf"/>
 
 	</widgetcontainer>
 </configuration>

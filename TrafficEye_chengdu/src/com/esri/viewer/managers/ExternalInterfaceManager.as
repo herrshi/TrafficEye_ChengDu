@@ -57,8 +57,14 @@ package com.esri.viewer.managers
 			ExternalInterface.addCallback( "startEditGeometry", dispatchStartEditEvent );
 			ExternalInterface.addCallback( "startAdd", dispatchStartAddEvent );
 			
+			//打开组件
 			ExternalInterface.addCallback( "openWidget", dispatchOpenWidgetEvent );
 			ExternalInterface.addCallback( "closeWidget", dispatchCloseWidgetEvent );
+			//打开图层
+			ExternalInterface.addCallback( "openLayer",dispatchOpenLayerEvent );
+			ExternalInterface.addCallback( "closeLayer",dispatchCLoseLayerEvent);
+			
+			
 			
 			ExternalInterface.addCallback( "setSearchText", dispatchSetSearchTextEvent );
 
@@ -75,6 +81,22 @@ package com.esri.viewer.managers
 		{
 			AppEvent.dispatch( AppEvent.SET_SEARCH_TEXT, param );
 		}
+		
+		
+		//需在layercontrolWidget中间配置
+		private function dispatchOpenLayerEvent( param:String ):void
+		{
+			var visible:Boolean = true;
+			AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: param, visible: visible } );
+		}
+		
+		//需在layercontrolWidget中间配置
+		private function dispatchCLoseLayerEvent( param:String ):void
+		{
+			var visible:Boolean = false;
+			AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: param, visible: visible } );
+		}
+		
 		
 		private function dispatchOpenWidgetEvent( param:String ):void
 		{
@@ -218,11 +240,17 @@ package com.esri.viewer.managers
 			AppEvent.dispatch( AppEvent.SET_MAPEXTENT, { xMin:xMin, xMax:xMax, yMin:yMin, yMax:yMax } );
 		}
 		
-		private function findDevice( type:String, id:String = "" ):void {
-		//	Alert.show( type);
+		private function findDevice( type:String, id:String = "", showInfo:Boolean = true ):void {
+//			Alert.show( type, id );
 			AppEvent.dispatch( AppEvent.CHANGE_WIDGET_ACTIVITY, { name: type, visible: true } );
 			if ( id && id != "" )
-				AppEvent.dispatch( AppEvent.FIND_DEVICE, { name: type, id: id } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, 
+					{ 
+						type: type, 
+						id: id, 
+						showInfo: showInfo 
+					} 
+				);
 		}
 		
 		private function hideDevice( type:String ):void {

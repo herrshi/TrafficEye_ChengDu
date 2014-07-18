@@ -12,26 +12,18 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.esri.ags.FeatureSet;
 			import com.esri.ags.Graphic;
 			import com.esri.ags.events.MapMouseEvent;
-			import com.esri.ags.geometry.Geometry;
 			import com.esri.ags.geometry.MapPoint;
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.symbols.PictureMarkerSymbol;
-			import com.esri.ags.tasks.QueryTask;
-			import com.esri.ags.tasks.supportClasses.Query;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.IInfowindowTemplate;
-			import com.esri.viewer.ViewerContainer;
 			
 			import mx.collections.ArrayCollection;
-			import mx.controls.Alert;
 			import mx.core.UIComponent;
 			import mx.events.FlexEvent;
-			import mx.formatters.DateFormatter;
 			import mx.managers.CursorManager;
-			import mx.rpc.AsyncResponder;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			import mx.rpc.remoting.mxml.RemoteObject;

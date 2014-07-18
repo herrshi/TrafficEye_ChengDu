@@ -6,9 +6,12 @@
 		<alpha>0.8</alpha>
 		<applicationbackgroudalpha>0</applicationbackgroudalpha>
 	</style>
+	
 	<showerror>true</showerror>
+	
 	<widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
 	<widget right="-2" bottom="-2" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	
 	<!--GIS服务器地址 -->
 	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="20.0.56.14:8399">
 		<basemaps>
@@ -16,16 +19,14 @@
 		</basemaps>
 		<operationallayers>
 			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />
-			<layer label="透明图层" type="dynamic" visible="true" alpha="0.5" url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
-			<layer label="设备图层" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" />
-			<layer label="路段状态" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
-			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer" />
 		</operationallayers>
 	</map>
+	
 	<widgetcontainer layout="float">
 		<widget label="OneWayStreetOverlay" preload="open" url="widgets/Overlay/PolylineOverlayWidget.swf" config="widgets/Overlay/to/locate/PolylineOverlayWidget-OneWayStreetLocate.xml"/>
 		<widget label="编辑工具栏" left="80" top="10" url="widgets/EditorToolbar/EditorToolbarWidget.swf"/>
 	</widgetcontainer>
+	
 	<widgetcontainer layout="horizontal">
 		<widget label="地图搜索" preload="minimized" icon="assets/images/i_search_s.png" config="widgets/MapSearch/ChengDu/MultiLayerSearchWidget-RoadAndPoi-WithName.xml" url="widgets/MapSearch/MultiLayerSearchWidget.swf" />
 	</widgetcontainer>

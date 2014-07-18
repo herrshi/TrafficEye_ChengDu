@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu
+END
+PointOverlayWidget-roadPark.xml
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu/PointOverlayWidget-roadPark.xml
+END
+PointOverlayWidget-busPark.xml
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu/PointOverlayWidget-busPark.xml
+END
+PointOverlayWidget-police.xml
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu/PointOverlayWidget-police.xml
+END
+PolylineOverlayWidget-oneWayStreet.xml
+K 25
+svn:wc:ra_dav:version-url
+V 135
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu/PolylineOverlayWidget-oneWayStreet.xml
+END
+PointOverlayWidget-park.xml
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/ChengDu/!svn/ver/4/trunk/code/chengdu-webapp/src/main/webapp/gis/v3/widgets/Overlay/ChengDu/PointOverlayWidget-park.xml
+END
