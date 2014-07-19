@@ -6,7 +6,7 @@
 	<layerinfo>
 		<url>http://[serverip]/arcgis/rest/services/cd_search/MapServer</url>
 		<layerids>0,1,2,3,4,5</layerids>
-		<fields>Name</fields>
+		<fields>DEVICEID,DES,Name,des,deviceid</fields>
 
 		<uniquevaluerenderer field="layerName">
 			<picturemarkersymbol url="assets/images/i_pushpin_centered.png" />

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:viewer="com.esri.viewer.*"
+					   xmlns:esri="http://www.esri.com/2008/ags"
+					   layout="absolute" 
+					   widgetConfigLoaded="widgetConfigLoadedHandler(event)"
+					   creationComplete="creationCompleteHandler(event)" >
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.tasks.QueryTask;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.utils.UIDUtil;
+			
+			private var _moveSpeed:Number;
+			private var _simMovePointType:String;
+			
+			private var _trackPointLayer:GraphicsLayer;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				_trackPointLayer = new GraphicsLayer();
+				map.addLayer( _trackPointLayer );
+				
+				AppEvent.addListener( AppEvent.TRACE_PLAYBACK, appevent_addCarTrackHandler );
+			}
+			
+			protected function widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_moveSpeed = configXML.speed || 40;
+					_simMovePointType = configXML.simmovepointtype || "carTrack";
+					
+					if ( configXML.devicelayer[0] )
+					{
+						var url:String = configXML.devicelayer.url;
+						url = url.replace( "[serverip]", configData.serverIp );
+						var idField:String = configXML.devicelayer.idfield;
+						if ( url != "" && idField != "" )
+						{
+							queryDevice( url, idField );
+						}
+					}
+				}
+			}
+			
+			private var _deviceArray:Array = [];
+			
+			private function queryDevice( url:String, idField:String ):void
+			{
+				var queryTask:QueryTask = new QueryTask( url );
+				var query:Query = new Query();
+				query.where = "1=1";
+				query.returnGeometry = true;
+				query.outFields = [ idField ];
+				queryTask.execute(query, new AsyncResponder(onResult, onFault));
+				
+				function onResult(featureSet:FeatureSet, token:Object = null):void
+				{
+					for each ( var graphic:Graphic in featureSet.features )
+					{
+						var id:String = graphic.attributes[ idField ];
+						var point:MapPoint = graphic.geometry as MapPoint;
+						_deviceArray.push( 
+							{ 
+								id: id, 
+								point: point 
+							} 
+						);
+					}
+				}
+				
+				function onFault(info:Object, token:Object = null):void
+				{
+					showError( info.toString() );
+				}
+			}
+			
+			private function appevent_addCarTrackHandler( event:AppEvent ):void
+			{
+				var param:String = event.data as String;
+				var pointsXML:XML = XML( param );
+				var pointList:XMLList = pointsXML..point;
+				
+				
+				//初始化卡口点图标overlay数据
+				var kaKouSymbolJsonObjArray:Array = [];
+				var kaKouSymbolObj:Object = 
+					{ 
+						type: "carTrackPoint", 
+						points: kaKouSymbolJsonObjArray 
+					};
+				
+				//初始化卡口点文字overlay数据
+				/*var kaKouTextJsonObjArray:Array = [];
+				var kakouTextObj:Object = 
+					{ 
+						type: "carTrackKaKouText", 
+						points: kaKouTextJsonObjArray 
+					};*/
+				
+				var trackPath:Array = [];
+				for each ( var pointXML:XML in pointList )
+				{
+					var x:Number = pointXML.x;
+					var y:Number = pointXML.y;
+					var deviceId:String = pointXML.id;
+					var name:String = pointXML.name;
+					var time:String = pointXML.time;
+					
+					var trackPoint:MapPoint;
+					trackPoint = new MapPoint( x, y );
+					
+					trackPath.push( trackPoint );
+					
+					//添加图标
+					//已经添加过的设备不再添加图标
+					var hasAdded:Boolean = false;
+					for each ( var symbolObj:Object in kaKouSymbolJsonObjArray )
+					{
+						if ( symbolObj.id == deviceId )
+						{
+							hasAdded = true;
+							break;
+						}
+					}
+					if ( !hasAdded )
+					{
+						kaKouSymbolJsonObjArray.push( 
+							{
+								id: deviceId, 
+								x: trackPoint.x, 
+								y: trackPoint.y,
+								fields:{ name: name, time: time }
+							}
+						);
+					}
+					
+					
+					//添加文字
+					/*hasAdded = false;
+					var content:String;
+					for each ( var textObj:Object in kaKouTextJsonObjArray )
+					{
+						if ( textObj.id == deviceId )
+						{
+							content = textObj.text;
+							content += "\n序号: " + index + "\n经过时间: " + passTime;
+							textObj.text = content;
+							hasAdded = true;
+							break;
+						}
+					}
+					if ( !hasAdded )
+					{
+						content = "编号: " + deviceId + "\n位置: " + deviceDesc + 
+							"\n序号: " + index + "\n经过时间: " + passTime;
+						kaKouTextJsonObjArray.push( 
+							{ 
+								text: content, 
+								id: deviceId, 
+								position: trackPoint.toJSON() 
+							} 
+						);
+					}*/
+				}
+				
+				//显示卡口点
+				var kaKouPointJsonString:String = JSON.stringify( kaKouSymbolObj );
+				AppEvent.dispatch( AppEvent.ADD_POINTS, kaKouPointJsonString );
+				
+				//显示卡口文字
+				/*var kaKouTextJsonString:String = JSON.stringify( kakouTextObj );
+				AppEvent.dispatch( AppEvent.ADD_TEXTS, kaKouTextJsonString );*/
+				
+				//设置显示范围
+				var trackPolyline:Polyline = new Polyline( [trackPath] );
+				map.extent = trackPolyline.extent.expand( 1.5 );
+				
+				//显示轨迹
+				var lineObj:Object = 
+					{ 
+						type: "carTrack", 
+						lines: [ { "id": UIDUtil.createUID(), "geometry": trackPolyline } ] 
+					};
+				var lineString:String = JSON.stringify( lineObj );
+				AppEvent.dispatch( AppEvent.ADD_LINES, lineString );
+				
+				//显示移动车辆
+				/*AppEvent.dispatch( AppEvent.SIM_MOVE_POINT_START, 
+					{ 
+						type: _simMovePointType,
+						id: UIDUtil.createUID(), 
+						speed: _moveSpeed, 
+						route: JSON.stringify( trackPolyline.toJSON() ) 
+					} 
+				);*/
+			}
+			
+			private function findGraphicById( id:String, point:MapPoint ):Graphic
+			{
+				for each ( var graphic:Graphic in _trackPointLayer.graphicProvider )
+				{
+					if ( graphic.id == id )
+					{
+						return graphic;
+					}
+				}
+				
+				graphic = new Graphic( point );
+				graphic.id = id;
+				graphic.attributes = { trackInfo: [] };
+				graphic.symbol = carTrackInfoSymbol;
+//				_trackPointLayer.add( graphic );
+				return graphic;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<esri:InfoSymbol id="carTrackInfoSymbol" infoRenderer="widgets.CarTrack.CarTrackSymbol"/>
+	</fx:Declarations>
+</viewer:BaseWidget>

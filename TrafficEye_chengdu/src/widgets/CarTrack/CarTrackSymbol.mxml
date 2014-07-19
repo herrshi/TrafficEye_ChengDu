@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  implements="mx.core.IDataRenderer" gap="2" verticalAlign="middle" height="22">
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.components.Image;
+			import spark.components.Label;
+			
+			private var _data:Object;
+			
+			[Bindable]
+			// implement IDataRenderer
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			public function set data(value:Object):void
+			{
+				_data = value;
+				var trackInfoArray:Array = _data.trackInfo;
+				for each ( var trackInfoObj:Object in trackInfoArray )
+				{
+					var index:uint = trackInfoObj.index;
+					var label:Label = new Label();
+					label.text = index.toString();
+					this.addElement( label );
+					
+					var directions:String = trackInfoObj.direction;
+					var directionArray:Array = directions.split( "," );
+					for each ( var direction:String in directionArray )
+					{
+						var image:Image = new Image();
+						image.source = "assets/images/laneDirection/" + direction + ".png";
+						image.buttonMode = true;
+						this.addElement( image );
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</s:HGroup>

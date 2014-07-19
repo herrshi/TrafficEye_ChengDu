@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2013 史晓青. All Rights Reserved.
+//
+// 1.在polyline上模拟点的移动。
+// 2.可设置点的移动速度（km/h）。
+///////////////////////////////////////////////////////////////////////////
+-->
+<TGISViewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:TGISViewer="cn.seisys.TGISViewer.*" 
+					   layout="absolute" 
+					   creationComplete="creationCompleteHandler(event)" 
+					   widgetConfigLoaded="widgetConfigLoadedHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Units;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.utils.GeometryUtil;
+			import com.esri.ags.utils.JSONUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import cn.seisys.TGISViewer.AppEvent;
+			import cn.seisys.TGISViewer.utils.SymbolParser;
+			
+			private var _pointSymbol:Symbol = new SimpleMarkerSymbol();
+			private var _pointLayer:GraphicsLayer;
+			
+			private var _moveSpeed:Number = 40;
+			private var _timerTick:Number = 200;
+			
+			private var _routeAC:ArrayCollection;
+			
+			private var _polylineType:String;
+			private var _type:String;
+			
+			protected function widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_type = configXML.type;
+					_polylineType = configXML.linetype;
+					
+					if ( configXML.pointsymbol[0] )
+					{
+						var symbolParser:SymbolParser = new SymbolParser();
+						_pointSymbol = symbolParser.parseSymbol( configXML.pointsymbol[0] );
+						_pointLayer.symbol = _pointSymbol;
+					}
+					//不需要显示移动点
+					else
+					{
+						_pointLayer.visible = false;
+					}
+				}
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				_routeAC = new ArrayCollection();
+				
+				_pointLayer = new GraphicsLayer();
+				_pointLayer.name = widgetTitle;
+				map.addLayer( _pointLayer );
+				
+				AppEvent.addListener( AppEvent.SIM_MOVE_POINT_START, appEvent_simMovePointStartHandler );
+				AppEvent.addListener( AppEvent.SIM_MOVE_POINT_STOP, appEvent_simMovePointStopHandler );
+				AppEvent.addListener( AppEvent.SIM_MOVE_POINT_PAUSE, appEvent_simMovePointPauseHandler );
+				AppEvent.addListener( AppEvent.SIM_MOVE_POINT_RESUME, appEvent_simMovePointResumeHander );
+				AppEvent.addListener( AppEvent.SIM_MOVE_POINT_SET_SPEED, appEvent_simMovePointSetSpeedHandler );
+				AppEvent.addListener( AppEvent.GET_SIM_MOVE_POINT_CURRENT_POINT, appEvent_getSimMovePointCurrentPointHandler );
+			}
+			
+			private function appEvent_simMovePointStartHandler( event:AppEvent ):void
+			{
+				var type:String = event.data.type;
+				if ( !type || type.toLowerCase() != _type.toLowerCase() )
+				{
+					return;
+				}
+				
+				//将文字图层移动到最上层
+				map.reorderLayer( _pointLayer.id, map.layerIds.length - 1 );
+				
+				_moveSpeed = event.data.speed || _moveSpeed;
+				
+				var id:String = event.data.id;
+				var route:String = event.data.route;
+				//显示轨迹线
+				AppEvent.dispatch( AppEvent.ADD_LINES, 
+					'{"type":"' + _polylineType + '","lines":[{"id":"' + id + '","line":' + route + '}]}' );
+				
+				var polyline:Polyline = Polyline.fromJSON( JSONUtil.decode( route ) );
+				map.extent = polyline.extent.expand( 1.5 );
+				var paths:Array = polyline.paths;
+				for each ( var path:Array in paths )
+				{
+					if ( path.length > 1 )
+					{
+						var timer:Timer = new Timer( _timerTick );
+						var pointGraphic:Graphic = new Graphic();
+						_pointLayer.add( pointGraphic );
+						var routeObj:Object = 
+							{ 
+								id: id, 
+								timer: timer, 
+								path: path, 
+								pointGraphic: pointGraphic 
+							};
+						_routeAC.addItem( routeObj );
+						movePoint( routeObj );
+					}
+				}
+			}
+			
+			private function movePoint( routeObj:Object ):void
+			{
+				var path:Array = routeObj.path;
+				var timer:Timer = routeObj.timer;
+				var pointGraphic:Graphic = routeObj.pointGraphic;
+				
+				var pointIndex:uint = 0;
+				movePointBetween2Points();
+				
+				function movePointBetween2Points():void
+				{
+					if ( pointIndex < path.length - 1 )
+					{
+						var startPoint:MapPoint = path[pointIndex];
+						var stopPoint:MapPoint = path[pointIndex+1];
+						var currentPoint:MapPoint = new MapPoint( startPoint.x, startPoint.y );
+						pointGraphic.geometry = currentPoint;
+						_pointLayer.refresh();
+						
+						//速度单位化为米/秒
+						var speed:Number = _moveSpeed * 1000 / 3600;
+						//时间单位化为秒
+						var tick:Number = _timerTick / 1000;
+						//每个tick前进的长度
+						var tickLength:Number = speed * tick;
+						
+						var currentPath:Array = [ startPoint, stopPoint ];
+						var polyline:Polyline = new Polyline( [currentPath] );
+						var totalLength:Number = GeometryUtil.geodesicLengths( [polyline], Units.METERS )[0];
+						var tickCount:uint = Math.floor( totalLength / tickLength );
+						var tickIndex:uint = 0;
+						var xOffset:Number = ( stopPoint.x - startPoint.x ) / tickCount;
+						var yOffset:Number = ( stopPoint.y - startPoint.y ) / tickCount;
+						timer.addEventListener( TimerEvent.TIMER, timerTickEvent );
+						timer.start();
+					}
+					
+					function timerTickEvent( event:TimerEvent ):void
+					{
+						currentPoint.x += xOffset;
+						currentPoint.y += yOffset;
+						_pointLayer.refresh();
+						tickIndex++;
+						if ( tickIndex >= tickCount )
+						{
+							timer.stop();
+							timer.removeEventListener( TimerEvent.TIMER, timerTickEvent );
+							pointIndex++;
+							movePointBetween2Points();
+						}
+					}
+				}
+			}
+			
+			/**
+			 * 根据当前的速度确定在timer的每个tick中点移动的距离，再算出对应的x、y轴偏移量。
+			 * */
+			private function calculateOffset( startPoint:MapPoint, stopPoint:MapPoint ):Object
+			{
+				//速度单位化为米/秒
+				var speed:Number = _moveSpeed * 1000 / 3600;
+				//时间单位化为秒
+				var tick:Number = _timerTick / 1000;
+				//每个tick前进的长度
+				var tickLength:Number = speed * tick;
+				
+				var path:Array = [ startPoint, stopPoint ];
+				var polyline:Polyline = new Polyline( [path] );
+				var totalLength:Number = GeometryUtil.geodesicLengths( [polyline], Units.METERS )[0];
+				var tickCount:uint = Math.floor( totalLength / tickLength );
+				
+				var xOffset:Number = ( stopPoint.x - startPoint.x ) / tickCount;
+				var yOffset:Number = ( stopPoint.y - startPoint.y ) / tickCount;
+				var result:Object = 
+					{ 
+						xOffset: xOffset, 
+						yOffset: yOffset 
+					};
+				return result;
+			}
+			
+			private function appEvent_simMovePointPauseHandler( event:AppEvent ):void
+			{
+				var id:String = event.data as String;
+				for each ( var routeObj:Object in _routeAC )
+				{
+					if ( id == "" || id == routeObj.id )
+					{
+						var timer:Timer = routeObj.timer;
+						timer.stop();
+					}
+				}
+			}
+			
+			private function appEvent_simMovePointResumeHander( event:AppEvent ):void
+			{
+				var id:String = event.data as String;
+				for each ( var routeObj:Object in _routeAC )
+				{
+					if ( id == "" || id == routeObj.id )
+					{
+						var timer:Timer = routeObj.timer;
+						timer.start();
+					}
+				}
+			}
+			
+			private function appEvent_simMovePointStopHandler( event:AppEvent ):void
+			{
+				var id:String = event.data as String;
+				//timer停止，清除图标
+				for ( var i:uint = 0; i < _routeAC.length; i++ )
+				{
+					var routeObj:Object = _routeAC.getItemAt( i );
+					if ( id == "" || id == routeObj.id )
+					{
+						var timer:Timer = routeObj.timer;
+						timer.stop();
+						
+						var pointGraphic:Graphic = routeObj.pointGraphic;
+						_pointLayer.remove( pointGraphic );
+						
+						_routeAC.removeItemAt( i );
+					}
+				}
+				//清除线
+				if ( id == "" )
+				{
+					AppEvent.dispatch( AppEvent.DELETE_ALL_LINES, _polylineType );
+				}
+				else
+				{
+					AppEvent.dispatch( AppEvent.DELETE_LINES, 
+						'{"type":"'+ _polylineType + '","lines":[' + id + ']}' );
+				}
+			}
+			
+			private function appEvent_simMovePointSetSpeedHandler( event:AppEvent ):void
+			{
+				if ( !isNaN( event.data as Number ) )
+					_moveSpeed = event.data as Number;
+			}
+			
+			private function appEvent_getSimMovePointCurrentPointHandler( event:AppEvent ):void
+			{
+				var id:String = event.data as String;
+				var callbackFunction:Function = event.callback;
+				for each ( var routeObj:Object in _routeAC )
+				{
+					if ( routeObj.id == id )
+					{
+						var pointGraphic:Graphic = routeObj.pointGraphic;
+						var pt:MapPoint = pointGraphic.geometry as MapPoint;
+						if ( callbackFunction != null )
+						{
+							callbackFunction( id, pt );
+						}
+						
+						break;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</TGISViewer:BaseWidget>
