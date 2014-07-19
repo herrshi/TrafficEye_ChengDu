@@ -6,6 +6,10 @@
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify></widgetclosenotify>
 	
+	<arrow enable="true">
+		<position>middle</position>
+	</arrow>
+	
 	<popup>
 		<title>{id}</title>
 		<fields>

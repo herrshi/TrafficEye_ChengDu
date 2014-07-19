@@ -20,6 +20,7 @@
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.portal.PopUpRenderer;
 			import com.esri.ags.renderers.IRenderer;
+			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.symbols.SimpleLineSymbol;
 			import com.esri.ags.symbols.Symbol;
 			import com.esri.ags.tools.DrawTool;
@@ -37,10 +38,8 @@
 			import mx.events.FlexEvent;
 			import mx.utils.UIDUtil;
 			
-			
-			
-			
 			private var _lineOverlayLayer:GraphicsLayer;
+			private var _lineArrowLayer:GraphicsLayer;
 			
 			private var _lineType:String;
 			
@@ -58,6 +57,15 @@
 			 * 新增时使用的symbol
 			 * */
 			private var _drawSymbol:Symbol;
+			
+			/**
+			 * 是否要在线上增加箭头
+			 * */
+			private var _needArrow:Boolean;
+			/**
+			 * 箭头位置，start/middle/end
+			 * */
+			private var _arrowPosition:String;
 			
 			/**
 			 * 当前模式
@@ -99,6 +107,10 @@
 				_lineOverlayLayer.name = widgetTitle;
 				map.addLayer( _lineOverlayLayer );
 				
+				_lineArrowLayer = new GraphicsLayer();
+				_lineArrowLayer.name = widgetTitle + "arrow";
+				map.addLayer( _lineArrowLayer );
+				
 				_movedGeometryTable = new Hashtable();
 				
 				AppEvent.addListener( AppEvent.FIND_DEVICE, appevent_findDeviceHandler );
@@ -137,6 +149,12 @@
 					{
 						var symbolParser:SymbolParser = new SymbolParser();
 						_drawSymbol = symbolParser.parseSymbol( configXML.drawsymbol[0] );
+					}
+					
+					_needArrow = configXML.arrow.@enable == "true" ? true : false;
+					if ( _needArrow )
+					{
+						_arrowPosition = configXML.arrow.position;
 					}
 					
 					//启动时的状态add/move/normal
@@ -196,6 +214,7 @@
 				if ( ( event.data as int == widgetId ) || ( event.data as String == widgetTitle ) )
 				{
 					map.addLayer( _lineOverlayLayer );
+					map.addLayer( _lineArrowLayer );
 					if ( _widgetRunNotifyFunctionName != "" )
 					{
 						//通知页面组件激活
@@ -211,6 +230,7 @@
 				if ( ( event.data as int == widgetId ) || ( event.data as String == widgetTitle ) )
 				{
 					map.removeLayer( _lineOverlayLayer );
+					map.removeLayer( _lineArrowLayer );
 					if ( _widgetRunNotifyFunctionName != "" )
 					{
 						//通知页面组件关闭
@@ -267,6 +287,11 @@
 						graphic.filters = [_symbolGlowFilter];
 					}
 					_lineOverlayLayer.add( graphic );
+					
+					if ( _needArrow )
+					{
+						drawArrow( polyline );
+					}
 				}
 			}
 			
@@ -675,6 +700,45 @@
 							map.infoWindow.show( centerPoint );
 						}
 						break;
+					}
+				}
+			}
+			
+			private function drawArrow( polyline:Polyline ):void
+			{
+				for each ( var path:Array in polyline.paths )
+				{
+					for ( var i:uint = 0; i < path.length - 1; i++ )
+					{
+						var startPoint:MapPoint = path[ i ];
+						var endPoint:MapPoint = path[ i + 1 ];
+						
+						//确定图标位置
+						var arrowGraphic:Graphic;
+						switch( _arrowPosition )
+						{
+							case "start":
+								arrowGraphic = new Graphic( startPoint );
+								break;
+								
+							case "end":
+								arrowGraphic = new Graphic( endPoint );
+								break;
+							
+							case "middle":
+								arrowGraphic = new Graphic( new MapPoint( ( startPoint.x + endPoint.x ) / 2, ( startPoint.y + endPoint.y ) / 2 ) );
+								break;
+						}
+						
+						//计算角度
+						var startScreenPoint:Point = map.toScreen( startPoint );
+						var endScreenPoint:Point = map.toScreen( endPoint );
+						var res:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
+						res -= 90;
+						var arrowSymbol:PictureMarkerSymbol = new PictureMarkerSymbol( "assets/images/w_collapse_up.png", 
+							20, 20, 0, 0, res );
+						arrowGraphic.symbol = arrowSymbol;
+						_lineArrowLayer.add( arrowGraphic );
 					}
 				}
 			}
