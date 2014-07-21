@@ -41,7 +41,7 @@
 				  width="50" height="20"
 				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
 				  click="btnUndo_clickHandler(event)"/>
-		<s:Button id="btnRedo" label="重做" 
+		<s:Button id="btnRedo" label="前进" 
 				  width="50" height="20" 
 				  skinClass="widgets.EditorToolbar.EditorToolbarButtonSkin"
 				  click="btnRedo_clickHandler(event)"/>

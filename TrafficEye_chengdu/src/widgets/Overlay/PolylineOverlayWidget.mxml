@@ -263,18 +263,32 @@
 						continue;
 					}
 					
-					//去掉id重复的graphic
-					for each ( var gra:Graphic in _lineOverlayLayer.graphicProvider )
+					var graphic:Graphic = getGraphicById( id );
+					if ( graphic )
 					{
-						if ( gra.id == id )
+						//若已经存在此元素且传入坐标则更新元素，否则只更新属性
+						if ( geometryObj )
 						{
-							_lineOverlayLayer.remove( gra );
-							break;
+							polyline = Polyline.fromJSON( geometryObj );
+							graphic.geometry = polyline;
 						}
 					}
-					
-					var graphic:Graphic = new Graphic( polyline );
-					graphic.id = id;
+					else
+					{
+						//若不存在此点且传入坐标则新建，否则退出
+						if ( geometryObj )
+						{
+							polyline = Polyline.fromJSON( geometryObj );
+							graphic = new Graphic( polyline );
+							graphic.id = id;
+							_lineOverlayLayer.add( graphic );
+						}
+						else
+						{
+							continue;
+						}
+						
+					}
 					
 					var fields:Object = lineObj.fields;
 					if ( fields )
