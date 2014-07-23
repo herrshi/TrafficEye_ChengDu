@@ -300,7 +300,6 @@
 					{
 						graphic.filters = [_symbolGlowFilter];
 					}
-					_lineOverlayLayer.add( graphic );
 					
 					if ( _needArrow )
 					{
@@ -748,9 +747,8 @@
 						var startScreenPoint:Point = map.toScreen( startPoint );
 						var endScreenPoint:Point = map.toScreen( endPoint );
 						var res:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
-						res -= 90;
-						var arrowSymbol:PictureMarkerSymbol = new PictureMarkerSymbol( "assets/images/w_collapse_up.png", 
-							20, 20, 0, 0, res );
+						/*var arrowSymbol:PictureMarkerSymbol = new PictureMarkerSymbol( "assets/images/arrow_green.png", 
+							27, 15, 0, 0, res);*/
 						arrowGraphic.symbol = arrowSymbol;
 						_lineArrowLayer.add( arrowGraphic );
 					}
@@ -765,5 +763,7 @@
 		
 		<!-- 高亮显示当前在编辑的元素 -->
 		<s:GlowFilter id="editHighlightGlowFilter" alpha="1" blurX="32" blurY="32" color="0xFF0000"/>
+		
+		<esri:InfoSymbol id="arrowSymbol" infoRenderer="com.esri.viewer.components.ArrowSymbol" infoPlacement="center"/>
 	</fx:Declarations>
 </viewer:BaseWidget>

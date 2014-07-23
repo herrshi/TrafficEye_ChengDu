@@ -243,8 +243,8 @@
 					hidekeyvalue = configXML.hidekeyvalue || "nodata";
 					hidekeyvalueAarray = hidekeyvalue.split(",");
 					for (  i = 0; i < scaleSymbolList.length(); i++ ) {
-						var maxScale:Number = scaleSymbolList[i].@maxscale || 3072000;
-						var minScale:Number = scaleSymbolList[i].@minscale || 6000;
+						var maxScale:Number = scaleSymbolList[i].@maxscale || Number.MAX_VALUE;
+						var minScale:Number = scaleSymbolList[i].@minscale || Number.MIN_VALUE;
 						var useInRankSymbolWidget:Boolean = scaleSymbolList[i].@useinranksymbolwidget == "true" ? true : false;
 						var rankSymbols:Vector.<QueryResultSymbol> = new Vector.<QueryResultSymbol>();
 						var symbolList:XMLList = scaleSymbolList[i].symbol;
