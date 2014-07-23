@@ -20,7 +20,6 @@
 			import com.esri.ags.layers.GraphicsLayer;
 			import com.esri.ags.portal.PopUpRenderer;
 			import com.esri.ags.renderers.IRenderer;
-			import com.esri.ags.symbols.PictureMarkerSymbol;
 			import com.esri.ags.symbols.SimpleLineSymbol;
 			import com.esri.ags.symbols.Symbol;
 			import com.esri.ags.tools.DrawTool;
@@ -378,6 +377,7 @@
 				drawGraphic.id = UIDUtil.createUID();
 				_movedGeometryTable.add( drawGraphic.id, [ drawGraphic.geometry ] );
 				_lineOverlayLayer.add( drawGraphic );
+				drawArrow( drawGraphic.geometry as Polyline );
 				_selectedGraphic = drawGraphic;
 				
 				//设置移动
@@ -746,16 +746,17 @@
 						//计算角度
 						var startScreenPoint:Point = map.toScreen( startPoint );
 						var endScreenPoint:Point = map.toScreen( endPoint );
-						var res:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
-						/*var arrowSymbol:PictureMarkerSymbol = new PictureMarkerSymbol( "assets/images/arrow_green.png", 
-							27, 15, 0, 0, res);*/
+						var angle:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
+						trace( angle );
 						arrowGraphic.symbol = arrowSymbol;
+						arrowGraphic.attributes = { arrowLength: 30, arrowAngle: angle };
 						_lineArrowLayer.add( arrowGraphic );
 					}
 				}
 			}
 		]]>
 	</fx:Script>
+	
 	<fx:Declarations>
 		<!-- 编辑已有元素 -->
 		<esri:EditTool id="editTool" map="{map}"
@@ -764,6 +765,7 @@
 		<!-- 高亮显示当前在编辑的元素 -->
 		<s:GlowFilter id="editHighlightGlowFilter" alpha="1" blurX="32" blurY="32" color="0xFF0000"/>
 		
-		<esri:InfoSymbol id="arrowSymbol" infoRenderer="com.esri.viewer.components.ArrowSymbol" infoPlacement="center"/>
+		<esri:InfoSymbol id="arrowSymbol" infoRenderer="com.esri.viewer.components.ArrowSymbol" 
+						 infoPlacement="center" containerStyleName="arrowInfoSymbolStyle"/>
 	</fx:Declarations>
 </viewer:BaseWidget>

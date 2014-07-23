@@ -1,18 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx" width="30" height="30">
-	<fx:Declarations>
-		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
-	</fx:Declarations>
-	<s:Path data="M 15 0
-			L 30 15
-			L 20 15
-			L 20 30
-			L 10 30
-			L 10 15
-			L 0 15
-			Z">
+		 xmlns:mx="library://ns.adobe.com/flex/mx" implements="mx.core.IDataRenderer">
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable] private var _pathData:String = "";
+			
+			private var _data:Object;
+			
+			[Bindable]
+			// implement IDataRenderer
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			public function set data(value:Object):void
+			{
+				_data = value;
+				var arrowLength:uint = _data.arrowLength;
+				var arrowAngle:Number = _data.arrowAngle;
+				this.width = this.height = arrowLength;
+				
+				_pathData = "M " + arrowLength + "  " + arrowLength / 2 + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 * 2 + " ";
+				_pathData += "L 0 " + arrowLength / 3 * 2 + " ";
+				_pathData += "L 0 " + arrowLength / 3 + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 + " ";
+				_pathData += "L " + arrowLength / 2 + " 0 ";
+				_pathData += "Z";
+				trace( _pathData );
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Path data="{_pathData}">
 		<s:stroke>
 			<s:SolidColorStroke color="0x000000"/>
 		</s:stroke>

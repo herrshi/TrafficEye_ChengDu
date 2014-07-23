@@ -90,3 +90,9 @@ esri|ContentNavigator
 	headerBackgroundAlpha: 1.0;
 	headerBackgroundColor: #6D0010;
 }
+
+.arrowInfoSymbolStyle
+{
+	backgroundAlpha: 0;
+	borderThickness: 0;
+}

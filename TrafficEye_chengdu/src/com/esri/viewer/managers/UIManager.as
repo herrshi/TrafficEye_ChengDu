@@ -262,6 +262,19 @@ public class UIManager extends EventDispatcher
         cssStyleDeclarationInfoWindowLabel.setStyle("fontSize", titleFontSize);
         cssStyleDeclarationInfoWindowLabel.setStyle("fontFamily", titleFontName);
         topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindowLabel", cssStyleDeclarationInfoWindowLabel, false);
+		
+		/*var cssStyleDeclarationInfoSymbolWindow:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoSymbolWindow");
+		if (numberOfStyleColors > 4)
+		{
+			cssStyleDeclarationInfoSymbolWindow.setStyle("backgroundColor", backgroundColor);
+			cssStyleDeclarationInfoSymbolWindow.setStyle("borderColor", textColor);
+		}
+		else
+		{
+			cssStyleDeclarationInfoSymbolWindow.setStyle("borderColor", defaultTextColor);
+		}
+		cssStyleDeclarationInfoSymbolWindow.setStyle("borderThickness", 1);
+		cssStyleDeclarationInfoSymbolWindow.setStyle("backgroundAlpha", styleAlpha);*/
 
         if (numberOfStyleColors > 4)
         {
