@@ -1,34 +1,37 @@
 <?xml version="1.0" ?>
 <configuration>
 	<relatewidgets>摄像机数量</relatewidgets>
-    <layer>http://[serverip]/arcgis/rest/services/ksl_live_device/MapServer/1</layer>
-    <titlefield>sb_sxj.DEVDESC</titlefield>
-    <idfield>sb_sxj.DEVICEID</idfield>
-    <linkfield></linkfield>
-    <fields all="false">
-        <field name="sb_sxj.DEVICEID"  alias="设备编号"/>
-        <field name="sb_sxj.DEVDESC"/>
-        <field name="FSTR_STATUS" show="false"/>
-    </fields>
-    <type>CCTVC</type>
-    <filterfield>
-        <name></name>
-        <alias></alias>
-    </filterfield>
-    <refreshrate></refreshrate>
-    <zoomscale>16000</zoomscale>
-    <query>1=1</query>
-    <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
-    <keyfield>FSTR_STATUS</keyfield>
-    <symbols useinranksymbolwidget="true" >    	
-    		<symbol keyvalue="0" alias="正常">
- 	   		<picturemarkersymbol url="assets/images/icon-ca-s.png" height="20" width="20"/>
-   	 	</symbol>
-   	 	<symbol keyvalue="1" alias="故障">
-   	 		<picturemarkersymbol url="assets/images/icon-ca-s-red.png" height="20" width="20"/>
-    		</symbol>
-  	  	<symbol keyvalue="default" alias="其他">
-   	 		<picturemarkersymbol url="assets/images/icon-ca-s.png" height="20" width="20" />
-   	 	</symbol>	
-    </symbols>
+	<layer>http://[serverip]/arcgis/rest/services/ksl_live_device/MapServer/1</layer>
+	<titlefield>sb_sxj.DEVDESC</titlefield>
+	<idfield>sb_sxj.DEVICEID</idfield>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="sb_sxj.DEVICEID" alias="设备编号" />
+		<field name="sb_sxj.DEVDESC" />
+		<field name="FSTR_STATUS" show="false" />
+	</fields>
+	<type>CCTVC</type>
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate></refreshrate>
+	<zoomscale>16000</zoomscale>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>FSTR_STATUS</keyfield>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="0" alias="正常">
+			<picturemarkersymbol url="assets/images/icon-ca-s.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="1" alias="故障">
+			<picturemarkersymbol url="assets/images/icon-ca-s-red.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="default" alias="其他">
+			<picturemarkersymbol url="assets/images/icon-ca-s.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
 </configuration>

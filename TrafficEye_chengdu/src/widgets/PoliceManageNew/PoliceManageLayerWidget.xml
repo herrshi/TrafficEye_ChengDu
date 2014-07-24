@@ -18,7 +18,7 @@
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard8.png" height="8" width="8" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard8.png" height="8" width="8" />
+			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard_new_8.png" height="8" width="8" />
 		</symbol>
 		<symbol keyvalue="在线">
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard8.png" height="8" width="8" />
@@ -36,7 +36,7 @@
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard16.png" height="16" width="16" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard16.png" height="16" width="16" />
+			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard_new_16.png" height="16" width="16" />
 		</symbol>
 		<symbol keyvalue="在线">
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard16.png" height="16" width="16" />
@@ -54,7 +54,7 @@
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard20.png" height="20" width="20" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard20.png" height="20" width="20" />
+			<picturemarkersymbol url="assets/images/policeStatus/police-OffGuard_new_20.png" height="20" width="20" />
 		</symbol>
 		<symbol keyvalue="在线">
 			<picturemarkersymbol url="assets/images/policeStatus/police-OnGuard20.png" height="20" width="20" />

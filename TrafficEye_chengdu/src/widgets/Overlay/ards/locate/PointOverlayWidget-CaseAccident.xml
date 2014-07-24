@@ -5,27 +5,22 @@
 	<widgetrunnotify>onCaseAccidentLocateOverlayLoad</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onCaseAccidentLocateOverlayClose</widgetclosenotify>	
-	<popup>
-		<fields>
-			<field name="taskSourceId" alias="任务源Id" visible="false" />
-			<field name="businessStateId" alias="业务状态Id" visible="false" />
-			<field name="caseId" alias="警情Id" visible="false" />
-			<field name="callPoliceTime" alias="报警时间：" visible="true" />
-			<field name="callPolicePhone" alias="报警电话：" visible="true" />
-			<field name="occurPlace" alias="案发地址：" visible="true"/>
-		</fields>
-		<showzoomtobutton>false</showzoomtobutton>
-	</popup>	
 	<uniquevaluerenderer field="businessStateId">
-    	<picturemarkersymbol url="assets/images/event/case-inprocess.png"/>
+    	<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
     	<uniquevalueinfo value="Dispatch">
-			<picturemarkersymbol url="assets/images/event/case-inprocess.png"/>
+			<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
 		</uniquevalueinfo>
-		<uniquevalueinfo value="Over">
-			<picturemarkersymbol url="assets/images/event/case-over.png"/>
+    	<uniquevalueinfo value="DispatchPolice">
+			<picturemarkersymbol url="assets/images/event/DispatchPolice.png"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="PoliceArrive">
+			<picturemarkersymbol url="assets/images/event/PoliceArrive.png"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="ProcessComplete">
+			<picturemarkersymbol url="assets/images/event/ProcessComplete.png"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 	<drawsymbol>
-		<picturemarkersymbol url="assets/images/event/case-unhandle.png"/>
+		<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
 	</drawsymbol>
 </configuration>

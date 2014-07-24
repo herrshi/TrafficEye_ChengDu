@@ -20,19 +20,19 @@
 			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="电子警察">
-				<picturemarkersymbol url="assets/images/device/dzjc_gj20_0.png"/>
+				<picturemarkersymbol url="assets/images/device/dzjc.png"/>
 			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="事件检测">
-				<picturemarkersymbol url="assets/images/device/sjjc-30.png"/>
+				<picturemarkersymbol url="assets/images/device/dzjc_gj20_0.png"/>
 			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="视频监控">
-				<picturemarkersymbol url="assets/images/device/camera.png"/>
+				<picturemarkersymbol url="assets/images/device/sxj_dm20_0.png"/>
 			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="视频采集">
-				<picturemarkersymbol url="assets/images/device/camera.png"/>
+				<picturemarkersymbol url="assets/images/device/cctv_sanhuan20.png"/>
 			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="警员管理图层">

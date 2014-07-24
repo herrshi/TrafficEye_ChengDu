@@ -6,12 +6,20 @@
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onRoadParkShowOverlayClose</widgetclosenotify>
 	<popup>
-		<title>{id}</title>
-		<fields>
-			<field name="id" alias="ID:" visible="true" />
-			<field name="name" alias="名称:" visible="true" />
+		<title>{name}</title>
+		<fields>	
 			<field name="parkType" alias="类型:" visible="true" />
+			<field name="belongArea" alias="所属区域:" visible="true" />
 			<field name="belongRoadNameForShow" alias="所属道路名称:" visible="true" />
+			<field name="occupyRoadType" alias="占道类型:" visible="true" />
+			<field name="belongSubofficeForShow" alias="所属分局:" visible="true" />
+			<field name="belongTeamForShow" alias="所属大队:" visible="true" />
+			<field name="belongPoliceDistrictForShow" alias="所属警务区:" visible="true" />
+			<field name="occupyRoadMode" alias="占道方式:" visible="true" />
+			<field name="leftParkMode" alias="单侧占道方式:" visible="true" />
+			<field name="leftOccupyRoadLength" alias="单侧占道长度:" visible="true" />
+			<field name="rightParkMode" alias="另侧占道方式:" visible="true" />
+	        <field name="rightOccupyRoadLength" alias="另侧占道长度:" visible="true" />
 			<field name="dayCode" alias="白天停车编号:" visible="true" />
 			<field name="dayParkingCount" alias="白天泊车总数:" visible="true" />
 			<field name="dayPeriodStart" alias="白天有效期起:" visible="true" />
@@ -20,17 +28,6 @@
 			<field name="nightParkingCount" alias="夜间泊车总数:" visible="true" />
 			<field name="nightPeriodStart" alias="夜间有效期起:" visible="true" />
 			<field name="nightPeriodEnd" alias="夜间有效期止:" visible="true" />
-			<field name="occupyRoadMode" alias="占道方式:" visible="true" />
-			<field name="leftParkMode" alias="单侧占道方式:" visible="true" />
-			<field name="leftOccupyRoadLength" alias="单侧占道长度:" visible="true" />
-			<field name="rightParkMode" alias="另侧占道方式:" visible="true" />
-	        <field name="rightOccupyRoadLength" alias="另侧占道长度:" visible="true" />
-			<field name="belongArea" alias="所属区域:" visible="true" />
-			
-			<field name="occupyRoadType" alias="占道类型:" visible="true" />
-			<field name="belongSuboffice" alias="所属分局:" visible="true" />
-			<field name="belongTeam" alias="所属大队:" visible="true" />
-			<field name="belongPoliceDistrict" alias="所属警务区:" visible="true" />
 			<field name="belongPoliceStation" alias="所属派出所:" visible="true" />
 			<field name="belongCompany" alias="交投管理公司:" visible="true" />
 			<field name="enableTime" alias="启用时间:" visible="true" />
@@ -40,15 +37,18 @@
 		
 	</popup>
 	<uniquevaluerenderer field="parkType">
-    	<picturemarkersymbol url="assets/images/mapIcons/BadWeather--grey.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-day.png" yoffset="13"/>
 		<uniquevalueinfo value="白天">
-			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-red.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-day.png" yoffset="13"/>
 		</uniquevalueinfo>
 		<uniquevalueinfo value="昼夜">
-			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-grey.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-dayandnight.png" yoffset="13"/>
 		</uniquevalueinfo>
 		<uniquevalueinfo value="夜间">
-			<picturemarkersymbol url="assets/images/mapIcons/BadWeather-blue.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-night.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="公共临时停车点">
+			<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-temporary.png" yoffset="13"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 </configuration>

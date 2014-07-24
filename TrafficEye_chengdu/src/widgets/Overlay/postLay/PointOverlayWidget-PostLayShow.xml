@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>postLay</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onPostLayShowLoad</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onPostLayShowClose</widgetclosenotify>
+	<popup>
+		<title>{postName}</title>
+		<fields>
+			<field name="id" alias="岗点编号" visible="false" />
+			<field name="departmentName" alias="所属分局" visible="true" />
+			<field name="groupName" alias="所属大队" visible="true" />
+			<field name="postTypeName" alias="岗点类型" visible="true" />
+			<field name="timePeriod" alias="时间段" visible="true" />
+			<field name="policeNames" alias="执勤警员" visible="true" />
+			<field name="gpsCode" alias="手台号" visible="true" />
+			<field name="state" alias="在岗状态" visible="true" />
+			<field name="postTypeState" alias="岗位在岗状态" visible="false" />
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+		<buttons>
+			<button label="刷新警员" action="openDevice" type="postRefesh" idfield="gpsCode" />
+		</buttons>
+	</popup>
+	<uniquevaluerenderer field="postTypeState">
+		<uniquevalueinfo value="未排班,一级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_g_1.png"
+				  height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="已排班,一级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_a_1.png"
+				  height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="在岗,一级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_b_1.png"
+				  height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="脱岗,一级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r_1.png"
+				  height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo keyvalue="部分脱岗,一级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r_1.png"
+				 height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="未排班,二级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_s_b.png"
+				 height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="已排班,二级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_a.png"
+				 height="16" width="16"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="在岗,二级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_s.png"
+				 height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="脱岗,二级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r.png"
+				 height="16" width="16" />
+		</uniquevalueinfo>
+		<uniquevalueinfo value="部分脱岗,二级岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r.png"
+				 height="16" width="16" />
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+</configuration>

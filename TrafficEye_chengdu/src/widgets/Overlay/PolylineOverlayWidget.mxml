@@ -622,6 +622,7 @@
 					if ( _currentMode == MODE_ADD )
 					{
 						_lineOverlayLayer.remove( graphic );
+						_lineArrowLayer.clear();
 						//进入新增状态，新增下一个点
 						setMapAction( DRAW_MODE, null, _drawSymbol, map_drawEndHandler );
 					}
@@ -747,7 +748,6 @@
 						var startScreenPoint:Point = map.toScreen( startPoint );
 						var endScreenPoint:Point = map.toScreen( endPoint );
 						var angle:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
-						trace( angle );
 						arrowGraphic.symbol = arrowSymbol;
 						arrowGraphic.attributes = { arrowLength: 30, arrowAngle: angle };
 						_lineArrowLayer.add( arrowGraphic );

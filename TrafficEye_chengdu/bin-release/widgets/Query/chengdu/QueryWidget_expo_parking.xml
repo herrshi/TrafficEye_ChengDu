@@ -7,7 +7,7 @@
 	<linkfield></linkfield>
 	<fields all="false">
 		<field name="info" alias="类型" />
-		<field name="Id"  />
+		<field name="Id" />
 	</fields>
 	<refreshrate>0</refreshrate>
 	<zoomscale>96000</zoomscale>

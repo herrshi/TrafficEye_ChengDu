@@ -1,56 +1,60 @@
 <?xml version="1.0" ?>
 <configuration>
-    <layer>http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer/0</layer>
-    <titlefield>DES</titlefield>
-    <idfield>DEVICEID</idfield>
-    <type>CCTVC</type>
-    <linkfield></linkfield>
-    <fields all="false">
-        <field name="DES" alias="设备描述"/>
-        <field name="DEVICEID" alias="设备编号"/>
-    </fields>
-    <filterfield>
-        <name></name>
-        <alias></alias>
-    </filterfield>
-    <refreshrate>0</refreshrate>
-    <zoomscale>16000</zoomscale>
-    <query>1=1</query>
-    <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
-    <keyfield></keyfield>
-    <symbols maxscale="768000" minscale="192000">
-    	<symbol keyvalue="default" alias="缺省状态">
-    		<picturemarkersymbol url="assets/images/device/cctv8.png" height="8" width="8" />
-    	</symbol>
-    </symbols>
-    <symbols maxscale="96000" minscale="24000" useinranksymbolwidget="true">
-    	<symbol keyvalue="default" alias="缺省状态">
-    		<picturemarkersymbol url="assets/images/device/cctv20.png" height="20" width="20" />
-    	</symbol>
-    </symbols>
-    <symbols maxscale="12000" minscale="6000">
-    	<symbol keyvalue="default" alias="缺省状态">
-    		<picturemarkersymbol url="assets/images/device/cctv30.png" height="30" width="30" />
-    	</symbol>
-    </symbols>
-    <clickfunction method="externalcall" value="opendevice">
-    	<params>
-    		<param name="设备类型" type="const" value="CCTVC"/>
-    		<param name="设备编号" type="field" value="DEVICEID"/>
-    		<param name="设备描述" type="field" value="DES"/>
-    	</params>
-    </clickfunction>
-    <!--<eventType flag="openDevice" />-->
-    
-    <!--<eventType flag="reportDevice" />-->
-    
-    <eventType flag="externalCall">
-   		<params>
-   			<param name="functionName" type="const" value="openDevice"></param>
-   			<param name="type" type="field" value="type"></param>
-   			<param name="id" type="field" value="id"></param>
-   			<param name="title" type="field" value="title"></param>
-   		</params>
-    </eventType>
-	
+	<layer>http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer/0</layer>
+	<titlefield>DES</titlefield>
+	<idfield>DEVICEID</idfield>
+	<type>CCTVC</type>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="DES" alias="设备描述" />
+		<field name="DEVICEID" alias="设备编号" />
+	</fields>
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>0</refreshrate>
+	<zoomscale>16000</zoomscale>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield></keyfield>
+	<symbols maxscale="768000" minscale="192000">
+		<symbol keyvalue="default" alias="缺省状态">
+			<picturemarkersymbol url="assets/images/device/cctv8.png"
+				height="8" width="8" />
+		</symbol>
+	</symbols>
+	<symbols maxscale="96000" minscale="24000"
+		useinranksymbolwidget="true">
+		<symbol keyvalue="default" alias="缺省状态">
+			<picturemarkersymbol url="assets/images/device/cctv20.png"
+				height="20" width="20" />
+		</symbol>
+	</symbols>
+	<symbols maxscale="12000" minscale="6000">
+		<symbol keyvalue="default" alias="缺省状态">
+			<picturemarkersymbol url="assets/images/device/cctv30.png"
+				height="30" width="30" />
+		</symbol>
+	</symbols>
+	<clickfunction method="externalcall" value="opendevice">
+		<params>
+			<param name="设备类型" type="const" value="CCTVC" />
+			<param name="设备编号" type="field" value="DEVICEID" />
+			<param name="设备描述" type="field" value="DES" />
+		</params>
+	</clickfunction>
+	<!--<eventType flag="openDevice" /> -->
+
+	<!--<eventType flag="reportDevice" /> -->
+
+	<eventType flag="externalCall">
+		<params>
+			<param name="functionName" type="const" value="openDevice"></param>
+			<param name="type" type="field" value="type"></param>
+			<param name="id" type="field" value="id"></param>
+			<param name="title" type="field" value="title"></param>
+		</params>
+	</eventType>
+
 </configuration>

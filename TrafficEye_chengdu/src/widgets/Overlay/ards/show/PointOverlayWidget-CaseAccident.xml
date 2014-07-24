@@ -13,19 +13,27 @@
 			<field name="callPoliceTime" alias="报警时间：" visible="true" />
 			<field name="callPolicePhone" alias="报警电话：" visible="true" />
 			<field name="occurPlace" alias="案发地址：" visible="true"/>
+			<field name="businessStateName" alias="状态：" visible="true"></field>
+			<field name="policeNames" alias="警员：" visible="true"></field>
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>	
 	<uniquevaluerenderer field="businessStateId">
-    	<picturemarkersymbol url="assets/images/event/case-inprocess.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
     	<uniquevalueinfo value="Dispatch">
-			<picturemarkersymbol url="assets/images/event/case-inprocess.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
 		</uniquevalueinfo>
-		<uniquevalueinfo value="Over">
-			<picturemarkersymbol url="assets/images/event/case-over.png" yoffset="13"/>
+    	<uniquevalueinfo value="DispatchPolice">
+			<picturemarkersymbol url="assets/images/event/DispatchPolice.png"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="PoliceArrive">
+			<picturemarkersymbol url="assets/images/event/PoliceArrive.png"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="ProcessComplete">
+			<picturemarkersymbol url="assets/images/event/ProcessComplete.png"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 	<drawsymbol>
-		<picturemarkersymbol url="assets/images/event/case-unhandle.png" yoffset="13"/>
+		<picturemarkersymbol url="assets/images/event/UnDispatchPolice.png"/>
 	</drawsymbol>
 </configuration>

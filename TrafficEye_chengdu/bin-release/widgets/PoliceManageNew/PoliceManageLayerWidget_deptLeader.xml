@@ -10,83 +10,51 @@
 	<buttons>
 		<button>呼叫</button>
 		<button>短信</button>
+		<button>刷新</button>		
 	</buttons>
-	<symbols maxscale="768000" minscale="192000">
+	
+	<symbols maxscale="3072000" minscale="192000">
 		<symbol keyvalue="在岗">
-			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png"
-				height="8" width="8" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="8" width="8" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="8"
-				width="8" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="8" width="8" />
 		</symbol>
-		<symbol keyvalue="在 岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/police-RedFlag16.png" height="8"
-				width="8" />
+		<symbol keyvalue="在线">
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="8" width="8" />
 		</symbol>
-		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
-		<!-- <picturemarkersymbol -->
-		<!-- url="assets/images/policeStatus/police-NotMatch8.png" height="8" -->
-		<!-- width="8" /> -->
-		<!-- </symbol> -->
 		<symbol keyvalue="default" alias="其他">
-			<picturemarkersymbol url="assets/images/police.png"
-				height="8" width="8" />
+			<picturemarkersymbol url="assets/images/police.png" height="8" width="8" />
 		</symbol>
 	</symbols>
-	<symbols maxscale="96000" minscale="48000"
-		useinranksymbolwidget="true">
+	
+	<symbols maxscale="192000" minscale="48000" useinranksymbolwidget="true">
 		<symbol keyvalue="在岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="16"
-				width="16" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="16" width="16" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="16"
-				width="16" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="16" width="16" />
 		</symbol>
-		<symbol keyvalue="在 岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/police-RedFlag16.png" height="16"
-				width="16" />
+		<symbol keyvalue="在线">
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="16" width="16" />
 		</symbol>
-		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
-		<!-- <picturemarkersymbol -->
-		<!-- url="assets/images/policeStatus/police-NotMatch16.png" height="16" -->
-		<!-- width="16" /> -->
-		<!-- </symbol> -->
 		<symbol keyvalue="default" alias="其他">
-			<picturemarkersymbol url="assets/images/police.png"
-				height="16" width="16" />
+			<picturemarkersymbol url="assets/images/police.png" height="16" width="16" />
 		</symbol>
 	</symbols>
-	<symbols maxscale="24000" minscale="6000">
+	
+	<symbols maxscale="48000" minscale="1">
 		<symbol keyvalue="在岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="20"
-				width="20" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="20" width="20" />
 		</symbol>
 		<symbol keyvalue="离岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="20"
-				width="20" />
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OffGuard16.png" height="20" width="20" />
 		</symbol>
-		<symbol keyvalue="在 岗">
-			<picturemarkersymbol
-				url="assets/images/policeStatus/police-RedFlag16.png" height="20"
-				width="20" />
+		<symbol keyvalue="在线">
+			<picturemarkersymbol url="assets/images/policeStatus/deptLeader-OnGuard16.png" height="20" width="20" />
 		</symbol>
-		<!-- <symbol keyvalue="-1" alias="未匹配"> -->
-		<!-- <picturemarkersymbol -->
-		<!-- url="assets/images/policeStatus/police-NotMatch20.png" height="20" -->
-		<!-- width="20" /> -->
-		<!-- </symbol> -->
 		<symbol keyvalue="default" alias="其他">
-			<picturemarkersymbol url="assets/images/police.png"
-				height="20" width="20" />
+			<picturemarkersymbol url="assets/images/police.png" height="20" width="20" />
 		</symbol>
 	</symbols>
 </configuration>

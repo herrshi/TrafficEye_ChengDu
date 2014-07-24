@@ -1,4 +1,0 @@
-<?xml version="1.0" ?>
-<configuration>
-	<queryurl>http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer/11</queryurl>
-</configuration>

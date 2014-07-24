@@ -7,18 +7,18 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="摄像机"/>
+							<param name="widgetname" value="摄像机" />
 						</params>
 					</clickfunction>
 				</clickfunctions>
 			</item>
-			
-			<item id="zdd" tooltip="匝道灯" initstate="enable" 
+
+			<item id="zdd" tooltip="匝道灯" initstate="enable"
 				imageenable="assets/images/icon-zdd.png" imagedisable="assets/images/icon-zdd-b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="匝道灯"/>
+							<param name="widgetname" value="匝道灯" />
 						</params>
 					</clickfunction>
 				</clickfunctions>

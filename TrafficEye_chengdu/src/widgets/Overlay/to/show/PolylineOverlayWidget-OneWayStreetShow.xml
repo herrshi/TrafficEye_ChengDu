@@ -9,11 +9,14 @@
 		<title>{roadName}</title>
 		<fields>
 			<field name="roadName" alias="道路名称" visible="false" />
-			<field name="code" alias="编号" visible="true" />
-			<field name="lineLength" alias="长度" visible="true" />
+			<field name="id" alias="编号" visible="false" />
 			<field name="belongSuboffice" alias="分局" visible="true" />
-			<field name="enableTime" alias="启用日期" visible="true" />
-			<field name="enableTime" alias="时段" visible="true" />
+			<field name="timeInterval" alias="时段" visible="true" />
+			<field name="roadMethod" alias="段面" visible="true" />
+			<field name="laneCount" alias="车道" visible="true" />
+			<field name="lineLength" alias="长度" visible="true" />
+			<field name="enableTime" alias="启用日期" visible="false" />
+			<field name="roadSectNames" alias="关联路段" visible="false" />
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>

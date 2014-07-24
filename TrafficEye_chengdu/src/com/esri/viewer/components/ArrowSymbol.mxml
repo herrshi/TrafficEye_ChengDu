@@ -31,12 +31,19 @@
 				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 + " ";
 				_pathData += "L " + arrowLength / 2 + " 0 ";
 				_pathData += "Z";
-				trace( _pathData );
+				
+				rotateEffect.angleFrom = 0;
+				rotateEffect.angleBy = arrowAngle;
+				rotateEffect.play();
 			}
 		]]>
 	</fx:Script>
 	
-	<s:Path data="{_pathData}">
+	<fx:Declarations>
+		<s:Rotate id="rotateEffect" target="{path}" autoCenterTransform="true"/>
+	</fx:Declarations>
+	
+	<s:Path id="path" data="{_pathData}">
 		<s:stroke>
 			<s:SolidColorStroke color="0x000000"/>
 		</s:stroke>

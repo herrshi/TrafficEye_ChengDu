@@ -1,22 +1,27 @@
 <?xml version="1.0" ?>
 <configuration>
 	<style>
-		<colors>0x000000,0xFFFFFF,0xDDDDDD,0x3E6FBC,0x3E6FBC</colors>
-		<navigationcolors>0xFFFFFF,0x3E6FBC,0xDDDDDD,0x3E6FBC,0xFFFFFF</navigationcolors>
-		<alpha>0.8</alpha>
+		<colors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444,0x000000</colors>
 		<font name="微软雅黑" size="14" />
+		<alpha>0.8</alpha>
+		<applicationbackgroudalpha>0</applicationbackgroudalpha>
 	</style>
-	<arcgisserverip>20.0.56.14:8399</arcgisserverip>
+	<showerror>true</showerror>
 	<widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf" />
-	<map top="0" initialextent="103.962 30.5946 104.2024 30.7335" scalebarvisible="false" esrilogovisible="false">
+	<widget right="-2" bottom="-2" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<!--GIS服务器地址 -->
+	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="20.0.56.14:8399">
 		<basemaps>
-			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://{serverip}/arcgis/rest/services/cd_base_nolabel/MapServer" />
+			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_base_0716/MapServer" />
 		</basemaps>
 		<operationallayers>
-			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://{serverip}/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />
+			<!-- <layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/cd_base_bz_0620/MapServer" /> -->
+			<layer label="透明图层" type="dynamic" visible="false" alpha="0.5" url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
+			<layer label="设备图层" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" />
+			<layer label="路段状态" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
 		</operationallayers>
 	</map>
-	<widgetcontainer layout="fix">
+	<widgetcontainer layout="float">
 		<!-- 占道施工 -->
 		<widget label="policelay" preload="open" config="widgets/Overlay/policeLay/PointOverlayWidget-PoliceLayShow.xml" url="widgets/Overlay/PointOverlayWidget.swf" />
 	</widgetcontainer>

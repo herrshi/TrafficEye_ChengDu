@@ -15,22 +15,24 @@
 	<geometryservice url="http://[serverip]/arcgis/rest/services/Geometry/GeometryServer" />
 	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="20.0.56.14:8399">
 		<basemaps>
-			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_base_0606/MapServer" />
+			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_base_0716/MapServer" />
 		</basemaps>
 		<operationallayers>
-			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/cd_base_bz_0606/MapServer" />
+		<!--	<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/cd_base_bz_0620/MapServer" /> -->
 			<layer label="警务区" type="dynamic" visible="true" alpha="0.5" url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
-			<layer label="设备图层" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer" />
+			<layer label="设备图层" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_search_201406/MapServer" />
 			<layer label="路段状态" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
-			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_fbd_0609/MapServer" />
+			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_fbd_201406/MapServer" />
 		</operationallayers>
 	</map>
 	<widgetcontainer layout="float">
+		<widget label="PostLayShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/postLay/PointOverlayWidget-PostLayShow.xml"/>
 		<widget label="CaseAccidentShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/ards/show/PointOverlayWidget-CaseAccident.xml"/>
 	    <widget label="OrcShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/orc/show/PointOverlayWidget-OrcShow.xml"/>
 	    <widget label="RoadParkShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/park/show/PointOverlayWidget-RoadPark.xml"/>
 	    <widget label="ParkShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/park/show/PointOverlayWidget-Park.xml"/>
 	    <widget label="BusParkShowOverlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/park/show/PointOverlayWidget-BusPark.xml"/>
+		<widget label="OneWayStreetShowOverlay" preload="open" url="widgets/Overlay/PolylineOverlayWidget.swf" config="widgets/Overlay/to/show/PolylineOverlayWidget-OneWayStreetShow.xml"/>
 		<widget label="preloadQueryWidget" preload="open" url="widgets/Query/QueryWidget.swf" />
 		<widget label="警员Overlay" preload="open" url="widgets/Overlay/PointOverlayWidget.swf" config="widgets/Overlay/ChengDu/PointOverlayWidget-police.xml"/>
 		<widget label="overlay" preload="open" url="widgets/Overlay/OverlayWidget.swf" config="widgets/Overlay/OverlayWidget_local.xml" />
@@ -85,10 +87,10 @@
 	</widgetcontainer>
 	<widgetcontainer layout="fix">
 		<widget label="真实图交通状态图例" bottom="10" right="10" url="widgets/StaticImage/StaticImageWidget.swf" config="widgets/StaticImage/StaticImageWidget_Legend_real.xml" />
-		<widget label="功能" preload="open" left="-50"
+		<widget label="功能" preload="open"
 			url="widgets/LayerControl/LayerControlWidget.swf" config="widgets/LayerControl/LayerControlWidget_chengdu.xml" />
 	</widgetcontainer>
-	<remoteobjects endpoint="http://20.0.23.212:8080/chengdu-webapp/messagebroker/amf">
+	<remoteobjects endpoint="http://20.0.58.42:8080/chengdu-webapp/messagebroker/amf">
 		<remoteobject name="PoliceManager" enable="true" destination="GPSInfoService" refreshrate="30" />
 		<remoteobject name="EventManager" enable="true" destination="caseInfoService" refreshrate="30" />
 		<remoteobject name="PoliceDeployment" enable="true" destination="policeLayoutService" />

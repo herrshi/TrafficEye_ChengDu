@@ -12,14 +12,14 @@
 	<!--GIS服务器地址 -->
 	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="20.0.56.14:8399">
 		<basemaps>
-			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_base_nolabel/MapServer" />
+			<layer label="基础图层" type="tiled" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_base_0716/MapServer" />
 		</basemaps>
 		<operationallayers>
-			<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />
+	<!--		<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" /> -->
 			<layer label="透明图层" type="dynamic" visible="true" alpha="0.5" url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
 			<layer label="设备图层" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" />
 			<layer label="路段状态" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
-			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer" />
+			<layer label="发布段" type="dynamic" visible="true" alpha="1" url="http://[serverip]/arcgis/rest/services/201406chengdu/cd_fbd_201406/MapServer" />
 		</operationallayers>
 	</map>
 	<widgetcontainer layout="float">

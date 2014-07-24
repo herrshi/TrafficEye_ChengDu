@@ -1,9 +1,19 @@
 <configuration>
 	<find>
-		<url>http://20.0.56.14:8399/arcgis/rest/services/cd_search/MapServer</url>
-		<fields>name</fields>
+		<url>http://[serverip]/arcgis/rest/services/cd_search/MapServer</url>
+		<fields>deviceid,name,FBD_NAME,FBD_CODE</fields>
+		<drawFindLayers>0,1,2,3,4,5,6</drawFindLayers>
 	</find>
 	<defaultsymbols>
-    	<picturemarkersymbol url="assets/flash/Red_glow.swf" height="30" width="30" />
-    </defaultsymbols>
+		<picturemarkersymbol url="assets/flash/Red_glow.swf"
+			height="30" width="30" />
+	</defaultsymbols>
+	<clickurl>
+		<ydUrl>/cdjg-webapp/createVmsImage?view_bool=false&type=CB&id=[id]&ini=[id]</ydUrl>
+		<zkUrl>/cdjg-webapp/issue/rc.htm</zkUrl>
+		<spjkUrl>/cdjg-webapp/playVideoView.htm?ID=[id]</spjkUrl>
+		<spcjUrl></spcjUrl>
+		<sjjcUrl></sjjcUrl>
+		<dzjcUrl></dzjcUrl>
+	</clickurl>
 </configuration>

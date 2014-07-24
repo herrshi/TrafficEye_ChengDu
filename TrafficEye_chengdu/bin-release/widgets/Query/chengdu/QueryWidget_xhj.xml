@@ -14,6 +14,7 @@
 		<name></name>
 		<alias></alias>
 	</filterfield>
+	<eventType flag="openDevice" />
 	<refreshrate>0</refreshrate>
 	<query>1=1</query>
 	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>

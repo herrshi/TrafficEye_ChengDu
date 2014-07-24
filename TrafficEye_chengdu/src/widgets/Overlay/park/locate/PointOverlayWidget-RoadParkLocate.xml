@@ -6,6 +6,6 @@
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onRoadParkLocateOverlayClose</widgetclosenotify>
 	<simplerenderer>
-		<picturemarkersymbol url="assets/images/mapIcons/ShiGong-red.png" />
+		<picturemarkersymbol url="assets/images/mapIcons/park/roadpark/RoadPark-day.png" />
 	</simplerenderer>
 </configuration>

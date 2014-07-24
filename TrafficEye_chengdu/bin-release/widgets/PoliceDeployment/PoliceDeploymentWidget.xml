@@ -5,7 +5,7 @@
 		<enable>true</enable>
 		<refreshrate>60</refreshrate>
 		<destination>dutyService</destination>
-		<!--web服务器地址-->
+		<!--web服务器地址 -->
 		<endpoint>http://10.1.5.103:8080/jyjj-webapp/messagebroker/amf</endpoint>
 	</remoteobj>
 	<layer>

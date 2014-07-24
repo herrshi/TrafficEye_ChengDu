@@ -16,24 +16,23 @@
 	<refreshrate>0</refreshrate>
 	<query>1=1</query>
 	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
-<!--	<keyfield></keyfield>-->
-<!--	<symbols maxscale="768000" minscale="192000">-->
-<!--		<symbol keyvalue="default" alias="缺省状态">-->
-<!--			<picturemarkersymbol url="assets/images/device/cctv16.png"-->
-<!--				height="8" width="8" />-->
-<!--		</symbol>-->
-<!--	</symbols>-->
-	<symbols 
-		useinranksymbolwidget="true">
+	<!-- <keyfield></keyfield> -->
+	<!-- <symbols maxscale="768000" minscale="192000"> -->
+	<!-- <symbol keyvalue="default" alias="缺省状态"> -->
+	<!-- <picturemarkersymbol url="assets/images/device/cctv16.png" -->
+	<!-- height="8" width="8" /> -->
+	<!-- </symbol> -->
+	<!-- </symbols> -->
+	<symbols useinranksymbolwidget="true">
 		<symbol keyvalue="default" alias="缺省状态">
 			<picturemarkersymbol url="assets/images/device/cctv16.png"
 				height="16" width="16" />
 		</symbol>
 	</symbols>
-<!--	<symbols maxscale="12000" minscale="6000">-->
-<!--		<symbol keyvalue="default" alias="缺省状态">-->
-<!--			<picturemarkersymbol url="assets/images/device/cctv16.png"-->
-<!--				height="30" width="30" />-->
-<!--		</symbol>-->
-<!--	</symbols>-->
+	<!-- <symbols maxscale="12000" minscale="6000"> -->
+	<!-- <symbol keyvalue="default" alias="缺省状态"> -->
+	<!-- <picturemarkersymbol url="assets/images/device/cctv16.png" -->
+	<!-- height="30" width="30" /> -->
+	<!-- </symbol> -->
+	<!-- </symbols> -->
 </configuration>

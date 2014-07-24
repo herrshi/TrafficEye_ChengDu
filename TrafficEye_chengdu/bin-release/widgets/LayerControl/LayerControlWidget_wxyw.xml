@@ -7,7 +7,7 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="挑臂信号灯"/>
+							<param name="widgetname" value="挑臂信号灯" />
 						</params>
 					</clickfunction>
 				</clickfunctions>
@@ -17,7 +17,7 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="挑臂箭头信号灯"/>
+							<param name="widgetname" value="挑臂箭头信号灯" />
 						</params>
 					</clickfunction>
 				</clickfunctions>
@@ -27,7 +27,7 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="行人信号灯"/>
+							<param name="widgetname" value="行人信号灯" />
 						</params>
 					</clickfunction>
 				</clickfunctions>
@@ -37,111 +37,111 @@
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="立柱信号灯"/>
+							<param name="widgetname" value="立柱信号灯" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="sxj_gj" tooltip="高架摄像机" initstate="disable"
 				imageenable="assets/images/wxyw/sxj_gj30.png" imagedisable="assets/images/wxyw/sxj_gj30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="高架摄像机"/>
+							<param name="widgetname" value="高架摄像机" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="sxj_dm" tooltip="地面摄像机" initstate="disable"
 				imageenable="assets/images/wxyw/sxj_dm30.png" imagedisable="assets/images/wxyw/sxj_dm30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="地面摄像机"/>
+							<param name="widgetname" value="地面摄像机" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="dzjc_gj" tooltip="高架电子警察" initstate="disable"
 				imageenable="assets/images/wxyw/dzjc_gj30.png" imagedisable="assets/images/wxyw/dzjc_gj30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="高架电子警察"/>
+							<param name="widgetname" value="高架电子警察" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="dzjc_dm" tooltip="地面电子警察" initstate="disable"
 				imageenable="assets/images/wxyw/dzjc_dm30.png" imagedisable="assets/images/wxyw/dzjc_dm30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="地面电子警察"/>
+							<param name="widgetname" value="地面电子警察" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="cp_gj" tooltip="高架卡口" initstate="disable"
 				imageenable="assets/images/wxyw/cp_gj30.png" imagedisable="assets/images/wxyw/cp_gj30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="高架卡口"/>
+							<param name="widgetname" value="高架卡口" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="cp_dm" tooltip="地面卡口" initstate="disable"
 				imageenable="assets/images/wxyw/cp_dm30.png" imagedisable="assets/images/wxyw/cp_dm30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="地面卡口"/>
+							<param name="widgetname" value="地面卡口" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="vd_gj" tooltip="高架车检器" initstate="disable"
 				imageenable="assets/images/wxyw/vd30.png" imagedisable="assets/images/wxyw/vd30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="高架车检器"/>
+							<param name="widgetname" value="高架车检器" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="xhj" tooltip="信号机" initstate="disable"
 				imageenable="assets/images/wxyw/xhj30.png" imagedisable="assets/images/wxyw/xhj30_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="信号机"/>
+							<param name="widgetname" value="信号机" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="lk" tooltip="路口" initstate="disable"
 				imageenable="assets/images/icon-fbd.png" imagedisable="assets/images/icon-fbd-b.png">
 				<clickfunctions>
 					<clickfunction name="openlayer">
 						<params>
-							<param name="servicename" value="设备图层"/>
-							<param name="layerindex" value="12"/>	
+							<param name="servicename" value="设备图层" />
+							<param name="layerindex" value="12" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 			<item id="poiSearch" tooltip="兴趣点搜索" initstate="disable"
 				imageenable="assets/images/i_search_s.png" imagedisable="assets/images/i_search_s_b.png">
 				<clickfunctions>
 					<clickfunction name="openwidget">
 						<params>
-							<param name="widgetname" value="兴趣点搜索"/>
+							<param name="widgetname" value="兴趣点搜索" />
 						</params>
 					</clickfunction>
-				</clickfunctions>	
+				</clickfunctions>
 			</item>
 		</group>
 	</groups>

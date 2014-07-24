@@ -1,32 +1,33 @@
-<!--变形图环线-->
+<!--变形图环线 -->
 <?xml version="1.0" ?>
-<configuration>	
-    <layer>http://[serverip]/arcgis/rest/services/cd_fbd_morph_1/MapServer/4</layer>
-    <titlefield>NAME</titlefield>
-    <idfield>fbd_huan_morph.Mergid</idfield>
-    <type>YP</type>
-    <linkfield></linkfield>
-    <fields all="false">
-        <field name="NAME" alias="路段名称"/>
-        <field name="fbd_huan_morph.Mergid" alias="路段编号" show="false"/>
-        <field name="FFLT_AVGSPEED" alias="平均车速"/>
-        <field name="FSTR_STATE" alias="交通状态"/>
-    </fields>
-    <filterfield>
-        <name></name>
-        <alias></alias>
-    </filterfield>
-    <buttons>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/cd_fbd_morph_1/MapServer/4</layer>
+	<titlefield>NAME</titlefield>
+	<idfield>fbd_huan_morph.Mergid</idfield>
+	<type>YP</type>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="NAME" alias="路段名称" />
+		<field name="fbd_huan_morph.Mergid" alias="路段编号" show="false" />
+		<field name="FFLT_AVGSPEED" alias="平均车速" />
+		<field name="FSTR_STATE" alias="交通状态" />
+	</fields>
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<buttons>
 		<button>查看</button>
 	</buttons>
-    <refreshrate>0</refreshrate>
-    <hinttimeout>0</hinttimeout>
-    <query>1=1</query>
-    <info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
-<!--    <keyfield></keyfield>-->
-<!--    <symbols useinranksymbolwidget="true">-->
-<!--    	<symbol keyvalue="default">-->
-<!--    		<picturemarkersymbol url="assets/images/dzjc.png" height="20" width="20" />-->
-<!--    	</symbol>      	-->
-<!--    </symbols>-->
+	<refreshrate>0</refreshrate>
+	<hinttimeout>0</hinttimeout>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<!-- <keyfield></keyfield> -->
+	<!-- <symbols useinranksymbolwidget="true"> -->
+	<!-- <symbol keyvalue="default"> -->
+	<!-- <picturemarkersymbol url="assets/images/dzjc.png" height="20" width="20" 
+		/> -->
+	<!-- </symbol> -->
+	<!-- </symbols> -->
 </configuration>

@@ -1,12 +1,10 @@
 <?xml version="1.0" ?>
 <configuration>
-    <!--
-        Refer to the doc below for valid HTML tags that can be used for the content
-        http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT
-    -->
-    <width>375</width>
-    <height>375</height>
-    <content>
+	<!-- Refer to the doc below for valid HTML tags that can be used for the 
+		content http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT -->
+	<width>375</width>
+	<height>375</height>
+	<content>
         <![CDATA[<p align='center'>
             <img src='assets/images/globe.png' width='140' height='140' />
         </p>
@@ -31,12 +29,9 @@
             <a href="http://www.esri.com/legal/pdfs/mla_e204_e300/english.pdf" target='_blank'><font color="#FFFFFF">(c) Copyright 2011 Esri</font></a>. All rights reserved.
         </p>
        ]]>
-    </content>
-    <btnlabel>Click to continue</btnlabel>
+	</content>
+	<btnlabel>Click to continue</btnlabel>
 
 </configuration>
 
-<!--
-    See Splash widget documentation at
-    http://links.esri.com/splashwidget
--->
+<!-- See Splash widget documentation at http://links.esri.com/splashwidget -->
