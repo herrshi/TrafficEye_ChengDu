@@ -2,9 +2,9 @@
 <configuration>
 	<type>oneWayStreet</type>
 	<!-- 组件打开时通知页面 -->
-	<widgetrunnotify></widgetrunnotify>
+	<widgetrunnotify>onOneWayStreetOverlayRun</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
-	<widgetclosenotify></widgetclosenotify>
+	<widgetclosenotify>onOneWayStreetOverlayClose</widgetclosenotify>
 	
 	<arrow enable="true">
 		<position>middle</position>

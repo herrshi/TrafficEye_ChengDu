@@ -85,7 +85,7 @@
 				  infoWindowRendererHighlightColor="{getStyle('selectionColor')}"/>
 	</s:Group>
 	
-	<s:HGroup right="10" bottom="10" visible="false">
+	<s:HGroup right="10" bottom="10" visible="true">
 		<s:Button id="btnTest1" label="test1" click="btnTest1_clickHandler(event)"/>
 		<s:Button id="btnTest2" label="test2" click="btnTest2_clickHandler(event)"/>
 		<s:Button id="btnTest3" label="test3" click="btnTest3_clickHandler(event)"/>
