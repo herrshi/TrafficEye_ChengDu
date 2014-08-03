@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 implements="mx.core.IDataRenderer">
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable] private var _pathData:String = "";
+			
+			private var _data:Object;
+			
+			[Bindable]
+			// implement IDataRenderer
+			public function get data():Object
+			{
+				return _data;
+			}
+			
+			public function set data(value:Object):void
+			{
+				_data = value;
+				var arrowLength:uint = _data.arrowLength;
+				var arrowAngle:Number = _data.arrowAngle;
+				
+				this.width = this.height = arrowLength;
+				
+				//画一个水平朝右的箭头
+				_pathData = "M " + arrowLength + "  " + arrowLength / 2 + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 * 2 + " ";
+				_pathData += "L 0 " + arrowLength / 3 * 2 + " ";
+				_pathData += "L 0 " + arrowLength / 3 + " ";
+				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 + " ";
+				_pathData += "L " + arrowLength / 2 + " 0 ";
+				_pathData += "Z";
+				
+				//将箭头旋转指定角度
+				rotateEffect.angleFrom = 0;
+				rotateEffect.angleBy = arrowAngle;
+				rotateEffect.play();
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:Rotate id="rotateEffect" target="{path}" autoCenterTransform="true"/>
+	</fx:Declarations>
+	
+	<s:Path id="path" data="{_pathData}">
+		<s:stroke>
+			<s:SolidColorStroke color="0x006bcf"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x006bcf" alpha="0.8"/>
+				<s:GradientEntry color="0x0084ff" alpha="0.8"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+</s:Group>

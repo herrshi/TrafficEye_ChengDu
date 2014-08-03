@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<!-- 单行道 -->
+<configuration>
+	<type>oneWayStreet</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onOneWayStreetOverlayRun</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onOneWayStreetOverlayClose</widgetclosenotify>
+	
+	<arrow enable="true">
+		<position>middle</position>
+		<length>20</length>
+	</arrow>
+	
+	<popup>
+		<title>{roadName}</title>
+		<fields>
+			<field name="roadName" />
+			<field name="laneCount" alias="车道数" visible="true" />
+			<field name="roadType" alias="类型" visible="true"/>
+			<field name="belongSuboffice" alias="所属分局" visible="true"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<uniquevaluerenderer field="roadType">
+		<defaultlabel>未知</defaultlabel>
+		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
+		
+		<uniquevalueinfo value="fixed">
+			<simplelinesymbol style="solid" color="0x0084ff " alpha="1" width="3"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="tides">
+			<simplelinesymbol style="solid" color="0xf000ff" alpha="1" width="3"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="construction">
+			<simplelinesymbol style="solid" color="0xff0000" alpha="1" width="3"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<drawsymbol>
+		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
+	</drawsymbol>
+</configuration>

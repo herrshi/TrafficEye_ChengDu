@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="index.mxml" projectUUID="034d1e94-f1a9-4d3b-a1f5-4df718f153ab" version="11">
+  <compiler additionalCompilerArguments="-locale zh_CN -source-path=locale/{locale} -keep-all-type-selectors=true" autoRSLOrdering="true" copyDependentFiles="true" flex3CompatMode="false" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="false" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="false" useFlashSDK="false" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="1">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject_Extended"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/Common"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_FIBER_LOCATION}"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_LIB_LOCATION}"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_LOCALE_LOCATION}"/>
+      <libraryPathEntry kind="3" linkType="1" path="${DCD_FIBER_LOCATION}/fiber.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_FIBER_LOCALE_LOCATION}"/>
+      <libraryPathEntry kind="3" linkType="1" path="${DCD_FIBER_LOCATION}/playerfds.swc" useDefaultLinkType="false"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="index.mxml"/>
+  </applications>
+  <modules>
+    <module application="src/index.mxml" destPath="widgets/Print/PrintWidget.swf" optimize="true" sourcePath="src/widgets/Print/PrintWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Draw/DrawWidget.swf" optimize="true" sourcePath="src/widgets/Draw/DrawWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/ReservePlan/ShowReservePlanWidget.swf" optimize="true" sourcePath="src/widgets/ReservePlan/ShowReservePlanWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Navigation/NavigationWidget.swf" optimize="true" sourcePath="src/widgets/Navigation/NavigationWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceManageNew/PoliceManagePanelWidget.swf" optimize="true" sourcePath="src/widgets/PoliceManageNew/PoliceManagePanelWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" optimize="true" sourcePath="src/widgets/RankSymbolLegend/RankSymbolLegendWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/InfoTemplates/GridInfoPopupWidget.swf" optimize="true" sourcePath="src/widgets/InfoTemplates/GridInfoPopupWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/RVPUB/RvPub.swf" optimize="true" sourcePath="src/widgets/RVPUB/RvPub.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/HeaderController/HeaderControllerWidget.swf" optimize="true" sourcePath="src/widgets/HeaderController/HeaderControllerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/ConstructionPoint/ConstructionPointWidget.swf" optimize="true" sourcePath="src/widgets/ConstructionPoint/ConstructionPointWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/OverlayWidget.swf" optimize="true" sourcePath="src/widgets/Overlay/OverlayWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Bookmark/BookmarkWidget.swf" optimize="true" sourcePath="src/widgets/Bookmark/BookmarkWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/DataExtract/DataExtractWidget.swf" optimize="true" sourcePath="src/widgets/DataExtract/DataExtractWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/LayerList/LayerListWidget.swf" optimize="true" sourcePath="src/widgets/LayerList/LayerListWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/EventManager/EventManagerPanelWidget.swf" optimize="true" sourcePath="src/widgets/EventManager/EventManagerPanelWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceManagePDA/PoliceManagePDALayerWidget.swf" optimize="true" sourcePath="src/widgets/PoliceManagePDA/PoliceManagePDALayerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/GeoRSS/GeoRSSWidget.swf" optimize="true" sourcePath="src/widgets/GeoRSS/GeoRSSWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/InfoTemplates/SimpleInfoWinWidget.swf" optimize="true" sourcePath="src/widgets/InfoTemplates/SimpleInfoWinWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/StaticImage/StaticImageWidget.swf" optimize="true" sourcePath="src/widgets/StaticImage/StaticImageWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceDeployment_CD/PoliceDeploymentWidget.swf" optimize="true" sourcePath="src/widgets/PoliceDeployment_CD/PoliceDeploymentWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceManagePDA/PoliceManagePDAPanelWidget.swf" optimize="true" sourcePath="src/widgets/PoliceManagePDA/PoliceManagePDAPanelWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/LayerControl/LayerControlWidget.swf" optimize="true" sourcePath="src/widgets/LayerControl/LayerControlWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/EventManager/EventManagerLayerWidget.swf" optimize="true" sourcePath="src/widgets/EventManager/EventManagerLayerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Splash/SplashWidget.swf" optimize="true" sourcePath="src/widgets/Splash/SplashWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/InfoTemplates/InfoPopupWidget.swf" optimize="true" sourcePath="src/widgets/InfoTemplates/InfoPopupWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Search/SearchWidget.swf" optimize="true" sourcePath="src/widgets/Search/SearchWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/DrawBasic/DrawBasic.swf" optimize="true" sourcePath="src/widgets/DrawBasic/DrawBasic.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/ReservePlan/AddReservePlanWidget.swf" optimize="true" sourcePath="src/widgets/ReservePlan/AddReservePlanWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/TracePlayback/TracePlayback.swf" optimize="true" sourcePath="src/widgets/TracePlayback/TracePlayback.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" optimize="true" sourcePath="src/widgets/PoliceManageNew/PoliceManageLayerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/EditorToolbar/EditorToolbarWidget.swf" optimize="true" sourcePath="src/widgets/EditorToolbar/EditorToolbarWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Coordinate/CoordinateWidget.swf" optimize="true" sourcePath="src/widgets/Coordinate/CoordinateWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/MapSearch/MultiLayerSearchWidget.swf" optimize="true" sourcePath="src/widgets/MapSearch/MultiLayerSearchWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Legend/LegendWidget.swf" optimize="true" sourcePath="src/widgets/Legend/LegendWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/BufferOverlayWidget.swf" optimize="true" sourcePath="src/widgets/Overlay/BufferOverlayWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/PointOverlayWidget.swf" optimize="true" sourcePath="src/widgets/Overlay/PointOverlayWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/WidgetContainer/WidgetContainerWidget.swf" optimize="true" sourcePath="src/widgets/WidgetContainer/WidgetContainerWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/OverviewMap/OverviewMapWidget.swf" optimize="true" sourcePath="src/widgets/OverviewMap/OverviewMapWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoiSearch/PoiSearchWidget.swf" optimize="true" sourcePath="src/widgets/PoiSearch/PoiSearchWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/PolylineOverlayWidget.swf" optimize="true" sourcePath="src/widgets/Overlay/PolylineOverlayWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Locate/LocateWidget.swf" optimize="true" sourcePath="src/widgets/Locate/LocateWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/PoliceDeployment/PoliceDeploymentWidget.swf" optimize="true" sourcePath="src/widgets/PoliceDeployment/PoliceDeploymentWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/MapSwitcher/MapSwitcherWidget.swf" optimize="true" sourcePath="src/widgets/MapSwitcher/MapSwitcherWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/MapSearch/MapSearchWidget.swf" optimize="true" sourcePath="src/widgets/MapSearch/MapSearchWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Time/TimeWidget.swf" optimize="true" sourcePath="src/widgets/Time/TimeWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Query/QueryWidget.swf" optimize="true" sourcePath="src/widgets/Query/QueryWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/CarTrack/CarTrackWidget.swf" optimize="true" sourcePath="src/widgets/CarTrack/CarTrackWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/SimulationMovePoint/SimulationMovePointWidget.swf" optimize="true" sourcePath="src/widgets/SimulationMovePoint/SimulationMovePointWidget.mxml"/>
+  </modules>
+  <workers/>
+  <buildCSSFiles/>
+  <publishSource>
+    <sourcePathIncludes/>
+    <sourceExcludes>
+      <exclude path="bin-release1"/>
+      <exclude path="html-template"/>
+      <exclude path="libs"/>
+      <exclude path="locale"/>
+      <exclude path="services"/>
+      <exclude path="src/assets"/>
+      <exclude path="src/com"/>
+      <exclude path="src/services"/>
+      <exclude path="src/test_class"/>
+      <exclude path="src/widgets/Bookmark"/>
+      <exclude path="src/widgets/ConstructionPoint"/>
+      <exclude path="src/widgets/Coordinate"/>
+      <exclude path="src/widgets/DataExtract"/>
+      <exclude path="src/widgets/Draw"/>
+      <exclude path="src/widgets/DrawBasic"/>
+      <exclude path="src/widgets/Edit"/>
+      <exclude path="src/widgets/EventManager"/>
+      <exclude path="src/widgets/Geoprocessing"/>
+      <exclude path="src/widgets/GeoRSS"/>
+      <exclude path="src/widgets/HeaderController"/>
+      <exclude path="src/widgets/InfoTemplates"/>
+      <exclude path="src/widgets/LayerControl"/>
+      <exclude path="src/widgets/LayerList"/>
+      <exclude path="src/widgets/Legend"/>
+      <exclude path="src/widgets/Locate"/>
+      <exclude path="src/widgets/MapSearch"/>
+      <exclude path="src/widgets/MapSwitcher"/>
+      <exclude path="src/widgets/Navigation"/>
+      <exclude path="src/widgets/Overlay"/>
+      <exclude path="src/widgets/OverviewMap"/>
+      <exclude path="src/widgets/PoiSearch"/>
+      <exclude path="src/widgets/PoliceDeployment"/>
+      <exclude path="src/widgets/PoliceDeployment_CD"/>
+      <exclude path="src/widgets/PoliceManageNew"/>
+      <exclude path="src/widgets/PoliceManagePDA"/>
+      <exclude path="src/widgets/Print"/>
+      <exclude path="src/widgets/Query"/>
+      <exclude path="src/widgets/RankSymbolLegend"/>
+      <exclude path="src/widgets/RVPUB"/>
+      <exclude path="src/widgets/Samples"/>
+      <exclude path="src/widgets/Search"/>
+      <exclude path="src/widgets/Splash"/>
+      <exclude path="src/widgets/StaticImage"/>
+      <exclude path="src/widgets/Time"/>
+      <exclude path="src/widgets/TracePlayback"/>
+      <exclude path="src/widgets/WidgetContainer"/>
+      <exclude path="src/config-changsha-local_old.xml"/>
+      <exclude path="src/config-chengdu-bak.xml"/>
+      <exclude path="src/config-chengdu-cs-local.xml"/>
+      <exclude path="src/config-chengdu-cs.xml"/>
+      <exclude path="src/config-chengdu-local-kaka.xml"/>
+      <exclude path="src/config-chengdu-local.xml"/>
+      <exclude path="src/config-chengdu-morph-local.xml"/>
+      <exclude path="src/config-chengdu-morph.xml"/>
+      <exclude path="src/config-chengdu-newcstest.xml"/>
+      <exclude path="src/config-chengdu.xml"/>
+      <exclude path="src/config-cpTrail.xml"/>
+      <exclude path="src/config-ksl-oa-nocctv.xml"/>
+      <exclude path="src/config-ksl-oa.xml"/>
+      <exclude path="src/config-policedeploy-cd.xml"/>
+      <exclude path="src/config-policedeploy-jy.xml"/>
+      <exclude path="src/config-whitelist.xml"/>
+      <exclude path="src/config-wlmq.xml"/>
+      <exclude path="src/config-wxjc-local.xml"/>
+      <exclude path="src/config-wxjc.xml"/>
+      <exclude path="src/config-wxyw-local.xml"/>
+      <exclude path="src/config-wxyw.xml"/>
+      <exclude path="src/defaults.css"/>
+      <exclude path="src/index.mxml"/>
+      <exclude path="src/license.txt"/>
+      <exclude path="license.txt"/>
+      <exclude path="readme.txt"/>
+    </sourceExcludes>
+  </publishSource>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>
+
