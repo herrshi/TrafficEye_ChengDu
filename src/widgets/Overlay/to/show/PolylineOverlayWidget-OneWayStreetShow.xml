@@ -1,10 +1,16 @@
 <?xml version="1.0" ?>
 <configuration>
-	<type>oneWayStreetShow</type>
+	<type>oneWayStreet</type>
 	<!-- 组件打开时通知页面 -->
 	<widgetrunnotify>onOneWayStreetShowOverlayLoad</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onOneWayStreetShowOverlayClose</widgetclosenotify>
+	
+<!-- 	<arrow enable="true"> -->
+<!-- 		<position>middle</position> -->
+<!-- 		<length>20</length> -->
+<!-- 	</arrow> -->
+	
 	<popup>
 		<title>{roadName}</title>
 		<fields>
@@ -17,12 +23,27 @@
 			<field name="lineLength" alias="长度" visible="true" />
 			<field name="enableTime" alias="启用日期" visible="false" />
 			<field name="roadSectNames" alias="关联路段" visible="false" />
+			<field name="roadType"/>
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>
-	<simplerenderer>
-		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>
-	</simplerenderer>
+	
+	<uniquevaluerenderer field="roadType">
+		<defaultlabel>未知</defaultlabel>
+		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
+		
+		<uniquevalueinfo value="固定" label="固定">
+			<simplelinesymbol style="solid" color="0x0084ff " alpha="1" width="3"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="潮汐" label="潮汐">
+			<simplelinesymbol style="solid" color="0xf000ff" alpha="1" width="3"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="施工" label="施工">
+			<simplelinesymbol style="solid" color="0xff0000" alpha="1" width="3"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
 	
 	<drawsymbol>
 		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>

@@ -138,19 +138,6 @@
 				{
 					_lineType = configXML.type;
 					
-					//popup
-					if ( configXML.popup[0] )
-					{
-						var popupXML:XML = configXML.popup[0];
-						var popUpInfo:PopUpInfoWithButtons = PopUpInfoParser.parsePopUpInfo( popupXML );
-						_popUpRenderer = new ClassFactory( PopUpRenderer );
-						_popUpRenderer.properties = 
-							{ 
-								popUpInfo: popUpInfo
-							};
-						_lineOverlayLayer.infoWindowRenderer = _popUpRenderer;
-					}
-					
 					//renderer
 					var rendererParser:RendererParser = new RendererParser;
 					var renderer:IRenderer = rendererParser.parseRenderer( configXML );
@@ -174,6 +161,19 @@
 								position: arrowPosition, 
 								length: arrowLength 
 							};
+					}
+					
+					//popup
+					if ( configXML.popup[0] )
+					{
+						var popupXML:XML = configXML.popup[0];
+						var popUpInfo:PopUpInfoWithButtons = PopUpInfoParser.parsePopUpInfo( popupXML );
+						_popUpRenderer = new ClassFactory( PopUpRenderer );
+						_popUpRenderer.properties = 
+							{ 
+								popUpInfo: popUpInfo
+							};
+						_lineOverlayLayer.infoWindowRenderer = _popUpRenderer;
 					}
 					
 					//启动时的状态add/move/normal
@@ -262,8 +262,8 @@
 				{
 					var id:String = lineObj.id;
 					var geometryObj:Object = lineObj.geometry;
-					var polyline:Polyline = Polyline.fromJSON( geometryObj );
-					if ( !polyline || !id || id == "" )
+					var polyline:Polyline;
+					if ( !id || id == "" )
 					{
 						continue;
 					}

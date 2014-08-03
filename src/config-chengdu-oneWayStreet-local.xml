@@ -31,7 +31,7 @@
 <!-- 		url="widgets/Coordinate/CoordinateWidget.swf"/> -->
 	
 	<!--gis服务器地址 -->
-	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="128.64.151.12:8399">
+	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="jiaotong.seisys.cn:8399">
 		<basemaps>
 			<layer label="基础图层" type="tiled" visible="true" alpha="1" 
 				url="http://[serverip]/arcgis/rest/services/chengdu/cd_base_nolabel/MapServer" />
@@ -52,8 +52,8 @@
 	
 	<widgetcontainer layout="float">
 		<widget label="OneWayStreetOverlay" preload="open" 
-			url="widgets/Overlay/PolylineOverlayWidget.swf" 
-			config="widgets/Overlay/ChengDu/PolylineOverlayWidget-oneWayStreet.xml"/>
+			url="widgets/Overlay/PolylineOverlayWidgetTest.swf" 
+			config="widgets/Overlay/to/show/PolylineOverlayWidget-OneWayStreetShow.xml"/>
 		
 		<widget label="编辑工具栏" left="80" top="10" 
 			url="widgets/EditorToolbar/EditorToolbarWidget.swf"/>

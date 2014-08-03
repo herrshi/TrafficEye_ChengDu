@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <actionScriptProperties analytics="false" mainApplicationPath="index.mxml" projectUUID="034d1e94-f1a9-4d3b-a1f5-4df718f153ab" version="11">
-  <compiler additionalCompilerArguments="-locale zh_CN -source-path=locale/{locale} -keep-all-type-selectors=true" autoRSLOrdering="true" copyDependentFiles="true" flex3CompatMode="false" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="false" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="false" useFlashSDK="false" verifyDigests="true" warn="true">
+  <compiler additionalCompilerArguments="-locale zh_CN -source-path=locale/{locale} -keep-all-type-selectors=true" autoRSLOrdering="true" copyDependentFiles="true" flex3CompatMode="false" flexSDK="Apache Flex 4.12.1 FP11.1 AIR3.9 en_US" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="false" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="false" useFlashSDK="false" verifyDigests="true" warn="true">
     <compilerSourcePath/>
     <libraryPath defaultLinkType="1">
       <libraryPathEntry kind="4" path="">
@@ -73,6 +73,7 @@
     <module application="src/index.mxml" destPath="widgets/Query/QueryWidget.swf" optimize="true" sourcePath="src/widgets/Query/QueryWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/CarTrack/CarTrackWidget.swf" optimize="true" sourcePath="src/widgets/CarTrack/CarTrackWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/SimulationMovePoint/SimulationMovePointWidget.swf" optimize="true" sourcePath="src/widgets/SimulationMovePoint/SimulationMovePointWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/Overlay/PolylineOverlayWidgetTest.swf" optimize="true" sourcePath="src/widgets/Overlay/PolylineOverlayWidgetTest.mxml"/>
   </modules>
   <workers/>
   <buildCSSFiles/>
@@ -155,4 +156,3 @@
   </publishSource>
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
 </actionScriptProperties>
-
