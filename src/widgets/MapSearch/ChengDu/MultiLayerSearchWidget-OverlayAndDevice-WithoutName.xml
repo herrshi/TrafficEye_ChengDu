@@ -4,12 +4,24 @@
 	<sendresult>false</sendresult>
 	
 	<layerinfo>
-		<url>http://[serverip]/arcgis/rest/services/cd_search/MapServer</url>
-		<layerids>0,1,2,3,4,5</layerids>
-		<fields>DEVICEID,DES,Name,des,deviceid</fields>
+		<url>http://[serverip]/arcgis/rest/services/201406chengdu/cd_search_201406/MapServer</url>
+		<layerids>0,1,2,3,4,5,9,10,11</layerids>
+		<fields>NAME,ADDRESS,NAME_CHN,GTBM,JDMC,JZSP,DEVICEID,DES,Name,des,deviceid</fields>
 
 		<uniquevaluerenderer field="layerName">
 			<picturemarkersymbol url="assets/images/i_pushpin_centered.png" />
+			
+			<uniquevalueinfo value="导航道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+			
+			<uniquevalueinfo value="杆件">
+				<simplemarkersymbol style="circle" color="0xFF0000" size="10"/>
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="POI25">
+				<simplemarkersymbol style="circle" color="0x0000FF" size="10"/>
+			</uniquevalueinfo>
 			
 			<uniquevalueinfo value="诱导板">
 				<picturemarkersymbol url="assets/images/device/qbb.png"/>
@@ -77,6 +89,26 @@
 				<title>{DES}</title>
 				<fields>
 					<field name="DES" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+			
+			<popup layername="杆件">
+				<title>{JDMC}{JZSP}</title>
+				<fields>
+					<field name="JDMC" />
+					<field name="JZSP" />
+					<field name="GTLB" alias="类别" visible="true"/>
+					<field name="PCSMC" alias="派出所" visible="true"/>
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="POI25">
+				<title>{NAME}</title>
+				<fields>
+					<field name="NAME" />
+					<field name="ADDRESS" alias="地址" visible="true"/>
 				</fields>
 				<showzoomtobutton>false</showzoomtobutton>
 			</popup>

@@ -261,7 +261,7 @@
 				for each ( var lineObj:Object in linesArray )
 				{
 					var id:String = lineObj.id;
-					var geometryObj:Object = lineObj.geometry;
+					var geometryObj:Object = lineObj.geometry || lineObj.line;
 					var polyline:Polyline;
 					if ( !id || id == "" )
 					{

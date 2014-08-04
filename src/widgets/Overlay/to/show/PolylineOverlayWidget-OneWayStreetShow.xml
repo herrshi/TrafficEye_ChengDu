@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <configuration>
-	<type>oneWayStreet</type>
+	<type>oneWayStreetShow</type>
 	<!-- 组件打开时通知页面 -->
 	<widgetrunnotify>onOneWayStreetShowOverlayLoad</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
@@ -11,7 +11,7 @@
 <!-- 		<length>20</length> -->
 <!-- 	</arrow> -->
 	
-	<popup>
+	<popup> 
 		<title>{roadName}</title>
 		<fields>
 			<field name="roadName" alias="道路名称" visible="false" />
@@ -28,7 +28,7 @@
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>
 	
-	<uniquevaluerenderer field="roadType">
+	<uniquevaluerenderer field="roadName">
 		<defaultlabel>未知</defaultlabel>
 		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
 		
