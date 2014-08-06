@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<configuration>
+	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>
+	<!--数据类型，警员or协警 -->
+	<datatype>AssistantManagerRTInfo</datatype>
+</configuration>

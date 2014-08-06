@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>case</type>
+	<simplefillsymbol style="solid" alpha="0.2" color="0xa2bad5">
+		<outline style="solid" color="0xa2bad5" width="3"/>
+	</simplefillsymbol>
+</configuration>

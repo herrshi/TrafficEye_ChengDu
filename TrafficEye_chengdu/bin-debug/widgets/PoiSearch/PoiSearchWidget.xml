@@ -1,0 +1,12 @@
+<configuration>
+	<defaultsymbols>
+		<picturemarkersymbol url="assets/flash/Red_glow.swf"
+			height="30" width="30" />
+	</defaultsymbols>
+	<layers>
+		<layer label="路口" expression="JNAME like '%[value]%'"
+			titlefield="JNAME" scale="12000">http://[ip]/arcgis/rest/services/wuxi/wx_poi/MapServer/0</layer>
+		<layer label="兴趣点" expression="NAMEC like '%[value]%'"
+			titlefield="NAMEC" scale="6000">http://[ip]/arcgis/rest/services/wuxi/wx_poi/MapServer/1</layer>
+	</layers>
+</configuration>

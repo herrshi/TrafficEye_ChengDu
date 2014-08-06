@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>oneWayStreetShow</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onOneWayStreetShowOverlayLoad</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onOneWayStreetShowOverlayClose</widgetclosenotify>
+	<popup>
+		<title>{roadName}</title>
+		<fields>
+			<field name="roadName" alias="道路名称" visible="false" />
+			<field name="code" alias="编号" visible="true" />
+			<field name="lineLength" alias="长度" visible="true" />
+			<field name="belongSuboffice" alias="分局" visible="true" />
+			<field name="enableTime" alias="启用日期" visible="true" />
+			<field name="enableTime" alias="时段" visible="true" />
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	<simplerenderer>
+		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>
+	</simplerenderer>
+	
+	<drawsymbol>
+		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>
+	</drawsymbol>
+</configuration>
