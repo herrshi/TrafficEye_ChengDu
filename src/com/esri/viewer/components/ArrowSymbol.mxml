@@ -2,11 +2,16 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" 
-		 implements="mx.core.IDataRenderer">
+		 implements="mx.core.IDataRenderer" creationComplete="this_creationCompleteHandler(event)">
 	
 	<fx:Script>
 		<![CDATA[
-			[Bindable] private var _pathData:String = "";
+			import mx.events.FlexEvent;
+			import mx.graphics.GradientEntry;
+			import mx.graphics.LinearGradient;
+			import mx.graphics.SolidColorStroke;
+			
+			import spark.primitives.Path;
 			
 			private var _data:Object;
 			
@@ -20,42 +25,77 @@
 			public function set data(value:Object):void
 			{
 				_data = value;
+				
 				var arrowLength:uint = _data.arrowLength;
 				var arrowAngle:Number = _data.arrowAngle;
+				var rendererInfo:Object = _data.rendererInfo;
 				
 				this.width = this.height = arrowLength;
 				
+				var lineColor:Number = rendererInfo.lineColor;
+				var lineWidth:Number = rendererInfo.lineWidth;
+				var gradientEntryArray:Array = rendererInfo.gradientEntryArray;
+				
+				//设置填充色
+				var fill:LinearGradient = new LinearGradient();
+				var entryArray:Array = [];
+				for each ( var gradientEntryObj:Object in gradientEntryArray )
+				{
+					var color:Number = gradientEntryObj.color;
+					var alpha:Number = gradientEntryObj.alpha;
+					var gradientEntry:GradientEntry = new GradientEntry( color, NaN, alpha );
+					entryArray.push( gradientEntry );
+				}
+				fill.entries = entryArray;
+				/*var g1:GradientEntry = new GradientEntry( 0x006bcf, NaN, 0.8 );
+				var g2:GradientEntry = new GradientEntry( 0x0084ff, NaN, 0.8 );
+				fill.entries = [ g1, g2 ];*/
+				
 				//画一个水平朝右的箭头
-				_pathData = "M " + arrowLength + "  " + arrowLength / 2 + " ";
-				_pathData += "L " + arrowLength / 2 + " " + arrowLength + " ";
-				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 * 2 + " ";
-				_pathData += "L 0 " + arrowLength / 3 * 2 + " ";
-				_pathData += "L 0 " + arrowLength / 3 + " ";
-				_pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 + " ";
-				_pathData += "L " + arrowLength / 2 + " 0 ";
-				_pathData += "Z";
+				var pathData:String = "M " + arrowLength + "  " + arrowLength / 2 + " ";
+				pathData += "L " + arrowLength / 2 + " " + arrowLength + " ";
+				pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 * 2 + " ";
+				pathData += "L 0 " + arrowLength / 3 * 2 + " ";
+				pathData += "L 0 " + arrowLength / 3 + " ";
+				pathData += "L " + arrowLength / 2 + " " + arrowLength / 3 + " ";
+				pathData += "L " + arrowLength / 2 + " 0 ";
+				pathData += "Z";
+				
+				var path:Path = new Path();
+				path.fill = fill;
+				path.data = pathData;
+				path.stroke = new SolidColorStroke( lineColor, lineWidth );
+				this.addElement( path );
 				
 				//将箭头旋转指定角度
+				rotateEffect.target = path;
 				rotateEffect.angleFrom = 0;
 				rotateEffect.angleBy = arrowAngle;
 				rotateEffect.play();
 			}
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				
+			}
+			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<s:Rotate id="rotateEffect" target="{path}" autoCenterTransform="true"/>
+		<s:Rotate id="rotateEffect" autoCenterTransform="true"/>
 	</fx:Declarations>
 	
-	<s:Path id="path" data="{_pathData}">
+	<!--<s:Path id="path" data="{_pathData}">
 		<s:stroke>
-			<s:SolidColorStroke color="0x006bcf"/>
+			<s:SolidColorStroke color="0x000000"/>
 		</s:stroke>
 		<s:fill>
-			<s:LinearGradient rotation="90">
-				<s:GradientEntry color="0x006bcf" alpha="0.8"/>
-				<s:GradientEntry color="0x0084ff" alpha="0.8"/>
+			<s:LinearGradient>
+				<s:GradientEntry color="0x000000" alpha="0.8"/>
+				<s:GradientEntry color="0xffffff" alpha="0.8"/>
 			</s:LinearGradient>
 		</s:fill>
-	</s:Path>
+	</s:Path>-->
 </s:Group>

@@ -66,6 +66,8 @@
 			 * */
 			private var _arrowInfo:Object;
 			
+			private var _lineUniqueValueRenderer:Object;
+			
 			/**
 			 * 当前模式
 			 * move/add
@@ -136,10 +138,11 @@
 			{
 				if ( configXML )
 				{
+					
 					_lineType = configXML.type;
 					
 					//renderer
-					var rendererParser:RendererParser = new RendererParser;
+					var rendererParser:RendererParser = new RendererParser();
 					var renderer:IRenderer = rendererParser.parseRenderer( configXML );
 					_lineOverlayLayer.renderer = renderer;
 					
@@ -156,10 +159,38 @@
 					{
 						var arrowPosition:String = configXML.arrow.position;
 						var arrowLength:Number = configXML.arrow.length;
+						
+						var arrowUniqueValueRenderer:Object;
+						var arrowSimpleRenderer:Object;
+						if ( configXML.arrow.uniquevaluerenderer[ 0 ] )
+						{
+							var arrowUniqueValueRendererTable:Hashtable = new Hashtable();
+							
+							var arrowRendererFieldName:String = configXML.arrow.uniquevaluerenderer.@field;
+							var arrowUniqueValueInfosXMLList:XMLList = configXML.arrow.uniquevaluerenderer.uniquevalueinfo;
+							for each ( var arrowUniqueValueInfoXML:XML in arrowUniqueValueInfosXMLList )
+							{
+								var arrowRendererFieldValue:String = arrowUniqueValueInfoXML.@value;
+								var arrowSymbolObj:Object = parseArrowGradientFillSymbol( arrowUniqueValueInfoXML.gradientfill[ 0 ] );
+								arrowUniqueValueRendererTable.add( arrowRendererFieldValue, arrowSymbolObj );
+							}
+							arrowUniqueValueRenderer = 
+								{ 
+									fieldName: arrowRendererFieldName, 
+									rendererTable: arrowUniqueValueRendererTable 
+								};
+						}
+						else if ( configXML.arrow.simplerenderer[ 0 ] )
+						{
+							arrowSimpleRenderer = parseArrowGradientFillSymbol( configXML.arrow.simplerenderer.gradientfill[ 0 ] );
+						}
+						
 						_arrowInfo = 
 							{ 
 								position: arrowPosition, 
-								length: arrowLength 
+								length: arrowLength,
+								uniqueValueRenderer: arrowUniqueValueRenderer,
+								simpleRenderer: arrowSimpleRenderer
 							};
 					}
 					
@@ -212,6 +243,33 @@
 					}
 					
 				}
+			}
+			
+			private function parseArrowGradientFillSymbol( symbolXML:XML ):Object
+			{
+				var lineColor:Number = symbolXML.@linecolor;
+				var lineWidth:Number = symbolXML.@linewidth;
+				
+				var gradientEntryArray:Array = [];
+				var gradientEntryXMLList:XMLList = symbolXML.gradiententry;
+				for each ( var gradientEntryXML:XML in gradientEntryXMLList )
+				{
+					var gradientColor:Number = gradientEntryXML.@color;
+					var gradientAlpha:Number = gradientEntryXML.@alpha;
+					gradientEntryArray.push( 
+						{ 
+							color: gradientColor, 
+							alpha: gradientAlpha 
+						} 
+					);
+				}
+				
+				var symbolObj:Object = { 
+					lineColor: lineColor, 
+					lineWidth: lineWidth,
+					gradientEntryArray: gradientEntryArray
+				} 
+				return symbolObj;
 			}
 			
 			private function appevent_WidgetRunHandler( event:AppEvent ):void
@@ -295,10 +353,9 @@
 						
 					}
 					
-					var fields:Object = lineObj.fields;
-					if ( fields )
+					if ( lineObj.fields )
 					{
-						graphic.attributes = fields;
+						graphic.attributes = lineObj.fields;
 					}
 					
 					if ( _symbolGlowFilter )
@@ -308,7 +365,7 @@
 					
 					if ( _needArrow )
 					{
-						drawArrow( polyline );
+						drawArrow( graphic );
 					}
 				}
 			}
@@ -383,7 +440,7 @@
 				drawGraphic.id = UIDUtil.createUID();
 				_movedGeometryTable.add( drawGraphic.id, [ drawGraphic.geometry ] );
 				_lineOverlayLayer.add( drawGraphic );
-				drawArrow( drawGraphic.geometry as Polyline );
+				drawArrow( drawGraphic );
 				_selectedGraphic = drawGraphic;
 				
 				//设置移动
@@ -724,8 +781,10 @@
 				}
 			}
 			
-			private function drawArrow( polyline:Polyline ):void
+			private function drawArrow( graphic:Graphic ):void
 			{
+				var polyline:Polyline = graphic.geometry as Polyline;
+				
 				for each ( var path:Array in polyline.paths )
 				{
 					for ( var i:uint = 0; i < path.length - 1; i++ )
@@ -754,11 +813,37 @@
 						var startScreenPoint:Point = map.toScreen( startPoint );
 						var endScreenPoint:Point = map.toScreen( endPoint );
 						var angle:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
+						
+						//获取箭头样式
+						var rendererInfo:Object;
+						if ( _arrowInfo.uniqueValueRenderer )
+						{
+							var rendererTable:Hashtable = _arrowInfo.uniqueValueRenderer.rendererTable;
+							
+							if ( graphic.attributes )
+							{
+								var rendererFieldName:String = _arrowInfo.uniqueValueRenderer.fieldName;
+								var rendererFieldValue:String = graphic.attributes[ rendererFieldName ];
+								
+								rendererInfo = rendererTable.find( rendererFieldValue ) ? 
+									rendererTable.find( rendererFieldValue ) : rendererTable.find( "default" );
+							}
+							else
+							{
+								rendererInfo = rendererTable.find( "default" );
+							}
+						}
+						else if ( _arrowInfo.simpleRenderer )
+						{
+							rendererInfo = _arrowInfo.simpleRenderer;
+						}
+						
 						arrowGraphic.symbol = arrowSymbol;
 						arrowGraphic.attributes = 
 							{ 
 								arrowLength: _arrowInfo.length, 
-								arrowAngle: angle 
+								arrowAngle: angle,
+								rendererInfo: rendererInfo
 							};
 						_lineArrowLayer.add( arrowGraphic );
 					}

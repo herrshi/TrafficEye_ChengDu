@@ -1,15 +1,10 @@
 <?xml version="1.0" ?>
 <configuration>
-	<type>oneWayStreetShow</type>
+	<type>oneWayStreet</type>
 	<!-- 组件打开时通知页面 -->
 	<widgetrunnotify>onOneWayStreetShowOverlayLoad</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
 	<widgetclosenotify>onOneWayStreetShowOverlayClose</widgetclosenotify>
-	
-<!-- 	<arrow enable="true"> -->
-<!-- 		<position>middle</position> -->
-<!-- 		<length>20</length> -->
-<!-- 	</arrow> -->
 	
 	<popup> 
 		<title>{roadName}</title>
@@ -28,24 +23,68 @@
 		<showzoomtobutton>false</showzoomtobutton>
 	</popup>
 	
-	<uniquevaluerenderer field="roadName">
+	<drawsymbol>
+		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
+	</drawsymbol>
+	
+	<uniquevaluerenderer field="roadType">
 		<defaultlabel>未知</defaultlabel>
 		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/>
 		
-		<uniquevalueinfo value="固定" label="固定">
+		<uniquevalueinfo value="固定">
 			<simplelinesymbol style="solid" color="0x0084ff " alpha="1" width="3"/>
 		</uniquevalueinfo>
 		
-		<uniquevalueinfo value="潮汐" label="潮汐">
+		<uniquevalueinfo value="潮汐">
 			<simplelinesymbol style="solid" color="0xf000ff" alpha="1" width="3"/>
 		</uniquevalueinfo>
 		
-		<uniquevalueinfo value="施工" label="施工">
+		<uniquevalueinfo value="施工">
 			<simplelinesymbol style="solid" color="0xff0000" alpha="1" width="3"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 	
-	<drawsymbol>
-		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>
-	</drawsymbol>
+<!-- 	<simplerenderer> -->
+<!-- 		<simplelinesymbol style="solid" color="0x000000" alpha="1" width="3"/> -->
+<!-- 	</simplerenderer> -->
+	
+	<arrow enable="true">
+		<position>middle</position>
+		<length>20</length>
+<!-- 		<simplerenderer> -->
+<!-- 			<gradientfill linecolor="0x000000" linewidth="1"> -->
+<!-- 					<gradiententry color="0x006bcf" alpha="0.8"/> -->
+<!-- 					<gradiententry color="0x0084ff" alpha="0.8"/> -->
+<!-- 				</gradientfill> -->
+<!-- 		</simplerenderer> -->
+		<uniquevaluerenderer field="roadType">
+			<uniquevalueinfo value="固定">
+				<gradientfill linecolor="0x000000" linewidth="1">
+					<gradiententry color="0x006bcf" alpha="0.8"/>
+					<gradiententry color="0x0084ff" alpha="0.8"/>
+				</gradientfill>
+			</uniquevalueinfo>
+			
+			<uniquevalueinfo value="潮汐">
+				<gradientfill linecolor="0x000000" linewidth="1">
+					<gradiententry color="0xbc01c8" alpha="0.8"/>
+					<gradiententry color="0xf000ff" alpha="0.8"/>
+				</gradientfill>
+			</uniquevalueinfo>
+			
+			<uniquevalueinfo value="施工">
+				<gradientfill linecolor="0x000000" linewidth="1">
+					<gradiententry color="0xc80101" alpha="0.8"/>
+					<gradiententry color="0xff0000" alpha="0.8"/>
+				</gradientfill>
+			</uniquevalueinfo>
+			
+			<uniquevalueinfo value="default">
+				<gradientfill linecolor="0x000000" linewidth="1">
+					<gradiententry color="0x000000" alpha="0.8"/>
+					<gradiententry color="0xffffff" alpha="0.8"/>
+				</gradientfill>
+			</uniquevalueinfo>
+		</uniquevaluerenderer>
+	</arrow>
 </configuration>
