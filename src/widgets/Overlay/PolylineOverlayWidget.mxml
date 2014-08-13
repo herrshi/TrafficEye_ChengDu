@@ -66,8 +66,6 @@
 			 * */
 			private var _arrowInfo:Object;
 			
-			private var _lineUniqueValueRenderer:Object;
-			
 			/**
 			 * 当前模式
 			 * move/add
@@ -440,7 +438,11 @@
 				drawGraphic.id = UIDUtil.createUID();
 				_movedGeometryTable.add( drawGraphic.id, [ drawGraphic.geometry ] );
 				_lineOverlayLayer.add( drawGraphic );
-				drawArrow( drawGraphic );
+				if ( _needArrow )
+				{
+					drawArrow( drawGraphic );
+				}
+				
 				_selectedGraphic = drawGraphic;
 				
 				//设置移动
