@@ -863,6 +863,6 @@
 		
 		<esri:InfoSymbol id="arrowSymbol" containerStyleName="arrowInfoSymbolStyle"
 						 infoPlacement="center"
-						 infoRenderer="com.esri.viewer.components.ArrowSymbol"/>
+						 infoRenderer="com.esri.viewer.components.SingleArrowSymbol"/>
 	</fx:Declarations>
 </viewer:BaseWidget>
