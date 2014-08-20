@@ -1,0 +1,10 @@
+<configuration>
+	<datatype>ConstructionPointInfo</datatype>
+	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>
+	<symbol url="assets/images/device/construction.png" height="24" width="24"
+		xoffset="-10" yoffset="10" />
+	<buttons>
+		<button>删除施工点</button>
+		<button>施工点详情</button>
+	</buttons>
+</configuration>

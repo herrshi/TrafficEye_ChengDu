@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="index.mxml" projectUUID="034d1e94-f1a9-4d3b-a1f5-4df718f153ab" version="11">
+  <compiler additionalCompilerArguments="-locale zh_CN -source-path=locale/{locale} -keep-all-type-selectors=true" autoRSLOrdering="true" copyDependentFiles="true" flex3CompatMode="false" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="false" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="false" useFlashSDK="false" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject_Extended"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/Common"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_FIBER_LOCATION}"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_LIB_LOCATION}"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_LOCALE_LOCATION}"/>
+      <libraryPathEntry kind="3" linkType="1" path="${DCD_FIBER_LOCATION}/fiber.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DCD_FIBER_LOCALE_LOCATION}"/>
+      <libraryPathEntry kind="3" linkType="1" path="${DCD_FIBER_LOCATION}/playerfds.swc" useDefaultLinkType="false"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="index.mxml"/>
+  </applications>
+  <modules/>
+  <workers/>
+  <buildCSSFiles/>
+  <publishSource>
+    <sourcePathIncludes/>
+    <sourceExcludes>
+      <exclude path="bin-release1"/>
+      <exclude path="html-template"/>
+      <exclude path="libs"/>
+      <exclude path="locale"/>
+      <exclude path="services"/>
+      <exclude path="src/assets"/>
+      <exclude path="src/com"/>
+      <exclude path="src/services"/>
+      <exclude path="src/test_class"/>
+      <exclude path="src/widgets/Bookmark"/>
+      <exclude path="src/widgets/ConstructionPoint"/>
+      <exclude path="src/widgets/Coordinate"/>
+      <exclude path="src/widgets/DataExtract"/>
+      <exclude path="src/widgets/Draw"/>
+      <exclude path="src/widgets/DrawBasic"/>
+      <exclude path="src/widgets/Edit"/>
+      <exclude path="src/widgets/EventManager"/>
+      <exclude path="src/widgets/Geoprocessing"/>
+      <exclude path="src/widgets/GeoRSS"/>
+      <exclude path="src/widgets/HeaderController"/>
+      <exclude path="src/widgets/InfoTemplates"/>
+      <exclude path="src/widgets/LayerControl"/>
+      <exclude path="src/widgets/LayerList"/>
+      <exclude path="src/widgets/Legend"/>
+      <exclude path="src/widgets/Locate"/>
+      <exclude path="src/widgets/MapSearch"/>
+      <exclude path="src/widgets/MapSwitcher"/>
+      <exclude path="src/widgets/Navigation"/>
+      <exclude path="src/widgets/Overlay"/>
+      <exclude path="src/widgets/OverviewMap"/>
+      <exclude path="src/widgets/PoiSearch"/>
+      <exclude path="src/widgets/PoliceDeployment"/>
+      <exclude path="src/widgets/PoliceDeployment_CD"/>
+      <exclude path="src/widgets/PoliceManageNew"/>
+      <exclude path="src/widgets/PoliceManagePDA"/>
+      <exclude path="src/widgets/Print"/>
+      <exclude path="src/widgets/Query"/>
+      <exclude path="src/widgets/RankSymbolLegend"/>
+      <exclude path="src/widgets/RVPUB"/>
+      <exclude path="src/widgets/Samples"/>
+      <exclude path="src/widgets/Search"/>
+      <exclude path="src/widgets/Splash"/>
+      <exclude path="src/widgets/StaticImage"/>
+      <exclude path="src/widgets/Time"/>
+      <exclude path="src/widgets/TracePlayback"/>
+      <exclude path="src/widgets/WidgetContainer"/>
+      <exclude path="src/config-changsha-local_old.xml"/>
+      <exclude path="src/config-chengdu-bak.xml"/>
+      <exclude path="src/config-chengdu-cs-local.xml"/>
+      <exclude path="src/config-chengdu-cs.xml"/>
+      <exclude path="src/config-chengdu-local-kaka.xml"/>
+      <exclude path="src/config-chengdu-local.xml"/>
+      <exclude path="src/config-chengdu-morph-local.xml"/>
+      <exclude path="src/config-chengdu-morph.xml"/>
+      <exclude path="src/config-chengdu-newcstest.xml"/>
+      <exclude path="src/config-chengdu.xml"/>
+      <exclude path="src/config-cpTrail.xml"/>
+      <exclude path="src/config-ksl-oa-nocctv.xml"/>
+      <exclude path="src/config-ksl-oa.xml"/>
+      <exclude path="src/config-policedeploy-cd.xml"/>
+      <exclude path="src/config-policedeploy-jy.xml"/>
+      <exclude path="src/config-whitelist.xml"/>
+      <exclude path="src/config-wlmq.xml"/>
+      <exclude path="src/config-wxjc-local.xml"/>
+      <exclude path="src/config-wxjc.xml"/>
+      <exclude path="src/config-wxyw-local.xml"/>
+      <exclude path="src/config-wxyw.xml"/>
+      <exclude path="src/defaults.css"/>
+      <exclude path="src/index.mxml"/>
+      <exclude path="src/license.txt"/>
+      <exclude path="license.txt"/>
+      <exclude path="readme.txt"/>
+    </sourceExcludes>
+  </publishSource>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>

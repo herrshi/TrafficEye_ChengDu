@@ -1,0 +1,69 @@
+﻿<!--诱导板 -->
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/8</layer>
+	<titlefield>车道.name</titlefield>
+	<idfield>车道.deviceid</idfield>
+	<type>lc</type>
+	<linkfield></linkfield>
+	<CheckWindow name="筛选面板" show="true">
+		<!-- <showField name="车道.type" alias="设备位置"> -->
+		<!-- <field keyvalue="二环高架" alias="二环高架"/> -->
+		<!-- </showField> -->
+		<showField name="STATE" alias="设备状态">
+			<field keyvalue="allopen" alias="全部开放" />
+			<field keyvalue="allclose" alias="全部关闭" />
+			<field keyvalue="partopen" alias="部分关闭" />
+			<field keyvalue="incorrect" alias="部分正常" />
+			<field keyvalue="blank" alias="黑屏" />
+			<field keyvalue="disconnect" alias="设备故障" />
+		</showField>
+	</CheckWindow>
+	<widIconUrl>assets/images/device/zk-30.png</widIconUrl>
+	<fields all="false">
+		<field name="车道.name" alias="设备描述" />
+		<field name="车道.deviceid" alias="设备编号" />
+		<field name="车道.location" alias="设备位置" />
+		<field name="STATE_CH" alias="设备状态" />
+		<field name="STATE" show="false" />
+	</fields>
+	<refreshrate>15</refreshrate>
+	<query>1=1</query>
+	<eventType flag="openDevice" />
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<keyfield>STATE</keyfield>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="blank" alias="黑屏">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-black.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="incorrect" alias="部分正常">
+			<picturemarkersymbol
+				url="assets/images/device/icon-zdd-unknown-yellow.png" height="20"
+				width="20" />
+		</symbol>
+		<symbol keyvalue="partopen" alias="部分关闭">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-open&close.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="allclose" alias="全部关闭">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-close.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="disconnect" alias="未连接">
+			<picturemarkersymbol
+				url="assets/images/device/icon-zdd-unknown-white.png" height="20"
+				width="20" />
+		</symbol>
+		<symbol keyvalue="allopen" alias="全部开放">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-open.png"
+				height="20" width="20" />
+		</symbol>
+		<symbol keyvalue="unknown" alias="未知">
+			<picturemarkersymbol
+				url="assets/images/device/icon-zdd-unknown-white.png" height="20"
+				width="20" />
+		</symbol>
+	</symbols>
+
+</configuration>

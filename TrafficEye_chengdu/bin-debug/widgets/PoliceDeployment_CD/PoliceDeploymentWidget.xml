@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" ?>
+<configuration>
+	<info>widgets/InfoTemplates/GridInfoPopupWidget.swf</info>
+	<hinttimeout>0</hinttimeout>
+	<refreshRate>60</refreshRate>
+	<layer enable="false">
+		<url>http://[serverip]/arcgis/rest/services/cd_device/MapServer/3</url>
+		<namefield>SentryName</namefield>
+		<idfield>SentryID</idfield>
+	</layer>
+	<symbols useinranksymbolwidget="true">
+		<symbol keyvalue="未排班,一级岗" alias="未排班">
+			<picturemarkersymbol url="assets/images/device/i_police_g_1.png"
+				height="16" width="16"/>
+		</symbol>
+		<symbol keyvalue="已排班,一级岗" alias="已排班">
+			<picturemarkersymbol url="assets/images/device/i_police_a_1.png"
+				height="16" width="16"/>
+		</symbol>
+		<symbol keyvalue="在岗,一级岗" alias="在岗">
+			<picturemarkersymbol url="assets/images/device/i_police_b_1.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="脱岗,一级岗" alias="脱岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r_1.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="部分脱岗,一级岗" alias="部分脱岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r_1.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="default" alias="default">
+			<picturemarkersymbol url="assets/images/i_police_s_b.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="未排班,二级岗" alias="未排班">
+			<picturemarkersymbol url="assets/images/device/i_police_s_b.png"
+				height="16" width="16"/>
+		</symbol>
+		<symbol keyvalue="已排班,二级岗" alias="已排班">
+			<picturemarkersymbol url="assets/images/device/i_police_a.png"
+				height="16" width="16"/>
+		</symbol>
+		<symbol keyvalue="在岗,二级岗" alias="在岗">
+			<picturemarkersymbol url="assets/images/device/i_police_s.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="脱岗,二级岗" alias="脱岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r.png"
+				height="16" width="16" />
+		</symbol>
+		<symbol keyvalue="部分脱岗,二级岗" alias="部分脱岗">
+			<picturemarkersymbol url="assets/images/device/i_police_r.png"
+				height="16" width="16" />
+		</symbol>
+	</symbols>
+	<buttons>
+		<button>刷新警员</button>		
+	</buttons>
+	
+</configuration>

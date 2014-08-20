@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>carTrack</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify></widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify></widgetclosenotify>
+	
+	<simplerenderer>
+		<simplelinesymbol style="solid" color="0x0055BF" alpha="1" width="3"/>
+	</simplerenderer>
+</configuration>

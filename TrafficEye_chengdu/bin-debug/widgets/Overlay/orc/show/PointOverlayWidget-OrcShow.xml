@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>orcShow</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onOrcShowOverlayLoad</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onOrcShowOverlayClose</widgetclosenotify>
+	<popup>
+		<title>{projectName}</title>
+		<fields>
+			<field name="id" alias="施工点Id" visible="false" />
+			<field name="projectId" alias="工程Id" visible="false" />
+			<field name="projectName" alias="工程名称" visible="false" />
+			<field name="summary" alias="工程概况" visible="false" />
+			<field name="roadSectNames" alias="施工路段" visible="false"/>
+			<field name="startTime" alias="开始时间" visible="true" />
+			<field name="endTime" alias="结束时间" visible="true" />
+			<field name="constructionUnit" alias="施工单位" visible="true"/>
+			<field name="constructionUnitLinkman" alias="联系人" visible="false"/>
+			<field name="constructionUnitContactPhone" alias="联系电话" visible="false"/>
+			<field name="stateId" alias="状态Id" visible="false"/>
+			<field name="departmentNames" alias="所在分局" visible="true"/>
+			<field name="statusId" alias="真实状态Id" visible="false"/>
+			<field name="stateName" alias="状态名称" visible="true"/>
+			<field name="acceptUnit" alias="分管单位" visible="true"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+		<buttons>
+			<button label="查看" action="openDevice" type="orcShow" idfield="projectId" />
+		</buttons>
+	</popup>
+	<uniquevaluerenderer field="statusId">
+		<uniquevalueinfo value="0">
+			<picturemarkersymbol url="assets/images/mapIcons/orc/construction-b.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="1">
+			<picturemarkersymbol url="assets/images/mapIcons/orc/construction-yellow.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="2">
+			<picturemarkersymbol url="assets/images/mapIcons/orc/construction-green.png" yoffset="13"/>
+		</uniquevalueinfo>
+		<uniquevalueinfo value="3">
+			<picturemarkersymbol url="assets/images/mapIcons/orc/construction-red.png" yoffset="13"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+</configuration>

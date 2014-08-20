@@ -1,0 +1,105 @@
+<?xml version="1.0" ?>
+<configuration>
+	<title>ArcGIS Viewer for Flex</title>
+	<subtitle>... using ArcGIS</subtitle>
+	<logo>assets/images/logo.png</logo>
+	<!--textColor,backgroundColor,rolloverColor,selectionColor,titleColor,applicationBackgroundColor -->
+	<stylecolors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444</stylecolors> <!-- Sky Blue -->
+	<stylealpha>0.8</stylealpha>
+
+	<!-- UI elements -->
+	<widget left="10" top="10" config="widgets/Navigation/NavigationWidget.xml"
+		url="widgets/Navigation/NavigationWidget.swf" />
+	<widget right="-2" bottom="-2"
+		config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<!--widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" 
+		url="widgets/MapSwitcher/MapSwitcherWidget.swf"/> <widget left="0" top="0" 
+		config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/ -->
+	<!--widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" 
+		url="widgets/Coordinate/CoordinateWidget.swf"/ -->
+
+	<!--gis服务器地址 -->
+	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0"
+		serverip="20.0.56.14:8399">
+		<basemaps>
+			<layer label="基础图层" type="tiled" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/cd_base_nolabel/MapServer" />
+		</basemaps>
+		<operationallayers>
+			<layer label="透明图层" type="dynamic" visible="true" alpha="0.3"
+				url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" />
+			<layer label="注记" type="dynamic" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/chengdu_anno_PGIS_93/MapServer" />
+			<layer label="发布段" type="dynamic" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer" />
+			<layer label="设备图层" type="dynamic" visible="true" alpha="1"
+				url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" />
+		</operationallayers>
+	</map>
+
+	<!-- widgets organized into widget containers that manage close/open etc -->
+	<!-- supported layout property options: horizontal(default)|float|vertical|fix -->
+
+	<widgetcontainer layout="float">
+		<widget label="preloadQueryWidget" preload="open"
+			url="widgets/Query/QueryWidget.swf" />
+
+		<widget label="警情管理图层" icon="assets/images/event/case30.png"
+			url="widgets/EventManager/EventManagerLayerWidget.swf" config="widgets/EventManager/EventManagerWidget.xml" />
+
+		<widget label="警员管理图层" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget.xml" />
+
+		<widget label="协警管理图层" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget_assistant.xml" />
+
+		<widget label="分局领导管理图层"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" icon="assets/images/policeStatus/police30.png"
+			config="widgets/PoliceManageNew/PoliceManageLayerWidget_deptLeader.xml" />
+
+		<widget label="大队领导管理图层"
+			url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" icon="assets/images/policeStatus/police30.png"
+			config="widgets/PoliceManageNew/PoliceManageLayerWidget_teamLeader.xml" />
+
+
+	</widgetcontainer>
+
+	<widgetcontainer layout="horizontal">
+		<widget label="警情管理面板" icon="assets/images/event/case30.png"
+			url="widgets/EventManager/EventManagerPanelWidget.swf" />
+		<widget label="警力部署" icon="assets/images/i_police.png"
+			url="widgets/PoliceDeployment_CD/PoliceDeploymentWidget.swf" config="widgets/PoliceDeployment_CD/PoliceDeploymentWidget.xml" />
+
+		<widget label="警员管理面板" icon="assets/images/policeStatus/police30.png"
+			url="widgets/PoliceManageNew/PoliceManagePanelWidget.swf" config="widgets/PoliceManageNew/PoliceManagePanelWidget.xml" />
+
+		<widget label="警员数量" icon="assets/images/policeStatus/police30.png"
+			url="widgets/RankSymbolLegend/RankSymbolLegendWidget.swf" />
+	</widgetcontainer>
+
+	<widgetcontainer layout="vertical">
+		<widget label="功能" preload="open"
+			url="widgets/LayerControl/LayerControlWidget_cs.swf" config="widgets/LayerControl/LayerControlWidget.xml" />
+
+		<widget label="地图搜索" config="widgets/MapSearch/MapSearchWidget.xml"
+			url="widgets/MapSearch/MapSearchWidget.swf" />
+	</widgetcontainer>
+
+	<remoteobjects
+		endpoint="http://20.0.58.42:8080/chengdu-webapp/messagebroker/amf">
+		<!--remoteobjects endpoint="http://20.0.23.206:8080/chengdu-webapp/messagebroker/amf" -->
+		<remoteobject name="PoliceManager" enable="true"
+			destination="GPSInfoService" refreshrate="30" />
+		<remoteobject name="EventManager" enable="true"
+			destination="caseInfoService" refreshrate="30" />
+		<remoteobject name="PoliceDeployment" enable="true"
+			destination="policeLayoutService" />
+	</remoteobjects>
+
+	<webservices>
+		<webservice name="CaseService"
+			wsdl="http://20.0.58.40:10000/dispatch/services/CaseService?wsdl"
+			service="CaseServiceService" port="CaseService" />
+	</webservices>
+</configuration>
+

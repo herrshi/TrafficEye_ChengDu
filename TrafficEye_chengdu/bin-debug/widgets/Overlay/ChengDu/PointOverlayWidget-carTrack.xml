@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<!-- 单车轨迹卡口点 -->
+<configuration>
+	<type>carTrackPoint</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify></widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify></widgetclosenotify>
+	
+	<popup>
+		<title>{name}</title>
+		<fields>
+        	<field name="name"/>
+        	<field name="time" alias="时间" visible="true"/>
+	    </fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+    <simplerenderer>
+		<simplemarkersymbol style="circle" color="0x0055BF" size="10"/>
+	</simplerenderer>
+	
+	
+</configuration>

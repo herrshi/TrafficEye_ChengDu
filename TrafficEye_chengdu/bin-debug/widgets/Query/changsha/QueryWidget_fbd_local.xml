@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/changsha/changsha_fbd/MapServer/0</layer>
+	<titlefield>NAME</titlefield>
+	<idfield>ID</idfield>
+	<type>FBD</type>
+	<linkfield></linkfield>
+	<fields all="false">
+		<field name="NAME" alias="设备位置" />
+		<field name="ID" alias="编号" />
+		<field name="道路等级" />
+		<field name="车道数" />
+		<field name="道路宽度" />
+	</fields>
+	<buttons>
+		<button>状态发布</button>
+	</buttons>
+	<filterfield>
+		<name></name>
+		<alias></alias>
+	</filterfield>
+	<refreshrate>0</refreshrate>
+	<query>1=1</query>
+	<info>widgets/InfoTemplates/InfoPopupWidget.swf</info>
+	<remotedata>GetIssuesectsByUserInfo</remotedata>
+</configuration>
