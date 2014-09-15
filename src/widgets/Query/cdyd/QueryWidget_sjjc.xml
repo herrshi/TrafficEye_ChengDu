@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/3</layer>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/3</layer>
 	<titlefield>事件检测.name</titlefield>
 	<idfield>事件检测.ip</idfield>
 	<type>SJJC</type>
@@ -21,8 +21,8 @@
 	<fields all="false">
 		<field name="事件检测.name" alias="设备名称" />
 		<field name="事件检测.deviceid" alias="编号" />
-		<field name="事件检测.type" alias="设备位置" />
-		<field name="事件检测.location" alias="设备方向" />
+<!-- 		<field name="事件检测.type" alias="设备位置" /> -->
+<!-- 		<field name="事件检测.location" alias="设备方向" /> -->
 		<field name="STATE_CH" alias="设备状态" />
 		<field name="事件检测.ip" show="false" />
 		<field name="STATE" show="false" />

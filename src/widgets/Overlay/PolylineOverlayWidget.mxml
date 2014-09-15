@@ -354,6 +354,12 @@
 					if ( lineObj.fields )
 					{
 						graphic.attributes = lineObj.fields;
+						
+						if ( lineObj.fields.needArrow )
+						{
+							_needArrow = lineObj.fields.needArrow == "true" ? true : false;
+						}
+						var angleOffset:Number = lineObj.fields.angleOffset || 0;
 					}
 					
 					if ( _symbolGlowFilter )
@@ -363,7 +369,7 @@
 					
 					if ( _needArrow )
 					{
-						drawArrow( graphic );
+						drawArrow( graphic, angleOffset );
 					}
 				}
 			}
@@ -783,7 +789,7 @@
 				}
 			}
 			
-			private function drawArrow( graphic:Graphic ):void
+			private function drawArrow( graphic:Graphic, angleOffset:Number = 0 ):void
 			{
 				var polyline:Polyline = graphic.geometry as Polyline;
 				
@@ -815,6 +821,7 @@
 						var startScreenPoint:Point = map.toScreen( startPoint );
 						var endScreenPoint:Point = map.toScreen( endPoint );
 						var angle:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
+						angle += angleOffset;
 						
 						//获取箭头样式
 						var rendererInfo:Object;

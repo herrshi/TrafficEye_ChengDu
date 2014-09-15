@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/2</layer>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/2</layer>
 	<titlefield>视频监控.name</titlefield>
 	<idfield>视频监控.channelid</idfield>
 	<type>SPJK</type>
@@ -24,7 +24,7 @@
 	<fields all="false">
 		<field name="视频监控.name" alias="设备名称" />
 		<field name="视频监控.deviceid" alias="编号" />
-		<field name="视频监控.type" alias="设备位置" />
+<!-- 		<field name="视频监控.type" alias="设备位置" /> -->
 		<field name="STATE_CH" alias="设备状态" />
 		<field name="视频监控.channelid" show="false" />
 		<field name="STATE" show="false" />

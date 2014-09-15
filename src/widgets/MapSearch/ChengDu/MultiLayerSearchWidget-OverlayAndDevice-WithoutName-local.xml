@@ -1,0 +1,326 @@
+<configuration>
+	<showgraphicsearch>true</showgraphicsearch>
+	<showtextsearch>true</showtextsearch>
+	<sendresult>false</sendresult>
+
+	<layerinfo>
+		<url>http://[serverip]/arcgis/rest/services/chengdu/cd_search/MapServer</url>
+		<layerids>0,1,2</layerids>
+		<fields>NAME,ADDRESS,NAME_CHN,GTBM,JDMC,JZSP,DEVICEID,DES,Name,des,deviceid</fields>
+
+		<uniquevaluerenderer field="layerName">
+			<picturemarkersymbol url="assets/images/i_pushpin_centered.png" />
+
+			<uniquevalueinfo value="面道路">
+				<simplefillsymbol color="0x3E6FBC" alpha="0.2" style="solid">
+					<outline color="0x3E6FBC" width="1" alpha="1" style="solid" />
+				</simplefillsymbol>
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="导航道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="杆件">
+				<simplemarkersymbol style="circle" color="0xFF0000" size="10" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="POI25">
+				<simplemarkersymbol style="circle" color="0x0000FF" size="10" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="诱导板">
+				<picturemarkersymbol url="assets/images/device/qbb.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="匝控">
+				<picturemarkersymbol url="assets/images/device/zk-open-20-20.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="电子警察">
+				<picturemarkersymbol url="assets/images/device/dzjc.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="事件检测">
+				<picturemarkersymbol url="assets/images/device/dzjc_gj20_0.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="视频监控">
+				<picturemarkersymbol url="assets/images/device/sxj_dm20_0.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="视频采集">
+				<picturemarkersymbol url="assets/images/device/cctv_sanhuan20.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="警员管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/police-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="协警管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/assistant-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="分局领导管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/deptLeader-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="大队领导管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/leader-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="警员PDA管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/police-OnGuard-pda.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="分局领导PDA管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/deptLeader-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="大队领导PDA管理图层">
+				<picturemarkersymbol
+					url="assets/images/policeStatus/leader-OnGuard16.png" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="主要道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+
+			<uniquevalueinfo value="次要道路">
+				<simplelinesymbol color="0x3E6FBC" width="2" />
+			</uniquevalueinfo>
+		</uniquevaluerenderer>
+
+		<popups>
+			<popup layername="default">
+				<title>{DES}</title>
+				<fields>
+					<field name="DES" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+			
+			<popup layername="面道路">
+				<title>{NAME}</title>
+				<fields>
+					<field name="NAME" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+			
+			<popup layername="杆件">
+				<title>{JDMC}{JZSP}</title>
+				<fields>
+					<field name="JDMC" />
+					<field name="JZSP" />
+					<field name="GTLB" alias="类别" visible="true" />
+					<field name="PCSMC" alias="派出所" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="POI25">
+				<title>{NAME}</title>
+				<fields>
+					<field name="NAME" />
+					<field name="ADDRESS" alias="地址" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="诱导板">
+				<title>{name}</title>
+				<fields>
+					<field name="name" />
+					<field name="deviceid" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="YDB" idfield="deviceid" />
+				</buttons>
+			</popup>
+
+			<popup layername="匝控">
+				<title>{desc_}</title>
+				<fields>
+					<field name="name" />
+					<field name="deviceid" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="zk" idfield="deviceid" />
+				</buttons>
+			</popup>
+
+			<popup layername="电子警察">
+				<title>{name}</title>
+				<fields>
+					<field name="name" />
+					<field name="deviceid" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="DZJC" idfield="deviceid" />
+				</buttons>
+			</popup>
+
+			<popup layername="事件检测">
+				<title>{name}</title>
+				<fields>
+					<field name="name" />
+					<field name="ip" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SJJC" idfield="ip" />
+				</buttons>
+			</popup>
+
+			<popup layername="视频监控">
+				<title>{name}</title>
+				<fields>
+					<field name="name" />
+					<field name="channelid" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SPJK" idfield="channelid" />
+				</buttons>
+			</popup>
+
+			<popup layername="视频采集">
+				<title>{name}</title>
+				<fields>
+					<field name="name" />
+					<field name="ip" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+				<buttons>
+					<button label="查看" action="openDevice" type="SPCJ" idfield="ip" />
+				</buttons>
+			</popup>
+
+			<popup layername="警员管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="协警管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="分局领导管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="大队领导管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="警员PDA管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="分局领导PDA管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+
+			<popup layername="大队领导PDA管理图层">
+				<title>{policeName}</title>
+				<fields>
+					<field name="deptName" alias="所属分局" visible="true" />
+					<field name="teamName" alias="所属大队" visible="true" />
+					<field name="postName" alias="岗点" visible="true" />
+					<field name="timePeriod" alias="时间段" visible="true" />
+					<field name="policeName" alias="执勤警员" visible="false" />
+					<field name="policeGpsCode" alias="手台号" visible="true" />
+					<field name="status" alias="在岗状态" visible="true" />
+				</fields>
+				<showzoomtobutton>false</showzoomtobutton>
+			</popup>
+		</popups>
+	</layerinfo>
+
+	<!-- 要搜索的动态数据 -->
+	<overlays>
+		<overlay name="警员管理图层" label="警员(800M)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="协警管理图层" label="警员(800M)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="分局领导管理图层" label="警员(800M)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="大队领导管理图层" label="警员(800M)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="警员PDA管理图层" label="警员(PDA)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="分局领导PDA管理图层" label="警员(PDA)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+		<overlay name="大队领导PDA管理图层" label="警员(PDA)" titlefield="policeName"
+			idfield="policeGpsCode" defaultselected="true" />
+	</overlays>
+</configuration>

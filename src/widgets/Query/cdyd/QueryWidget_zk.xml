@@ -1,6 +1,6 @@
 ﻿<!--诱导板 -->
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/4</layer>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/4</layer>
 	<titlefield>匝控.name</titlefield>
 	<idfield>匝控.deviceid</idfield>
 	<type>zk</type>
@@ -25,7 +25,7 @@
 		<field name="匝控.deviceid" alias="设备编号" />
 		<field name="匝控.loction" alias="设备位置" />
 		<field name="STATE_CH" alias="设备状态" />
-		<field name="匝控.type" alias="设备类型" />
+<!-- 		<field name="匝控.type" alias="设备类型" /> -->
 		<field name="STATE" show="false" />
 	</fields>
 	<refreshrate>15</refreshrate>

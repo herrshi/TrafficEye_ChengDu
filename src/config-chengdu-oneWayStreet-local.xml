@@ -40,9 +40,9 @@
 			<layer label="注记" type="dynamic" visible="true" alpha="1" 	
 				url="http://[serverip]/arcgis/rest/services/chengdu/cd_anno/MapServer" />
 <!-- 			<layer label="透明图层" type="dynamic" visible="true" alpha="0.5"  -->
-<!-- 				url="http://[serverip]/arcgis/rest/services/cd_transperant/MapServer" /> -->
+<!-- 				url="http://[serverip]/arcgis/rest/services/chengdu/cd_transperant/MapServer" /> -->
 <!-- 			<layer label="设备图层" type="dynamic" visible="true" alpha="1"  -->
-<!-- 				url="http://[serverip]/arcgis/rest/services/cd_device/MapServer" /> -->
+<!-- 				url="http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer" /> -->
 <!-- 			<layer label="路段状态" type="dynamic" visible="true" alpha="1"  -->
 <!-- 				url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" /> -->
 <!-- 			<layer label="发布段" type="dynamic" visible="true" alpha="1"  -->
@@ -53,7 +53,7 @@
 	<widgetcontainer layout="float">
 		<widget label="OneWayStreetOverlay" preload="open" 
 			url="widgets/Overlay/PolylineOverlayWidget.swf" 
-			config="widgets/Overlay/to/show/PolylineOverlayWidget-OneWayStreetShow.xml"/>
+			config="widgets/Overlay/ChengDu/PolylineOverlayWidget-oneWayStreet.xml"/>
 		
 		<widget label="编辑工具栏" left="80" top="10" 
 			url="widgets/EditorToolbar/EditorToolbarWidget.swf"/>

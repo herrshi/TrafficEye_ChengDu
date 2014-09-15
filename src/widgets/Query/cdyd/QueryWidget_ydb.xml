@@ -1,7 +1,7 @@
 ﻿<!--诱导板 -->
 <?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/0</layer>
+	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/0</layer>
 	<titlefield>诱导板.name</titlefield>
 	<idfield>诱导板.deviceid</idfield>
 	<type>YDB</type>
