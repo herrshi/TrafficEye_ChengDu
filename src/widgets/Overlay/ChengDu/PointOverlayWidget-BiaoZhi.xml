@@ -27,30 +27,30 @@
 	</popup>
 	
 	<uniquevaluerenderer field="bzlx">
-    	<picturemarkersymbol url="assets/police/police.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/SheBei.png" yoffset="13"/>
     	
 		<uniquevalueinfo value="警告标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_警告png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingGao.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="指标标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_指标.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZhiBiao.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="组合标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标线_组合.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZuHe.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="禁令标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_禁令.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingLing.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="旅游标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_旅游.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_LvYou.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="其他标志">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_其他.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_QiTa.png" yoffset="13"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 </configuration>

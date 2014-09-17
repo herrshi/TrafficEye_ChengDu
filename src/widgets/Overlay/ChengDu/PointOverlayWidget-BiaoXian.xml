@@ -27,6 +27,6 @@
 	</popup>
 	
 	<simplerenderer field="type">
-    	<picturemarkersymbol url="assets/images/mapIcons/标志标线/标线.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" yoffset="13"/>
 	</simplerenderer>
 </configuration>

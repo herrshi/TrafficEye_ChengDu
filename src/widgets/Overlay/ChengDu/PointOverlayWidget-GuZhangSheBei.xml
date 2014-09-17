@@ -1,4 +1,4 @@
-<!-- 故障设备 -->
+<!-- GuZhang设备 -->
 <?xml version="1.0" ?>
 <configuration>
 	<type>GuZhangSheBei</type>
@@ -28,22 +28,22 @@
 	</popup>
 	
 	<uniquevaluerenderer field="type">
-    	<picturemarkersymbol url="assets/police/police.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/SheBei.png" yoffset="13"/>
     	
 		<uniquevalueinfo value="信号设备">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/信号设备_故障.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/XinHaoSheBei_GuZhang.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="标志设备">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标志_故障.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_GuZhang.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="标线设备">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/标线_故障.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian_GuZhang.png" yoffset="13"/>
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="其他设备">
-			<picturemarkersymbol url="assets/images/mapIcons/标志标线/其他设备设备_故障.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/QiTaSheBei_GuZhang.png" yoffset="13"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 </configuration>
