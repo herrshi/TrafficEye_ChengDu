@@ -68,6 +68,10 @@
 		<widget label="电子警察" config="widgets/Query/cdyd/QueryWidget_dzjc.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="三环管制标牌" config="widgets/Query/chengdu/QueryWidget_shgzbp.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="管制点" config="widgets/Query/chengdu/QueryWidget_gzd.xml" url="widgets/Query/QueryWidget.swf" />
+		<widget label="故障设备" config="widgets/Overlay/ChengDu/PointOverlayWidget-GuZhangSheBei.xml" url="widgets/Overlay/PointOverlayWidget.swf"/>
+		<widget label="标志" config="widgets/Overlay/ChengDu/PointOverlayWidget-BiaoZhi.xml" url="widgets/Overlay/PointOverlayWidget.swf"/>
+		<widget label="标线" config="widgets/Overlay/ChengDu/PointOverlayWidget-BiaoXian.xml" url="widgets/Overlay/PointOverlayWidget.swf"/>
+		<widget label="信号设备" config="widgets/Overlay/ChengDu/PointOverlayWidget-XinHaoSheBei.xml" url="widgets/Overlay/PointOverlayWidget.swf"/>
 	</widgetcontainer>
 	<widgetcontainer layout="horizontal">
 		<widget label="警情管理面板" icon="assets/images/event/case30.png" url="widgets/EventManager/EventManagerPanelWidget.swf" />

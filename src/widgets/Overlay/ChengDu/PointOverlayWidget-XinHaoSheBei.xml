@@ -1,0 +1,31 @@
+<!-- 信号设备 -->
+<?xml version="1.0" ?>
+<configuration>
+	<type>XinHaoSheBei</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onXinHaoSheBeiOverlayRun</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onXinHaoSheBeiOverlayClose</widgetclosenotify>
+	
+	<popup>
+		<title>{lkldmc}</title>
+		
+		<fields>
+			<field name="lkldmc" />
+			<field name="szqy" alias="所在区域" visible="true" />
+			<field name="ssfj" alias="所属分局" visible="true" />
+			<field name="ddmc" alias="所属大队" visible="true"/>
+			<field name="qyrq" alias="启用日期" visible="true" />
+		</fields>
+		
+		<showzoomtobutton>false</showzoomtobutton>
+		
+		<buttons>
+			<button label="查看详细" action="openDevice" type="XinHaoSheBei"/>
+		</buttons>
+	</popup>
+	
+	<simplerenderer field="type">
+    	<picturemarkersymbol url="assets/images/mapIcons/标志标线/信号设备.png" yoffset="13"/>
+	</simplerenderer>
+</configuration>
