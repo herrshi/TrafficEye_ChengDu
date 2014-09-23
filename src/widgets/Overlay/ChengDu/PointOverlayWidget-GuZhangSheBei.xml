@@ -18,12 +18,13 @@
 			<field name="type" alias="设备分类" visible="true" />
 			<field name="gzfl" alias="故障分类" visible="true" />
 			<field name="zt" alias="故障状态" visible="true" />
+			<field name="typeid"/>
 		</fields>
 		
 		<showzoomtobutton>false</showzoomtobutton>
 		
 		<buttons>
-			<button label="查看详细" action="openDevice" type="GuZhangSheBei"/>
+			<button label="查看详细" action="openDevice" type="GuZhangSheBei" idfield="typeid"/>
 		</buttons>
 	</popup>
 	

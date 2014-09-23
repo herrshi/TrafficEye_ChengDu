@@ -1,0 +1,30 @@
+<!-- 运维员 -->
+<?xml version="1.0" ?>
+<configuration>
+	<type>YunWeiYuan</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onYunWeiYuanOverlayRun</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onYunWeiYuanOverlayClose</widgetclosenotify>
+	
+	<popup>
+		<title>{username}</title>
+		
+		<fields>
+			<field name="username" />
+			<field name="lxdh" alias="联系电话" visible="true" />
+			<field name="dwmc" alias="所在单位" visible="true" />
+			<field name="zt" alias="状态" visible="true" />
+		</fields>
+		
+		<showzoomtobutton>false</showzoomtobutton>
+		
+		<buttons>
+			<button label="查看详细" action="openDevice" type="YunWeiYuan"/>
+		</buttons>
+	</popup>
+	
+	<simplerenderer field="type">
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" yoffset="13"/>
+	</simplerenderer>
+</configuration>

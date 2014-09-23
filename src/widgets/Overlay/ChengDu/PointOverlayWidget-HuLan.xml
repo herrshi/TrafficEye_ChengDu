@@ -1,0 +1,30 @@
+<!-- 护栏 -->
+<?xml version="1.0" ?>
+<configuration>
+	<type>HuLan</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify>onHuLanOverlayRun</widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify>onHuLanOverlayClose</widgetclosenotify>
+	
+	<popup>
+		<title>{lkldmc}</title>
+		
+		<fields>
+			<field name="lkldmc" />
+			<field name="szqy" alias="所在区域" visible="true" />
+			<field name="ssfj" alias="所属分局" visible="true" />
+			<field name="ddmc" alias="所属大队" visible="true"/>
+		</fields>
+		
+		<showzoomtobutton>false</showzoomtobutton>
+		
+		<buttons>
+			<button label="查看详细" action="openDevice" type="HuLan"/>
+		</buttons>
+	</popup>
+	
+	<simplerenderer field="type">
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" yoffset="13"/>
+	</simplerenderer>
+</configuration>

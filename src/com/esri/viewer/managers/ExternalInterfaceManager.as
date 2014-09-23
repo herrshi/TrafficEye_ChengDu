@@ -55,7 +55,10 @@ package com.esri.viewer.managers
 			ExternalInterface.addCallback( "deleteAllBuffers", dispatchDeleteAllBuffersEvent );
 			
 			ExternalInterface.addCallback( "startEditGeometry", dispatchStartEditEvent );
+			ExternalInterface.addCallback( "startEdit", dispatchStartEditEvent );
+			ExternalInterface.addCallback( "stopEdit", dispatchStopEditEvent );
 			ExternalInterface.addCallback( "startAdd", dispatchStartAddEvent );
+			ExternalInterface.addCallback( "stopAdd", dispatchStopAddEvent );			
 			
 			//打开组件
 			ExternalInterface.addCallback( "openWidget", dispatchOpenWidgetEvent );
@@ -131,6 +134,16 @@ package com.esri.viewer.managers
 		private function dispatchStartEditEvent( param:String ):void
 		{
 			AppEvent.dispatch( AppEvent.START_MOVE_OVERLAY, param );
+		}
+		
+		private function dispatchStopAddEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.STOP_ADD_OVERLAY, param );
+		}
+		
+		private function dispatchStopEditEvent( param:String ):void
+		{
+			AppEvent.dispatch( AppEvent.STOP_EDIT_OVERLAY, param );
 		}
 		
 		private function dispatchAddPointsEvent( param:String ):void

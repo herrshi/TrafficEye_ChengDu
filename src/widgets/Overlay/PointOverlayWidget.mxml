@@ -556,6 +556,7 @@
 							
 							//停止编辑
 							editTool.deactivate();
+//							setMapAction( null, null, null, null );
 							_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
 							//清除历史数据
 							_movedGeometryTable.clear();
