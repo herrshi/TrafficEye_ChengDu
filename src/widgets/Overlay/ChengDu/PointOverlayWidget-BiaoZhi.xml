@@ -12,11 +12,11 @@
 		
 		<fields>
 			<field name="lkldmc" />
-			<field name="azwz" alias="安装位置" visible="true" />
-			<field name="bzlx" alias="标志类型" visible="true" />
-			<field name="szqy" alias="所在区域" visible="true"/>
-			<field name="ssfj" alias="所属分局" visible="true" />
-			<field name="ddmc" alias="所属大队" visible="true" />
+			<field name="azwz" alias="安装位置：" visible="true" />
+			<field name="bzlx" alias="标志类型：" visible="true" />
+			<field name="szqy" alias="所在区域：" visible="true"/>
+			<field name="ssfj" alias="所属分局：" visible="true" />
+			<field name="ddmc" alias="所属大队：" visible="true" />
 		</fields>
 		
 		<showzoomtobutton>false</showzoomtobutton>
@@ -27,30 +27,38 @@
 	</popup>
 	
 	<uniquevaluerenderer field="bzlx">
-    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/SheBei.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/SheBei.png" />
+		
+		<uniquevalueinfo value="指路标志">
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZhiLu.png" />
+		</uniquevalueinfo>
     	
 		<uniquevalueinfo value="警告标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingGao.png" yoffset="13"/>
-		</uniquevalueinfo>
-		
-		<uniquevalueinfo value="指标标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZhiBiao.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingGao.png" />
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="组合标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZuHe.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZuHe.png" />
 		</uniquevalueinfo>
 		
-		<uniquevalueinfo value="禁令标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingLing.png" yoffset="13"/>
+		<uniquevalueinfo value="旅游区标志">
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_LvYou.png" />
 		</uniquevalueinfo>
 		
-		<uniquevalueinfo value="旅游标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_LvYou.png" yoffset="13"/>
+		<uniquevalueinfo value="告示标志">
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_QiTa.png" />
 		</uniquevalueinfo>
 		
 		<uniquevalueinfo value="其他标志">
-			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_QiTa.png" yoffset="13"/>
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_QiTa.png" />
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="禁令标志">
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_JingLing.png" />
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="指示标志">
+			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoZhi_ZhiShi.png" />
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
 </configuration>

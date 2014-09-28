@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<!-- gps轨迹，显示每个节点 -->
+<configuration>
+	<type>gpsTrackPointSymbol</type>
+	<!-- 组件打开时通知页面 -->
+	<widgetrunnotify></widgetrunnotify>
+	<!-- 组件关闭时通知页面 -->
+	<widgetclosenotify></widgetclosenotify>
+	
+	<popup>
+		<fields>
+        	<field name="time" alias="经过时间" visible="true"/>
+	    </fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+    <simplerenderer>
+		<simplemarkersymbol style="circle" color="0x0055BF" size="10"/>
+	</simplerenderer>
+	
+	
+</configuration>

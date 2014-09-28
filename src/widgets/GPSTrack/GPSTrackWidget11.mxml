@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TGISViewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:TGISViewer="cn.seisys.TGISViewer.*" 
+					   xmlns:esri="http://www.esri.com/2008/ags"
+					   layout="absolute" 
+					   creationComplete="creationCompleteHandler(event)" 
+					   widgetConfigLoaded="widgetConfigLoadedHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.SpatialReference;
+			import com.esri.ags.Units;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.symbols.SimpleLineSymbol;
+			import com.esri.ags.symbols.SimpleMarkerSymbol;
+			import com.esri.ags.symbols.Symbol;
+			import com.esri.ags.utils.GeometryUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import cn.seisys.TGISViewer.AppEvent;
+			import cn.seisys.TGISViewer.components.ArrowSymbol;
+			import cn.seisys.TGISViewer.utils.Hashtable;
+			
+			private var _pointSymbol:Symbol = new SimpleMarkerSymbol();
+			private var _pointLayer:GraphicsLayer;
+			private var myGraphicsLayer:GraphicsLayer;
+			private var _lineArrowLayer:GraphicsLayer;
+			private var _lineLayer:GraphicsLayer;
+			private var _timerTick:Number = 3000;
+			
+			private var _type:String;
+			private var _simMovePointType:String;
+			private var _id:String;
+			/**
+			 * 是否要在线上增加箭头
+			 * */
+			private var _needArrow:Boolean;
+			private var _arrowInfo:Object;
+		    private var _routeAC:ArrayCollection;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				_pointLayer = new GraphicsLayer();
+				_pointLayer.name = widgetTitle;
+				map.addLayer( _pointLayer );
+				
+				myGraphicsLayer = new GraphicsLayer();
+				myGraphicsLayer.name = widgetTitle;
+				map.addLayer( myGraphicsLayer );
+				
+				_lineArrowLayer = new GraphicsLayer();
+				_lineArrowLayer.name = widgetTitle;
+				map.addLayer( _lineArrowLayer );
+				
+				
+				_lineLayer = new GraphicsLayer();
+				_lineLayer.name = widgetTitle;
+				map.addLayer( _lineLayer );
+				
+				AppEvent.addListener( AppEvent.ADD_GPS_TRACK, appevent_addGpsTrackHandler );
+				AppEvent.addListener( AppEvent.DELETE_ALL_GPS_TRACK, appevent_deleteAllGpsTrackHandler );
+			}
+			
+			protected function widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_type = configXML.type;
+					_simMovePointType = configXML.simmovepointtype || "gpsTrack";
+					_needArrow = configXML.arrow.@enable == "true" ? true : false;
+					if ( _needArrow )
+					{
+						var arrowPosition:String = configXML.arrow.position;
+						var arrowLength:Number = configXML.arrow.length;
+						var arrowUniqueValueRenderer:Object;
+						var arrowSimpleRenderer:Object;
+						
+						if ( configXML.arrow.uniquevaluerenderer[ 0 ] )
+						{
+							var arrowUniqueValueRendererTable:Hashtable = new Hashtable();
+							var arrowRendererFieldName:String = configXML.arrow.uniquevaluerenderer.@field;
+							var arrowUniqueValueInfosXMLList:XMLList = configXML.arrow.uniquevaluerenderer.uniquevalueinfo;
+							for each ( var arrowUniqueValueInfoXML:XML in arrowUniqueValueInfosXMLList )
+							{
+								var arrowRendererFieldValue:String = arrowUniqueValueInfoXML.@value;
+								var arrowSymbolObj:Object = parseArrowGradientFillSymbol( arrowUniqueValueInfoXML.gradientfill[ 0 ] );
+								arrowUniqueValueRendererTable.add( arrowRendererFieldValue, arrowSymbolObj );
+							}
+							arrowUniqueValueRenderer = 
+								{ 
+									fieldName: arrowRendererFieldName, 
+									rendererTable: arrowUniqueValueRendererTable 
+								};
+						}
+						else if ( configXML.arrow.simplerenderer[ 0 ] )
+						{
+							arrowSimpleRenderer = parseArrowGradientFillSymbol( configXML.arrow.simplerenderer.gradientfill[ 0 ] );
+						}
+						_arrowInfo = 
+							{ 
+								position: arrowPosition, 
+								length: arrowLength,
+								uniqueValueRenderer: arrowUniqueValueRenderer,
+								simpleRenderer: arrowSimpleRenderer
+							};
+					}
+				}
+			}
+			
+			private var nodeList:ArrayCollection=new ArrayCollection();
+			private var point_index:Number=0;
+			/*接受gps数据*/
+			private function appevent_addGpsTrackHandler( event:AppEvent ):void
+			{
+				var params:String = event.data as String;
+				var paramObj:Object = JSON.parse( params );
+				
+				var type:String = paramObj.type;
+				if ( !type || type.toLowerCase() != _type.toLowerCase() )
+				{
+					return;
+				}
+				_id = paramObj.id;
+				var speed:Number = paramObj.speed || 40;
+				var pointArray:Array = paramObj.points;
+				var trackPath:Array = [];
+				var tPath:Array = [];
+				_routeAC = new ArrayCollection();
+			
+				var trackPointJsonObjArray:Array = [];
+				var trackPointSymbolObj:Object = 
+					{ 
+						type: "gpsTrackPointSymbol", 
+						points: trackPointJsonObjArray 
+					};
+				
+				//把js传递过来的点坐标集，存在相应数组中
+				var pointNm:Number=0;
+				var grap:Graphic= new Graphic();
+				var paths:Array = new Array();
+				for each ( var pointObj:Object in pointArray )
+				{
+					var time:String = pointObj.time;
+					var x:Number = pointObj.x;
+					var y:Number = pointObj.y;
+					var trackPoint:MapPoint;
+					if ( !isNaN( x ) && !isNaN( y ) )
+					{
+						trackPoint = new MapPoint( x, y );
+						trackPath.push( trackPoint );
+					}
+					//生成轨迹			
+					var obj:Object = {   
+						id: pointNm,
+						x: x,
+						y: y,
+						fields: { time: time }
+					};	
+					var myPointSymbol:SimpleMarkerSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 20, 0xFF0000, 0.5);
+					var myPointSymbol1:SimpleMarkerSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 20, 0x00ff00, 0.5);
+					var myPointSymbol2:SimpleMarkerSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 20, 0x0000ff, 0.5);
+					if(pointNm==0)
+					{
+						grap=new Graphic(trackPoint,myPointSymbol,obj);
+					}
+					else if(pointNm == pointArray.length)
+					{
+						grap=new Graphic(trackPoint,myPointSymbol1,obj);
+					}	
+					else
+					{
+						grap=new Graphic(trackPoint,myPointSymbol2,obj);
+					}
+					nodeList.addItem(grap);
+					pointNm++;
+				}
+				
+				paths.push(trackPath);
+				var pathline:Polyline = new Polyline(paths,new SpatialReference(4326));
+				var sls:SimpleLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x0000ff, 0.8, 5);
+				var gj:Graphic=new Graphic(pathline,sls);
+			
+				if(pointArray.length>1)
+				{
+					var timer:Timer = new Timer( _timerTick );
+					timer.addEventListener( TimerEvent.TIMER, timerTickEvent );
+					function timerTickEvent( event:TimerEvent ):void
+					{
+						var node:Graphic=Graphic(nodeList.getItemAt(point_index));
+						myGraphicsLayer.add(node);
+						if(point_index>=1)
+						{
+							var preNode:Graphic=Graphic(nodeList.getItemAt(point_index-1));
+							var p1:MapPoint=MapPoint(node.geometry);
+							var p2:MapPoint=MapPoint(preNode.geometry);
+							var paths:Array = new Array();					
+							var path:Array = new Array();	
+							path.push(p2);path.push(p1);
+							paths.push(path);
+							var pathline:Polyline = new Polyline(paths,new SpatialReference(4326));		
+							var guiji:Graphic=new Graphic(pathline,sls);	
+							drawArrow(guiji);
+							myGraphicsLayer.add(guiji);
+						}
+						point_index++;
+						if(point_index==nodeList.length)
+						{
+							timer.stop();								
+						}
+						var p:MapPoint=MapPoint(node.geometry);
+						map.centerAt(p);
+					}
+					timer.start();
+				}		
+				else
+				{
+					Alert.show("无数据");
+				}
+				
+				/*延迟5秒，等第一段线出现后在进行移动*/
+				/*setTimeout(function(){
+					AppEvent.dispatch( AppEvent.SIM_MOVE_POINT_START, 
+						{ 
+							type: _simMovePointType,
+							id: _id, 
+							speed: speed, 
+							route: JSON.stringify( pathline.toJSON() ) 
+						} )
+				},5000);*/
+			}
+		
+			
+			
+			
+			
+			private var arrowGraphic:Graphic =  new Graphic();
+			private function drawArrow( graphic:Graphic ):void
+			{
+				var polyline:Polyline = graphic.geometry as Polyline;
+				for each ( var path:Array in polyline.paths )
+				{
+					for ( var i:uint = 0; i < path.length - 1; i++)
+					{
+						var startPoint:MapPoint = path[ i ];
+						var endPoint:MapPoint = path[ i + 1 ];
+						
+						arrowGraphic = new Graphic( new MapPoint( ( startPoint.x + endPoint.x ) / 2, ( startPoint.y + endPoint.y ) / 2 ) );
+						//计算角度
+						var startScreenPoint:Point = map.toScreen( startPoint );
+						var endScreenPoint:Point = map.toScreen( endPoint );
+						var angle:Number = ( Math.atan2( endScreenPoint.y - startScreenPoint.y, endScreenPoint.x - startScreenPoint.x ) ) / Math.PI * 180.0;
+						
+						//获取箭头样式
+						var rendererInfo:Object;
+						if ( _arrowInfo.uniqueValueRenderer )
+						{
+							var rendererTable:Hashtable = _arrowInfo.uniqueValueRenderer.rendererTable;
+							
+							if ( graphic.attributes )
+							{
+								var rendererFieldName:String = _arrowInfo.uniqueValueRenderer.fieldName;
+								var rendererFieldValue:String = graphic.attributes[ rendererFieldName ];
+								
+								rendererInfo = rendererTable.find( rendererFieldValue ) ? 
+									rendererTable.find( rendererFieldValue ) : rendererTable.find( "default" );
+							}
+							else
+							{
+								rendererInfo = rendererTable.find( "default" );
+							}
+						}
+						else if ( _arrowInfo.simpleRenderer )
+						{
+							rendererInfo = _arrowInfo.simpleRenderer;
+						}
+						arrowGraphic.symbol = arrowSymbol;
+						arrowGraphic.attributes = 
+							{ 
+								arrowLength: _arrowInfo.length, 
+									arrowAngle: angle,
+									rendererInfo: rendererInfo
+							};
+						_lineArrowLayer.add( arrowGraphic );
+						map.reorderLayer(_lineArrowLayer.id,5);
+						
+					}
+				}
+			}
+	
+			private function parseArrowGradientFillSymbol( symbolXML:XML ):Object
+			{
+				var lineColor:Number = symbolXML.@linecolor;
+				var lineWidth:Number = symbolXML.@linewidth;
+				var gradientEntryArray:Array = [];
+				var gradientEntryXMLList:XMLList = symbolXML.gradiententry;
+				for each ( var gradientEntryXML:XML in gradientEntryXMLList )
+				{
+					var gradientColor:Number = gradientEntryXML.@color;
+					var gradientAlpha:Number = gradientEntryXML.@alpha;
+					gradientEntryArray.push( 
+						{ 
+							color: gradientColor, 
+							alpha: gradientAlpha 
+						} 
+					);
+				}
+				var symbolObj:Object = { 
+					lineColor: lineColor, 
+					lineWidth: lineWidth,
+					gradientEntryArray: gradientEntryArray
+				} 
+				return symbolObj;
+			}
+
+			private function appevent_deleteAllGpsTrackHandler( event:AppEvent ):void
+			{
+				AppEvent.dispatch( AppEvent.DELETE_ALL_POINTS, "gpsTrackPointSymbol" );
+				AppEvent.dispatch( AppEvent.SIM_MOVE_POINT_STOP, "" );
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<esri:InfoSymbol id="arrowSymbol" containerStyleName="arrowInfoSymbolStyle"
+						 infoPlacement="center"
+						 infoRenderer="cn.seisys.TGISViewer.components.ArrowSymbol"/>
+	</fx:Declarations>
+</TGISViewer:BaseWidget>

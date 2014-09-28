@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <configuration>
-	<type>oneWayStreet</type>
+	<type>oneWayStreetShow</type>
 	<!-- 组件打开时通知页面 -->
 	<widgetrunnotify>onOneWayStreetShowOverlayLoad</widgetrunnotify>
 	<!-- 组件关闭时通知页面 -->
@@ -50,7 +50,7 @@
 	
 	<arrow enable="true">
 		<position>middle</position>
-		<length>20</length>
+		<length>15</length>
 <!-- 		<simplerenderer> -->
 <!-- 			<gradientfill linecolor="0x000000" linewidth="1"> -->
 <!-- 					<gradiententry color="0x006bcf" alpha="0.8"/> -->

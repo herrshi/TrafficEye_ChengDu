@@ -12,9 +12,9 @@
 		
 		<fields>
 			<field name="lkldmc" />
-			<field name="szqy" alias="所在区域" visible="true" />
-			<field name="ssfj" alias="所属分局" visible="true" />
-			<field name="ddmc" alias="所属大队" visible="true"/>
+			<field name="szqy" alias="所在区域：" visible="true" />
+			<field name="ssfj" alias="所属分局：" visible="true" />
+			<field name="ddmc" alias="所属大队：" visible="true"/>
 		</fields>
 		
 		<showzoomtobutton>false</showzoomtobutton>
@@ -25,6 +25,6 @@
 	</popup>
 	
 	<simplerenderer field="type">
-    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/HuLan.png"/>
 	</simplerenderer>
 </configuration>

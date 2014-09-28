@@ -50,7 +50,6 @@
 		<widget label="匝道控制" config="widgets/Query/cdyd/QueryWidget_zk.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="诱导板" config="widgets/Query/cdyd/QueryWidget_ydb.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="发布段" config="widgets/Query/cdyd/QueryWidget_fbd.xml" url="widgets/Query/QueryWidget.swf" />
-		<widget label="交安设施" config="widgets/Query/cdyd/QueryWidget_jass.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="警情管理图层" icon="assets/images/event/case30.png" url="widgets/EventManager/EventManagerLayerWidget.swf" config="widgets/EventManager/EventManagerWidget.xml" />
 		<widget label="警员管理图层" icon="assets/images/policeStatus/police30.png" url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget.xml" />
 		<widget label="协警管理图层" icon="assets/images/policeStatus/police30.png" url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget_assistant.xml" />

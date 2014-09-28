@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<configuration>
+	<type>YunWeiYuanTrack</type>
+	
+	<popup>
+		<fields>
+        	<field name="time" alias="经过时间" visible="true"/>
+	    </fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+</configuration>

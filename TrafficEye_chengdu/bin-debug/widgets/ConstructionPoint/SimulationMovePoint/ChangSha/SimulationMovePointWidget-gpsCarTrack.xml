@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<!-- 宜兴警车gps轨迹 -->
-<configuration>
-	<type>gpsCarTrack</type>
-	<linetype>gpsCarTrack</linetype>
-	<pointsymbol>
-		<picturemarkersymbol url="assets/images/mapIcons/JingChe-blue.png" yoffset="13"/>
-	</pointsymbol>
-</configuration>

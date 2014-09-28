@@ -1,0 +1,47 @@
+<?xml version="1.0" ?>
+<configuration>
+	<style>
+		<!--textColor,backgroundColor,rolloverColor,selectionColor,titleColor,applicationBackgroundColor -->
+		<colors>0x444444,0xdae7f5,0xdae7f5,0xa2bad5,0x444444,0x000000</colors>
+		<font name="微软雅黑" size="14" />
+		<alpha>0.8</alpha>
+		<applicationbackgroudalpha>0</applicationbackgroudalpha>
+	</style>
+	<showerror>true</showerror>
+	<!-- UI elements -->
+	<widget left="10" top="10" 
+		config="widgets/Navigation/NavigationWidget.xml" 
+		url="widgets/Navigation/NavigationWidget.swf" />
+	<widget right="-2" bottom="-2" 
+		config="widgets/OverviewMap/OverviewMapWidget.xml" 
+		url="widgets/OverviewMap/OverviewMapWidget.swf" />
+	<!--GIS服务器地址 -->
+	<geometryservice url="http://[serverip]/arcgis/rest/services/Geometry/GeometryServer" />
+	<map initialextent="103.962 30.5946 104.2024 30.7335" top="0" serverip="128.64.151.12:8399">
+		<basemaps>
+			<layer label="基础图层" type="tiled" visible="true" alpha="1" 
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_base_2014/MapServer" />
+		</basemaps>
+		<operationallayers>
+<!-- 			<layer label="注记" type="dynamic" visible="true" alpha="1" 	 -->
+<!-- 				url="http://[serverip]/arcgis/rest/services/cd_base_bz_0620/MapServer" /> -->
+			<layer label="警务区" type="dynamic" visible="true" alpha="0.5" 
+				url="http://[serverip]/arcgis/rest/services/chengdu/cd_transperant/MapServer" />
+		</operationallayers>
+	</map>
+	
+	<widgetcontainer layout="fix">
+<!-- 		<widget label="轨迹节点" preload="open"  -->
+<!-- 			config="widgets/Overlay/ChengDu/PointOverlayWidget-gpsTrack.xml"  -->
+<!-- 			url="widgets/Overlay/PointOverlayWidget.swf"/> -->
+				
+		<widget label="运维员轨迹" preload="open" 
+			config="widgets/GPSTrack/ChengDu/GPSTrackWidget-YunWeiYuan.xml" 
+			url="widgets/GPSTrack/GPSTrackWidget.swf"/>
+			
+		<widget label="警员轨迹" preload="open" 
+			config="widgets/GPSTrack/ChengDu/GPSTrackWidget-police.xml" 
+			url="widgets/GPSTrack/GPSTrackWidget.swf"/>
+	</widgetcontainer>
+	
+</configuration>

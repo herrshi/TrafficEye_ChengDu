@@ -524,6 +524,13 @@ public class AppEvent extends Event
 	public static const GET_SIM_MOVE_POINT_CURRENT_POINT:String = "getSimMovePointCurrentPoint";
 	public static const SET_SIM_MOVE_POINT_CURRENT_POINT:String = "setSimMovePointCurrentPoint";
 	
+	/**
+	 * 增加警员、警车等gps轨迹
+	 * 参数：json字符串
+	 * */
+	public static const ADD_GPS_TRACK:String = "addGpsTrack";
+	public static const DELETE_ALL_GPS_TRACK:String = "deleteAllGpsTrack";
+	
     //--------------------------------------------------------------------------
     //
     //  Constructor

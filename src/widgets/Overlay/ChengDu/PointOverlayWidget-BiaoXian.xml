@@ -12,11 +12,11 @@
 		
 		<fields>
 			<field name="lkldmc" />
-			<field name="lkldfl" alias="路口路段分类" visible="true" />
-			<field name="szqy" alias="所在区域" visible="true" />
-			<field name="ssfj" alias="所属分局" visible="true" />
-			<field name="ddmc" alias="所属大队" visible="true"/>
-			<field name="lkfs" alias="路口方式" visible="true" />
+			<field name="lkldfl" alias="路口路段分类：" visible="true" />
+			<field name="szqy" alias="所在区域：" visible="true" />
+			<field name="ssfj" alias="所属分局：" visible="true" />
+			<field name="ddmc" alias="所属大队：" visible="true"/>
+			<field name="lkfs" alias="路口方式：" visible="true" />
 		</fields>
 		
 		<showzoomtobutton>false</showzoomtobutton>
@@ -27,6 +27,6 @@
 	</popup>
 	
 	<simplerenderer field="type">
-    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" yoffset="13"/>
+    	<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/BiaoXian.png" />
 	</simplerenderer>
 </configuration>

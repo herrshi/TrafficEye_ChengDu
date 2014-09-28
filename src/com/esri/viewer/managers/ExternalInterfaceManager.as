@@ -67,7 +67,8 @@ package com.esri.viewer.managers
 			ExternalInterface.addCallback( "openLayer",dispatchOpenLayerEvent );
 			ExternalInterface.addCallback( "closeLayer",dispatchCLoseLayerEvent);
 			
-			
+			ExternalInterface.addCallback( "addGPSTrack", dispatchAddGPSTrackEvent );
+			ExternalInterface.addCallback( "deleteAllGPSTrack", dispatchDeleteAllGPSTrackEvent );
 			
 			ExternalInterface.addCallback( "setSearchText", dispatchSetSearchTextEvent );
 
@@ -78,6 +79,16 @@ package com.esri.viewer.managers
 			AppEvent.addListener( AppEvent.PLAN_DATA_READY, dataReady );
 			AppEvent.addListener( AppEvent.GET_PLAN_ID, getPlanId );
 			AppEvent.addListener( AppEvent.SEND_RESERVEPLAN_DATA_NEW, sendPlanInfo);
+		}
+		
+		private function dispatchDeleteAllGPSTrackEvent( params:String ):void
+		{
+			AppEvent.dispatch( AppEvent.DELETE_ALL_GPS_TRACK, params );
+		}
+		
+		private function dispatchAddGPSTrackEvent( params:String ):void
+		{
+			AppEvent.dispatch( AppEvent.ADD_GPS_TRACK, params );
 		}
 		
 		private function dispatchSetSearchTextEvent( param:String ):void

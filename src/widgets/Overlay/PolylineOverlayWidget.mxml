@@ -380,6 +380,7 @@
 				if ( type && ( type.toLowerCase() == _lineType.toLowerCase() ) )
 				{
 					_lineOverlayLayer.clear();
+					_lineArrowLayer.clear();
 				}
 			}
 			
@@ -401,6 +402,14 @@
 						{
 							_lineOverlayLayer.remove( graphic );
 							break;
+						}
+					}
+					
+					for each ( graphic in _lineArrowLayer.graphicProvider )
+					{
+						if ( id == graphic.attributes.id )
+						{
+							_lineArrowLayer.remove( graphic );
 						}
 					}
 				}
@@ -852,7 +861,8 @@
 							{ 
 								arrowLength: _arrowInfo.length, 
 								arrowAngle: angle,
-								rendererInfo: rendererInfo
+								rendererInfo: rendererInfo,
+								id: graphic.id
 							};
 						_lineArrowLayer.add( arrowGraphic );
 					}

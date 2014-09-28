@@ -1,4 +1,0 @@
-<configuration>
-	<identifyurl>http://[serverIp]/arcgis/rest/services/pt_GetNO/MapServer</identifyurl>
-	<layerIds>0</layerIds>
-</configuration>
