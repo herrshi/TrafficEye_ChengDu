@@ -97,6 +97,7 @@
 			url="widgets/LayerControl/LayerControlWidget.swf" config="widgets/LayerControl/LayerControlWidget_chengdu.xml" />
 	</widgetcontainer>
 	<remoteobjects endpoint="http://20.0.58.42:8080/chengdu-webapp/messagebroker/amf">
+<!-- 	<remoteobjects endpoint="http://192.168.1.105:8080/chengdu-webapp/messagebroker/amf"> -->
 		<remoteobject name="PoliceManager" enable="true" destination="GPSInfoService" refreshrate="30" />
 		<remoteobject name="EventManager" enable="true" destination="caseInfoService" refreshrate="30" />
 		<remoteobject name="PoliceDeployment" enable="true" destination="policeLayoutService" />

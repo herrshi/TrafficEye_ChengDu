@@ -531,6 +531,11 @@ public class AppEvent extends Event
 	public static const ADD_GPS_TRACK:String = "addGpsTrack";
 	public static const DELETE_ALL_GPS_TRACK:String = "deleteAllGpsTrack";
 	
+	/**
+	 * 刷新单个警员位置
+	 * */
+	public static const REFRESH_SINGLE_POLICE:String = "refreshSinglePolice";
+	
     //--------------------------------------------------------------------------
     //
     //  Constructor

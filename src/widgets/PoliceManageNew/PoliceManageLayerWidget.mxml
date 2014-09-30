@@ -26,6 +26,7 @@
 			import flash.utils.setTimeout;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
 			import mx.core.UIComponent;
 			import mx.utils.StringUtil;
 			
@@ -66,6 +67,7 @@
 				AppEvent.addListener( AppEvent.SEND_POLICE, sendPoliceHandler );
 				map.addEventListener(ZoomEvent.ZOOM_UPDATE, zoomEndHandler );
 				AppEvent.addListener( AppEvent.DATA_SENT, dataSentHandler );
+				AppEvent.addListener( AppEvent.REFRESH_SINGLE_POLICE, appevent_refreshSinglePoliceHandler );
 				//AppEvent.addListener( AppEvent.TEAM_VISIBLE_PREV, revisiableData);
 				//增加函数监听policeTree中team状态
 				AppEvent.addListener( AppEvent.POLICETREE_TEAM_CHECKBOX_CLICKED,
@@ -655,7 +657,18 @@
 					AppEvent.dispatch( AppEvent.DATA_PUBLISH, 
 						{ key: wTitle, data: _rankSymbols } );
 				}
-				_policeLayer.refresh();				
+				_policeLayer.refresh();	
+				
+				if ( _refreshSinglePoliceCode != "" )
+				{
+					for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
+						if ( id == gra.attributes.id ) {
+							map.centerAt( gra.attributes.point );
+							showInfoWindow( gra.attributes );
+							break;
+						}
+					}
+				}
 			}
 			
 			private function getSymbol( scale:Number, keyValue:String ):QueryResultSymbol {
@@ -846,12 +859,26 @@
 				if ( type != widgetTitle )
 					return;
 				
+				
 				for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
 					if ( id == gra.attributes.id ) {
 						map.centerAt( gra.attributes.point );
 						showInfoWindow( gra.attributes );
+						break;
 					}
 				}
+			}
+			
+			private var _refreshSinglePoliceCode:String = "";
+			
+			/**
+			 * 刷新单个警员
+			 * layer组件保留警员id，panel组件请求刷新全部警员
+			 * layer组件重绘警员后再定位
+			 * */
+			private function appevent_refreshSinglePoliceHandler( event:AppEvent ):void
+			{
+				_refreshSinglePoliceCode = event.data as String;
 			}
 		]]>
 	</fx:Script>

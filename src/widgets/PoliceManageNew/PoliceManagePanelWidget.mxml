@@ -107,7 +107,12 @@
 			private var _geometryService:GeometryService;
 			
 			private function init():void {
-//				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				AppEvent.addListener( AppEvent.REFRESH_SINGLE_POLICE, appevent_refreshSinglePoliceHandler );
+				AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
+				AppEvent.addListener( AppEvent.DATA_SENT, dataSentHandler );
+				AppEvent.addListener( AppEvent.POLICETREE_TEAM_CHECKBOX_CLICKED, policeTree_team_checkClickHandler );
+				AppEvent.addListener( AppEvent.POLICETREE_PERSON_CHECKBOX_CLICKED, policeTree_person_checkClickHandler );
+				
 				wTemplate.addTitlebarButton( "assets/images/tree.png", "警员列表", toggleViewSearchCollapsed, true );
 				wTemplate.addTitlebarButton( "assets/images/i_searchgraphical.png", "图形搜索", toggleViewGraphicSearch, true );
 				wTemplate.addTitlebarButton( "assets/images/i_searchtext.png", "文本搜索", toggleViewTextSearch, true );
@@ -203,7 +208,7 @@
 							openWidget( title );
 						}
 					} 
-					var infoUrl:String =  configXML.info; 
+					var infoUrl:String = configXML.info; 
 					var data:Object = {
 						id: String(this.widgetId),
 						url: infoUrl,
@@ -220,7 +225,7 @@
 				var id:Number = event.data as Number;
 				if ( _relateWidgetIdList.indexOf( id ) > -1 ) {		
 					//最小化图例widget
-					//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
+//					AppEvent.dispatch( new AppEvent(AppEvent.WIDGET_CHANGE_STATE, { id: id, state: WIDGET_MINIMIZED } ) );
 					//请求数据
 					fetchSharedData();
 				}
@@ -229,7 +234,7 @@
 			private function dataSentHandler( event:AppEvent ):void {
 				var dataTable:Hashtable = event.data as Hashtable;
 				_policeAC = dataTable.find( _dataType ); 
-				if ( _policeAC&&_policeAC!=null ) 
+				if ( _policeAC && _policeAC!=null ) 
 					setRTInfo();
 				else
 					refreshData();
@@ -1102,12 +1107,6 @@
 						_teamLayer.add( teamSymbol );
 					}
 					
-					AppEvent.addListener( AppEvent.DATA_NEW_PUBLISHED, dataRefreshed );
-					AppEvent.addListener( AppEvent.DATA_SENT, dataSentHandler );
-					AppEvent.addListener( AppEvent.POLICETREE_TEAM_CHECKBOX_CLICKED, 
-						policeTree_team_checkClickHandler );
-					AppEvent.addListener( AppEvent.POLICETREE_PERSON_CHECKBOX_CLICKED, 
-						policeTree_person_checkClickHandler );
 					fetchSharedData();
 				}
 				
@@ -1422,6 +1421,17 @@
 			protected function chkShowTeam_clickHandler(event:MouseEvent):void {
 				_teamLayer.visible = chkShowTeam.selected;
 				
+			}
+			
+			
+			/**
+			 * 刷新单个警员
+			 * layer组件保留警员id，panel组件请求刷新全部警员
+			 * layer组件重绘警员后再定位
+			 * */
+			private function appevent_refreshSinglePoliceHandler( event:AppEvent ):void
+			{
+				refreshData();
 			}
 			
 		]]>
