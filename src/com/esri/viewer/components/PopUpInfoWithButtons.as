@@ -12,5 +12,7 @@ package com.esri.viewer.components
 		public var buttonArray:Array;
 		
 		public var idFieldName:String;
+		
+		public var showDetailLink:Boolean;
 	}
 }

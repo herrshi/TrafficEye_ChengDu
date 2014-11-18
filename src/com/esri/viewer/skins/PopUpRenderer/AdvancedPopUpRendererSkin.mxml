@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" 
+			 width="320" maxHeight="300"
+			 preinitialize="this_preinitializeHandler(event)">
+	
+	<fx:Metadata>
+		[HostComponent("com.esri.ags.portal.PopUpRenderer")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.portal.PopUpRenderer;
+			import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+			import com.esri.ags.utils.StringUtil;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.components.PopUpInfoWithButtons;
+			import com.esri.viewer.skins.btSkin;
+			
+			import mx.containers.utilityClasses.ConstraintRow;
+			import mx.events.FlexEvent;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			import flashx.textLayout.elements.Configuration;
+			import flashx.textLayout.elements.LinkElement;
+			import flashx.textLayout.elements.TextFlow;
+			import flashx.textLayout.events.FlowElementMouseEvent;
+			import flashx.textLayout.formats.TextDecoration;
+			import flashx.textLayout.formats.TextLayoutFormat;
+			import flashx.textLayout.formats.WhiteSpaceCollapse;
+			
+			
+			
+			
+			
+			
+			private var _textLayoutConfiguration:Configuration;
+			
+			[Embed(source="assets/images/star.png")]  
+			[Bindable] private var starIcon:Class;
+			
+			private var _buttonArray:Array;
+			
+			protected function this_preinitializeHandler(event:FlexEvent):void
+			{
+				// set the link styles
+				_textLayoutConfiguration = new Configuration();
+				var textLayoutFormat:TextLayoutFormat = new TextLayoutFormat();
+				textLayoutFormat.color = getStyle("linkActiveColor")
+				textLayoutFormat.textDecoration = TextDecoration.UNDERLINE;
+				_textLayoutConfiguration.defaultLinkActiveFormat = textLayoutFormat;
+				textLayoutFormat = new TextLayoutFormat();
+				textLayoutFormat.color = getStyle("linkHoverColor")
+				textLayoutFormat.textDecoration = TextDecoration.UNDERLINE;
+				_textLayoutConfiguration.defaultLinkHoverFormat = textLayoutFormat;
+				textLayoutFormat = new TextLayoutFormat();
+				textLayoutFormat.color = getStyle("linkNormalColor")
+				textLayoutFormat.textDecoration = TextDecoration.UNDERLINE;
+				_textLayoutConfiguration.defaultLinkNormalFormat = textLayoutFormat;
+				
+				// preserve white space
+				textLayoutFormat = new TextLayoutFormat();
+				textLayoutFormat.whiteSpaceCollapse = WhiteSpaceCollapse.PRESERVE;
+				_textLayoutConfiguration.textFlowInitialFormat = textLayoutFormat;
+				
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				var formattedAttributes:Object = hostComponent.formattedAttributes;
+				var graphic:Graphic = hostComponent.graphic;
+				var geometry:Geometry = graphic ? graphic.geometry : null;
+				var map:Map = hostComponent.map;
+				var popUpInfo:PopUpInfoWithButtons = hostComponent.popUpInfo as PopUpInfoWithButtons;
+				
+				header.removeAllElements();
+				vGroup.removeAllElements();
+				footer.removeAllElements();
+				
+				if (popUpInfo)
+				{
+					headerLine.visible = headerLine.includeInLayout = 
+						header.visible = header.includeInLayout = ( popUpInfo.title || popUpInfo.showDetailLink );
+					
+					
+					if (popUpInfo.title)
+					{
+						titleText.text = StringUtil.substitute(popUpInfo.title, formattedAttributes);
+						if (titleText.text)
+						{
+							header.addElement(titleText);
+						}
+					}
+					
+					if ( popUpInfo.showDetailLink )
+					{
+						header.addElement( detailLink );
+					}
+					
+					var htmlText:String;
+					if (popUpInfo.popUpFieldInfos)
+					{
+						// make sure there's enough constraint rows
+						var constraintRows:Vector.<ConstraintRow> = keyValueGroupLayout.constraintRows; // returns a clone
+						if (constraintRows.length < popUpInfo.popUpFieldInfos.length)
+						{
+							for (var i:int = constraintRows.length + 1; i <= popUpInfo.popUpFieldInfos.length; i++)
+							{
+								var constraintRow:ConstraintRow = new ConstraintRow();
+								constraintRow.initialized(this, null); // required
+								constraintRow.id = "row" + i;
+								constraintRows.push(constraintRow);
+							}
+							keyValueGroupLayout.constraintRows = constraintRows;
+						}
+						
+						keyValueGroup.removeAllElements();
+						var rowID:int = 1;
+						for each (var fieldInfo:PopUpFieldInfo in popUpInfo.popUpFieldInfos)
+						{
+							if (fieldInfo.visible)
+							{
+								var fieldLabel:Label = new Label();
+								fieldLabel.text = ( fieldInfo.label || fieldInfo.fieldName );
+								fieldLabel.setStyle( "textAlign", "end" );
+								fieldLabel.left = 0;
+								fieldLabel.right = "col1:0";
+								fieldLabel.top = "row" + rowID + ":" + (rowID == 1 ? 5 : 15);
+								fieldLabel.setStyle( "fontWeight", "bold" );
+//								fieldLabel.setStyle( "backgroundColor", getStyle( "selectionColor" ) );
+								keyValueGroup.addElement(fieldLabel);
+								
+								var fieldValue:RichEditableText;
+								htmlText = formattedAttributes[fieldInfo.fieldName];
+								if (htmlText)
+								{
+									fieldValue = new RichEditableText();
+									// convert attribute field values that just contain URLs into links
+									var match:Array = htmlText.match(/^\s*((https?|ftp):\/\/\S+)\s*$/i);
+									if (match && match.length > 0)
+									{
+										htmlText = '<a href="' + match[1] + '" target="_blank">' + match[1] + "</a>";
+									}
+									setTextFlow(fieldValue, htmlText);
+									fieldValue.editable = false;
+									fieldValue.left = "col2:5";
+									fieldValue.right = 0;
+									fieldValue.top = fieldLabel.top;
+									keyValueGroup.addElement(fieldValue);
+								}
+								rowID++;
+							}
+						}
+						if (keyValueGroup.numElements > 0)
+						{
+							fieldLabel.bottom = "row" + --rowID + ":5"; // add a little bottom padding to last label
+							vGroup.addElement(keyValueGroup);
+						}
+					}
+					
+					_buttonArray = popUpInfo.buttonArray;
+					if ( _buttonArray && _buttonArray.length > 0 )
+					{
+						footer.addElement( naviContainer );
+//						footerLine.includeInLayout = footerLine.visible = true;
+						for each ( var buttonObj:Object in _buttonArray )
+						{
+							var label:String = buttonObj.label;
+							var action:String = buttonObj.action;
+							var idField:String = buttonObj.idField || "";
+							var id:String = "";
+							if ( idField != "" )
+							{
+								for each (fieldInfo in popUpInfo.popUpFieldInfos)
+								{
+									if ( idField == fieldInfo.fieldName )
+									{
+										id = formattedAttributes[fieldInfo.fieldName];
+										break;
+									}
+								}
+							}
+							else
+							{
+								id = graphic.id;
+							}
+							
+							var button:Button = new Button();
+							button.label = label;
+							button.id = id;
+							button.setStyle( "skinClass", Class( btSkin ) );
+							switch( action.toLowerCase() )
+							{
+								case "opendevice":
+									button.addEventListener( MouseEvent.CLICK, openDevice_clickHandler );
+									break;
+							}
+							buttonContainer.addElement( button );
+						}
+					}
+				}
+			}
+			
+			private function openDevice_clickHandler( event:MouseEvent ):void
+			{
+				var button:Button = event.currentTarget as Button;
+				var buttonLabel:String = button.label;
+				
+				for each ( var buttonObj:Object in _buttonArray )
+				{
+					if ( buttonObj.label == buttonLabel )
+					{
+						AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+							{
+								functionName: "openDevice",
+								params: [ buttonObj.type, button.id ]
+							} 
+						);
+						break;
+					}
+				}
+			}
+			
+			private function setTextFlow(textComp:RichEditableText, htmlText:String):void
+			{
+				if (textComp && htmlText != null)
+				{
+					var textFlow:TextFlow = TextConverter.importToFlow(htmlText, TextConverter.TEXT_FIELD_HTML_FORMAT, 
+						_textLayoutConfiguration);
+					if (textFlow)
+					{
+						textFlow.addEventListener(FlowElementMouseEvent.CLICK, textFlow_linkClickHandler, false, 0, true);
+						textComp.textFlow = textFlow;
+					}
+				}
+			}
+			
+			private function textFlow_linkClickHandler(event:FlowElementMouseEvent):void
+			{
+				var linkElement:LinkElement = event.flowElement as LinkElement;
+				if (linkElement && linkElement.target != "_blank")
+				{
+					linkElement.target = "_blank"; // make sure target is "_blank"
+				}
+			}
+			
+			protected function zoomToButton_clickHandler(event:MouseEvent):void
+			{
+				var graphic:Graphic = hostComponent.graphic;
+				var map:Map = hostComponent.map;
+				var geometry:Geometry = graphic.geometry;
+				
+				var extent:Extent = geometry.extent; // returns null for MapPoint or Multipoint's with only one point
+				if ( extent )
+				{
+					map.zoomTo( geometry );
+				}
+				else
+				{
+					var mapPoint:MapPoint;
+					if ( geometry is MapPoint )
+					{
+						mapPoint = geometry as MapPoint;
+					}
+					else if ( geometry is Multipoint )
+					{
+						var multipoint:Multipoint = geometry as Multipoint;
+						if ( multipoint.points && multipoint.points.length > 0 )
+						{
+							mapPoint = multipoint.points[0];
+						}
+					}
+					if ( mapPoint )
+					{
+						// make sure the infoWindow always points to the current (selected) feature
+						map.infoWindow.show( mapPoint );
+						// Zoom to 1/16th the size of the current extent.
+						// This is the same as calling map.zoomIn() four times.
+						map.zoom( 1 / 16, mapPoint );
+						if ( !map.extent.contains( mapPoint ) )
+						{
+							map.centerAt( mapPoint );
+						}
+					}
+				}
+			}
+			
+			protected function detailLink_clickHandler(event:MouseEvent):void
+			{
+				var graphic:Graphic = hostComponent.graphic;
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ graphic.attributes.type + "Detail", graphic.id ]
+					} 
+				);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RichEditableText id="titleText"
+							width="100%"
+							editable="false"
+							fontWeight="bold"
+							fontSize="16"/>
+		
+		<s:Label id="detailLink" text="详细信息>>" color="0x5185b5" 
+				 buttonMode="true" 
+				 click="detailLink_clickHandler(event)"/>
+		
+		<s:Line id="titleLine" width="100%">
+			<s:stroke>
+				<s:SolidColorStroke id="titleLineSymbol"
+									color="#BBBBBB"
+									weight="1"/>
+			</s:stroke>
+		</s:Line>
+		
+		<s:RichEditableText id="descriptionText"
+							width="100%"
+							editable="false"/>
+		
+		<s:Group id="keyValueGroup" width="100%">
+			<s:layout>
+				<s:ConstraintLayout id="keyValueGroupLayout">
+					<s:constraintColumns>
+						<s:ConstraintColumn id="col1" maxWidth="100"/>
+						<s:ConstraintColumn id="col2" width="100%"/>
+					</s:constraintColumns>
+				</s:ConstraintLayout>
+			</s:layout>
+		</s:Group>
+		
+		<s:Button id="zoomToButton"
+				  fontWeight="bold"
+				  label="{resourceManager.getString('ESRIMessages', 'zoomLabel')}"
+				  click="zoomToButton_clickHandler(event)"/>
+		
+		<s:Group id="naviContainer" width="100%" height="100%">
+			<s:Rect left="0" top="0" width="100%" height="25">
+				<s:fill>
+					<s:SolidColor color="0xeeeeee" alpha="1"/>
+				</s:fill>
+			</s:Rect>
+			
+			<mx:TabNavigator left="0" top="0" width="100%" height="100%" 
+							 creationPolicy="all" tabHeight="25"
+							 borderStyle="none">
+				<s:NavigatorContent width="100%" height="100%" label="操  作" icon="{starIcon}">
+					<s:HGroup id="buttonContainer" width="100%" height="100%" verticalAlign="middle" paddingLeft="5" gap="15"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:Group>
+		
+	</fx:Declarations>
+	
+	<s:VGroup width="100%" height="100%" paddingLeft="10" paddingRight="10">
+		<s:HGroup id="header"
+				  width="100%" 
+				  verticalAlign="middle"
+				  includeInLayout="false"
+				  visible="false">
+			<!-- elements are added in commitProperties() -->
+		</s:HGroup>
+		
+		<s:Line id="headerLine" width="100%" includeInLayout="false" visible="false">
+			<s:stroke>
+				<s:SolidColorStroke color="{getStyle( 'selectionColor' )}"
+									weight="1"/>
+			</s:stroke>
+		</s:Line>
+		
+		<s:HGroup width="100%" height="100%"
+				  paddingBottom="5"
+				  paddingLeft="5"
+				  paddingRight="5"
+				  paddingTop="5">
+			<s:Scroller width="100%" height="100%">
+				<!--- @private -->
+				<s:VGroup id="vGroup">
+					<!-- elements are added in commitProperties() -->
+				</s:VGroup>
+			</s:Scroller>
+		</s:HGroup>
+		
+		<s:Line id="footerLine" width="100%" includeInLayout="false" visible="false">
+			<s:stroke>
+				<s:SolidColorStroke color="{getStyle( 'selectionColor' )}"
+									weight="1"/>
+			</s:stroke>
+		</s:Line>
+		
+		<s:HGroup id="footer" paddingBottom="10" width="100%">
+			<!-- elements are added in commitProperties() -->
+		</s:HGroup>
+	</s:VGroup>
+</s:SparkSkin>

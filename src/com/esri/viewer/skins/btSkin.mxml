@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+		]]>
+	</fx:Script>
+	
+	<!-- 按钮的四种状态states -->
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	
+	<!-- 按下时添加阴影 -->
+	<s:Rect includeIn="down,over" top="-5" bottom="-5" left="-5" right="-5">
+		<s:fill>
+			<s:SolidColor color="0x58abed" alpha="1" color.down="0x58abed" color.over="0x58abed"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke alpha="1" color="0x58abed" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<!-- 按钮的背景和边框 -->
+	<s:Rect id="rect" excludeFrom="down,over" top="-5" bottom="-5" left="-5" right="-5">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="0xFFFFFF"/>
+				<s:GradientEntry alpha="1" color="0xEFF3F6"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke alpha="1" color="0xDDDDDD" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<!--<s:Rect excludeFrom="down" left="2" right="2" top="2" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="0xeeeeee"/>
+				<s:GradientEntry alpha="1" color="0xFFFFFF"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>-->
+	
+	<s:Label id="lableElement" text="{hostComponent.label}" 
+			 fontSize="16"
+			 color="0x656D80" color.down="0xFFFFFF" color.over="0xFFFFFF"
+			 horizontalCenter="0" verticalCenter="0"
+			 textAlign="center" verticalAlign="middle"/>
+</s:Skin>

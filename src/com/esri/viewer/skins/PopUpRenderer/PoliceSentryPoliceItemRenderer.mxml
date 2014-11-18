@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" autoDrawBackground="false">
+	
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" gap="5"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import cn.seisys.TGISViewer.AppEvent;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			protected function btnCall_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EXTERNALINTERFACE_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ "callPDA", data.id ]
+					} 
+				);
+			}
+			
+			protected function btnSendMessage_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EXTERNALINTERFACE_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ "sendMessage", data.id ]
+					} 
+				);
+			}
+			
+			protected function btnShowTrack_clickHandler(event:MouseEvent):void
+			{
+				AppEvent.dispatch( AppEvent.EXTERNALINTERFACE_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ "gpsPoliceTrack", data.id ]
+					} 
+				);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:RichEditableText editable="false" width="80"
+						textFlow="{TextConverter.importToFlow(data.name + '(' + data.state + ')',TextConverter.TEXT_FIELD_HTML_FORMAT )}"/>
+	<s:Spacer width="10"/>
+	<s:Button id="btnCall" label="呼叫" width="50" height="25" 
+			  skinClass="cn.seisys.TGISViewer.skins.btSkin" 
+			  click="btnCall_clickHandler(event)"/>
+	<s:Button id="btnSendMessage" label="短信" width="50" height="25" 
+			  skinClass="cn.seisys.TGISViewer.skins.btSkin" 
+			  click="btnSendMessage_clickHandler(event)"/>
+	<s:Button id="btnShowTrack" label="查看轨迹" width="80" height="25" 
+			  skinClass="cn.seisys.TGISViewer.skins.btSkin" 
+			  click="btnShowTrack_clickHandler(event)"/>
+	
+</s:ItemRenderer>

@@ -26,7 +26,6 @@
 			import flash.utils.setTimeout;
 			
 			import mx.collections.ArrayCollection;
-			import mx.controls.Alert;
 			import mx.core.UIComponent;
 			import mx.utils.StringUtil;
 			
@@ -662,12 +661,13 @@
 				if ( _refreshSinglePoliceCode != "" )
 				{
 					for each ( var gra:Graphic in _policeLayer.graphicProvider ) {
-						if ( id == gra.attributes.id ) {
+						if ( _refreshSinglePoliceCode == gra.attributes.id ) {
 							map.centerAt( gra.attributes.point );
 							showInfoWindow( gra.attributes );
 							break;
 						}
 					}
+					_refreshSinglePoliceCode = "";
 				}
 			}
 			

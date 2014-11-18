@@ -15,14 +15,11 @@ package widgets.Query
 	import com.esri.ags.geometry.Geometry;
 	import com.esri.ags.geometry.MapPoint;
 	import com.esri.ags.symbols.Symbol;
-	import com.esri.viewer.utils.Hashtable;
 	
-	import flash.events.EventDispatcher;
+	/*[Bindable]
+	[RemoteClass(alias="widgets.Query.QueryResult")]*/
 	
-	[Bindable]
-	[RemoteClass(alias="widgets.Query.QueryResult")]
-	
-	public class QueryResult extends EventDispatcher
+	public class QueryResult
 	{
 		public var title:String;
 		
@@ -48,7 +45,7 @@ package widgets.Query
 		
 		public var plusInfo:String;
 		
-		public var keyTable:Hashtable;
+		public var keyArray:Array;
 		
 	}
 	

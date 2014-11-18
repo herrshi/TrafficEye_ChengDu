@@ -20,7 +20,7 @@
 		<name></name>
 		<alias></alias>
 	</filterfield>
-	<refreshrate>20</refreshrate>
+	<refreshrate>5</refreshrate>
 	<refreshratetype>发布段图层</refreshratetype>
 	<hinttimeout>0</hinttimeout>
 	<query>1=1</query>

@@ -43,7 +43,9 @@
 //				AppEvent.dispatch( AppEvent.ADD_POINTS, '{"type":"pointEdit","points":[{"id":"111","x":103.95958,"y":30.58108}]}' );
 //				AppEvent.dispatch( AppEvent.START_MOVE_OVERLAY, '{"type":"pointEdit","ids":["111"]}' );
 				
-				AppEvent.dispatch( AppEvent.WIDGET_RUN, "警员管理面板" );
+//				AppEvent.dispatch( AppEvent.WIDGET_RUN, "警员管理面板" );
+				
+				AppEvent.dispatch( AppEvent.ADD_POINTS, '{"type":"rcShow","points":[{"id":"3031-040037","x":103.987101,"y":30.646121,"fields":{"id":"3031-040037","sbzt":"1","name":"草金立交—武侯立交","sbqw":"","sbfx":""}}]}' );
 			}
 			
 			protected function btnTest2_clickHandler(event:MouseEvent):void {
@@ -66,10 +68,10 @@
 //				AppEvent.dispatch( AppEvent.DELETE_ALL_LINES, "oneWayStreet" );
 //				AppEvent.dispatch( AppEvent.DELETE_ALL_GPS_TRACK );
 				
-//				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "警员管理图层", id: "004789" } );
-//				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "协警管理图层", id: "004789" } );
-//				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "分局领导管理图层", id: "004789" } );
-//				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "大队领导管理图层", id: "004789" } );
+				/*AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "警员管理图层", id: "004789" } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "协警管理图层", id: "004789" } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "分局领导管理图层", id: "004789" } );
+				AppEvent.dispatch( AppEvent.FIND_DEVICE, { type: "大队领导管理图层", id: "004789" } );*/
 			}
 			
 			protected function btnTest3_clickHandler(event:MouseEvent):void {

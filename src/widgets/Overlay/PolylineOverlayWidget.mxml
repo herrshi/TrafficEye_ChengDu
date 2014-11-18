@@ -410,6 +410,7 @@
 						if ( id == graphic.attributes.id )
 						{
 							_lineArrowLayer.remove( graphic );
+							break;
 						}
 					}
 				}

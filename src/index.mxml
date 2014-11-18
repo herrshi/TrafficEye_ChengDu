@@ -17,7 +17,8 @@
 			   xmlns:viewer="com.esri.viewer.*"
 			   xmlns:managers="com.esri.viewer.managers.*"
 			   pageTitle="ArcGIS Viewer for Flex"
-			   rollOut="rollOutHandler(event)">
+			   rollOut="rollOutHandler(event)" 
+			   creationComplete="this_creationCompleteHandler(event)">
 
     <fx:Style source="defaults.css"/>
 
@@ -27,11 +28,11 @@
 	
 	<fx:Script>
 		<![CDATA[			
-			import mx.managers.PopUpManager;
+			import mx.events.FlexEvent;
 			import mx.messaging.messages.RemotingMessage;
 			
-			import widgets.Query.QueryResultSymbol;
 			import widgets.Query.QueryResult;
+			import widgets.Query.QueryResultSymbol;
 			
 			//解决module之间共享数据的问题
 			private var rm:RemotingMessage;
@@ -54,6 +55,11 @@
 			
 			
 			
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				registerClassAlias("widgets.Query.QueryResult", QueryResult);
+			}
 			
 		]]>
 	</fx:Script>

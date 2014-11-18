@@ -21,8 +21,15 @@
 		<!--	<layer label="注记" type="dynamic" visible="true" alpha="1" 	url="http://[serverip]/arcgis/rest/services/cd_base_bz_0620/MapServer" /> -->
 			<layer label="警务区" type="dynamic" visible="true" alpha="0.5" url="http://[serverip]/arcgis/rest/services/chengdu/cd_transperant/MapServer" />
 			<layer label="设备图层" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu/cd_device/MapServer" />
-			<layer label="路段状态" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" />
-			<layer label="发布段" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu/cd_fbd/MapServer" />
+<!-- 			<layer label="路段状态" type="dynamic" visible="false" alpha="1" url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_road_state/MapServer" /> -->
+			<layer label="发布段" type="dynamic" visible="true" alpha="1" autorefresh="0"
+				url="http://[serverip]/arcgis/rest/services/chengdu_yd/cd_fbd_new/MapServer">
+<!-- 				<sublayer id="2" popupconfig="popups/Popup-fbd.xml"/> -->
+<!-- 				<sublayer id="4" popupconfig="popups/Popup-fbd.xml"/> -->
+<!-- 				<sublayer id="6" popupconfig="popups/Popup-fbd.xml"/> -->
+<!-- 				<sublayer id="8" popupconfig="popups/Popup-fbd.xml"/> -->
+<!-- 				<sublayer id="10" popupconfig="popups/Popup-fbd.xml"/> -->
+			</layer>
 		</operationallayers>
 	</map>
 	<widgetcontainer layout="float">
@@ -49,7 +56,7 @@
 		<widget label="事件检测" config="widgets/Query/cdyd/QueryWidget_sjjc.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="匝道控制" config="widgets/Query/cdyd/QueryWidget_zk.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="诱导板" config="widgets/Query/cdyd/QueryWidget_ydb.xml" url="widgets/Query/QueryWidget.swf" />
-		<widget label="发布段" config="widgets/Query/cdyd/QueryWidget_fbd.xml" url="widgets/Query/QueryWidget.swf" />
+		<widget label="发布段" preload="open" config="widgets/Query/cdyd/QueryWidget_fbd.xml" url="widgets/Query/QueryWidget.swf" />
 		<widget label="警情管理图层" icon="assets/images/event/case30.png" url="widgets/EventManager/EventManagerLayerWidget.swf" config="widgets/EventManager/EventManagerWidget.xml" />
 		<widget label="警员管理图层" icon="assets/images/policeStatus/police30.png" url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget.xml" />
 		<widget label="协警管理图层" icon="assets/images/policeStatus/police30.png" url="widgets/PoliceManageNew/PoliceManageLayerWidget.swf" config="widgets/PoliceManageNew/PoliceManageLayerWidget_assistant.xml" />

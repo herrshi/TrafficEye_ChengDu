@@ -199,11 +199,13 @@
 			{
 				// TODO Auto-generated method stub
 				var policeCode:String = this.data.policeInfo.policeCode;
+				var policeGpsCode:String = this.data.policeInfo.policeGpsCode;
+				
 				AppEvent.dispatch( AppEvent.REFRESH_SINGLE_POLICE, policeCode );
-				/*var policeGpsCode:String = this.data.policeInfo.policeGpsCode;
+				
 				var param:String = policeCode + "," + policeGpsCode + ";";
 				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
-					{ functionName: "openDevice", params: [ "RefreshPerson", param ] } );*/
+					{ functionName: "openDevice", params: [ "RefreshPerson", param ] } );
 			}
 			
 			

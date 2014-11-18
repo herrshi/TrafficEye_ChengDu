@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<configuration>
+	<title>{发布段.FBD_NAME}</title>
+	<fields>
+		<field name="发布段.FBD_NAME" />
+		<field name="发布段.FBD_CODE" alias="发布段编号" visible="true" />
+		<field name="VOLUME" visible="流量" />
+		<field name="SPEED" visible="平均速度" />
+		<field name="OCC" visible="占有率" />
+	</fields>
+	<showzoomtobutton>false</showzoomtobutton>
+	<buttons>
+	   <button label="人工发布" action="openDevice" type="FBD" idfield="发布段.FBD_CODE" />
+	</buttons>
+</configuration>

@@ -30,6 +30,9 @@
 			import com.esri.ags.tools.DrawTool;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
+			import com.esri.viewer.skins.PopUpRenderer.AdvancedPopUpRendererSkin;
+			import com.esri.viewer.skins.PopUpRenderer.ClassicPopUpRendererSkinWithButtons;
+			import com.esri.viewer.skins.PopUpRenderer.ZaKongPopUpRendererSkin;
 			import com.esri.viewer.utils.Hashtable;
 			import com.esri.viewer.utils.PopUpInfoParser;
 			import com.esri.viewer.utils.RendererParser;
@@ -41,8 +44,6 @@
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			import mx.utils.UIDUtil;
-			
-			
 			
 			private var _pointOverlayLayer:GraphicsLayer;
 			
@@ -78,10 +79,16 @@
 			private var _drawSymbol:Symbol;
 			
 			/**
+			 * 弹出窗使用的皮肤类
+			 * */
+			private var _popUpSkinClass:String;
+			
+			/**
 			 * 弹出窗样式。 
 			 * 编辑模式时禁用弹出窗，非编辑模式时启动弹出窗
 			 * */
-			private var _popUpRenderer:ClassFactory;
+//			private var _popUpRenderer:ClassFactory;
+			private var _popUpInfo:PopUpInfoWithButtons;
 			
 			/**
 			 * 当前模式
@@ -92,6 +99,11 @@
 			private const MODE_ADD:String = "add";
 			private const MODE_NORMAL:String = "normal";
 			private const DRAW_MODE:String = DrawTool.MAPPOINT;
+			
+			/**
+			* 点击图标直接触发事件
+			* */
+			private var _clickFunctionInfo:Object;
 			
 			protected function creationCompleteHandler(event:FlexEvent):void
 			{
@@ -132,20 +144,34 @@
 					if ( configXML.popup[0] )
 					{
 						var popupXML:XML = configXML.popup[0];
-						var popUpInfo:PopUpInfoWithButtons = PopUpInfoParser.parsePopUpInfo( popupXML );
+						_popUpInfo = PopUpInfoParser.parsePopUpInfo( popupXML );
+						
+						_popUpSkinClass = configXML.popupskinclass || "Classic";
+						/*var popUpInfo:PopUpInfoWithButtons = PopUpInfoParser.parsePopUpInfo( popupXML );
 						
 						_popUpRenderer = new ClassFactory( PopUpRenderer );
 						_popUpRenderer.properties = 
 							{ 
 								popUpInfo: popUpInfo
 							};
-						_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+						_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;*/
 					}
 					
 					//renderer
 					var rendererParser:RendererParser = new RendererParser;
 					var renderer:IRenderer = rendererParser.parseRenderer( configXML );
 					_pointOverlayLayer.renderer = renderer;
+					
+					//clickFunciton
+					if ( configXML.clickfunction )
+					{
+						_clickFunctionInfo = 
+							{
+								action: String( configXML.clickfunction.action ) || "showInfoWindow",
+								type: String( configXML.clickfunction.type ),
+								idField: String( configXML.clickfunction.idfield )
+							};
+					}
 					
 					//drawSymbol
 					if ( configXML.drawsymbol[0] )
@@ -216,12 +242,10 @@
 			{
 				var params:String = event.data as String;
 				var paramObj:Object = JSON.parse( params );
-				
 				//类型
 				var type:String = paramObj.type;
 				if ( !type || type.toLowerCase() != _pointType.toLowerCase() )
 					return;
-//				Alert.show( params );
 				
 				//点集
 				var pointArray:Array = paramObj.points;
@@ -231,33 +255,133 @@
 					var x:Number = pointObj.x;
 					var y:Number = pointObj.y;
 					var id:String = pointObj.id;
+					var fields:Object = pointObj.fields;
 					
-					if ( isNaN( x ) || isNaN( y ) || !id || id == "" )
+					if ( !id || id == "" )
 						continue;
 					
-					var graphic:Graphic = new Graphic( new MapPoint( x, y ) );
-					graphic.id = id;
-					
-					//去掉id重复的点
-					for each ( var gra:Graphic in _pointOverlayLayer.graphicProvider )
+					var graphic:Graphic = getGraphicById( id );
+					//已存在的点
+					if ( graphic )
 					{
-						if ( gra.id == id )
+						//若传入坐标则更新位置
+						if ( !isNaN( x ) && !isNaN( y ) )
 						{
-							_pointOverlayLayer.remove( gra );
-							break;
+							graphic.geometry = new MapPoint( x, y );
+						}
+						//若传入fields则更新attributes
+						if ( fields )
+						{
+							var attributes:Object = graphic.attributes;
+							//fields可能只传了变化的字段，不能直接覆盖attributes
+							for ( var fieldName:String in fields )
+							{
+								attributes[ fieldName ] = fields[ fieldName ];
+							}
+						}
+						graphic.refresh();
+					}
+						//不存在的点
+					else
+					{
+						if ( !isNaN( x ) && !isNaN( y ) )
+						{
+							graphic = new Graphic( new MapPoint( x, y ) );
+							graphic.id = id;
+							graphic.attributes = fields || {};
+							graphic.attributes.type = _pointType;
+							_pointOverlayLayer.add( graphic );
+						}
+						else
+						{
+							continue;
 						}
 					}
 					
-					var fields:Object = pointObj.fields;
-					if ( fields )
+					addGraphicClickHandler( graphic );
+				}
+				addSharedData( widgetTitle, _pointOverlayLayer.graphicProvider as ArrayCollection );
+			}
+			
+			private function addGraphicClickHandler( graphic:Graphic ):void
+			{
+				if ( _clickFunctionInfo )
+				{
+					var action:String = _clickFunctionInfo.action;
+					switch( action.toLowerCase() )
 					{
-						graphic.attributes = fields;
+						case "opendevice":
+							graphic.addEventListener( MouseEvent.CLICK, openDevice_clickHandler );
+							break;
+						case "showinfowindow":
+							graphic.addEventListener( MouseEvent.CLICK, showInfowWindow_clickHandler );
+							break;
 					}
+				}
+			}
+			
+			private function removeGraphicClickHandler( graphic:Graphic ):void
+			{
+				if ( _clickFunctionInfo )
+				{
+					var action:String = _clickFunctionInfo.action;
+					switch( action.toLowerCase() )
+					{
+						case "opendevice":
+							graphic.removeEventListener( MouseEvent.CLICK, openDevice_clickHandler );
+							break;
+						case "showinfowindow":
+							graphic.removeEventListener( MouseEvent.CLICK, showInfowWindow_clickHandler );
+							break;
+					}
+				}
+			}
+			
+			private function showInfowWindow_clickHandler( event:MouseEvent ):void
+			{
+				var graphic:Graphic = event.currentTarget as Graphic;
+				var popupRenderer:PopUpRenderer = new PopUpRenderer();
+				popupRenderer.graphic = graphic;
+				popupRenderer.popUpInfo = _popUpInfo;
+				switch( _popUpSkinClass )
+				{
+					case "advanced":
+						popupRenderer.setStyle( "skinClass", Class( AdvancedPopUpRendererSkin ) );
+						break;
 					
-					_pointOverlayLayer.add( graphic );
+					case "ZaKong":
+						popupRenderer.setStyle( "skinClass", Class( ZaKongPopUpRendererSkin ) );
+						break;
+					
+					default:
+						popupRenderer.setStyle( "skinClass", Class( ClassicPopUpRendererSkinWithButtons ) );
+						break;
+				}
+				map.infoWindow.content = popupRenderer;
+				map.infoWindow.contentOwner = popupRenderer.graphic;
+				map.infoWindow.show( graphic.geometry as MapPoint );
+			}
+			
+			
+			private function openDevice_clickHandler( event:MouseEvent ):void
+			{
+				var graphic:Graphic = event.currentTarget as Graphic;
+				
+				var type:String = _clickFunctionInfo.type;
+				if ( type == "" )
+				{
+					type = _pointType;
 				}
 				
-				addSharedData( widgetTitle, _pointOverlayLayer.graphicProvider as ArrayCollection );
+				var idField:String = _clickFunctionInfo.idField;
+				var id:String = ( idField == "" ? graphic.id : graphic.attributes[ idField ] );
+				
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ type, id ]
+					} 
+				);
 			}
 			
 			private function appevent_DeleteAllPointsHandler( event:AppEvent ):void
@@ -368,7 +492,11 @@
 				
 				editTool.deactivate();
 				_pointOverlayLayer.removeEventListener( MouseEvent.CLICK, pointOverlayLayer_ClickHandler );
-				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+//				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+				for each ( var graphic:Graphic in _pointOverlayLayer.graphicProvider )
+				{
+					addGraphicClickHandler( graphic );
+				}
 			}
 			
 			private function appevent_StartAddOverlayHandler( event:AppEvent ):void
@@ -414,7 +542,11 @@
 				editTool.deactivate();
 				
 				_pointOverlayLayer.removeEventListener( MouseEvent.CLICK, pointOverlayLayer_ClickHandler );
-				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+//				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+				for each ( var graphic:Graphic in _pointOverlayLayer.graphicProvider )
+				{
+					addGraphicClickHandler( graphic );
+				}
 			}
 			
 			/**
@@ -557,7 +689,11 @@
 							//停止编辑
 							editTool.deactivate();
 //							setMapAction( null, null, null, null );
-							_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+//							_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+							for each ( var graphic:Graphic in _pointOverlayLayer.graphicProvider )
+							{
+								addGraphicClickHandler( graphic );
+							}
 							//清除历史数据
 							_movedGeometryTable.clear();
 							break;
@@ -609,12 +745,16 @@
 				
 				//停止编辑
 				editTool.deactivate();
-				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+//				_pointOverlayLayer.infoWindowRenderer = _popUpRenderer;
+				for each ( var graphic:Graphic in _pointOverlayLayer.graphicProvider )
+				{
+					addGraphicClickHandler( graphic );
+				}
 				//回到初始位置
 				for each ( var graphicId:String in _movedGeometryTable.getKeySet() )
 				{
 					var geometryArray:Array = _movedGeometryTable.find( graphicId );
-					var graphic:Graphic = getGraphicById( graphicId );
+					graphic = getGraphicById( graphicId );
 					graphic.geometry = geometryArray[ 0 ];
 					
 					//如果是新增模式，要把新增的点删掉

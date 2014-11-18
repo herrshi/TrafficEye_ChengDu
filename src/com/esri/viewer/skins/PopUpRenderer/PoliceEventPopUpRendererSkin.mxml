@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" 
+			 preinitialize="this_preinitializeHandler(event)">
+	<fx:Metadata>
+		[HostComponent("com.esri.ags.portal.PopUpRenderer")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.portal.PopUpRenderer;
+			
+			import mx.events.FlexEvent;
+			
+			protected function this_preinitializeHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+		]]>
+	</fx:Script>
+</s:SparkSkin>

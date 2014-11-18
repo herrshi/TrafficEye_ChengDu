@@ -25,11 +25,11 @@
 		<s:State name="filterInput"/>
 	</viewer:states>
 	
-	<viewer:transitions>
+	<!--<viewer:transitions>
 		<s:Transition autoReverse="true" toState="*">
 			<s:Fade targets="{[resultsList, filterInput]}"/>
 		</s:Transition>
-	</viewer:transitions>
+	</viewer:transitions>-->
 	
 	
 	
@@ -70,6 +70,9 @@
 			import spark.components.supportClasses.ItemRenderer;
 			
 			
+			
+			
+			
 			private const ICON_URL:String = "assets/images/";
 			
 			[Bindable]
@@ -96,7 +99,7 @@
 			private var type:String;
 			private var keyField:String;
 			private var hidekeyvalue:String;
-			private var hidekeyvalueAarray:Array;
+			private var hidekeyvalueArray:Array;
 			private var timer:Timer;
 			private var useProxy:Boolean;
 			private var zoomScale:Number;
@@ -241,7 +244,7 @@
 					var scaleSymbolList:XMLList = configXML..symbols;
 					keyField = configXML.keyfield;
 					hidekeyvalue = configXML.hidekeyvalue || "nodata";
-					hidekeyvalueAarray = hidekeyvalue.split(",");
+					hidekeyvalueArray = hidekeyvalue.split(",");
 					for (  i = 0; i < scaleSymbolList.length(); i++ ) {
 						var maxScale:Number = scaleSymbolList[i].@maxscale || Number.MAX_VALUE;
 						var minScale:Number = scaleSymbolList[i].@minscale || Number.MIN_VALUE;
@@ -562,7 +565,7 @@
 					var link:String = "";
 					var keyValue:String = "";
 					var show:Boolean;
-					var keyTable:Hashtable = new Hashtable();
+					var keyArray:Array = [];
 					if (allFields) {
 						// requires ArcGIS Server 10.0+
 						if (featureSet.fields) { 
@@ -609,7 +612,7 @@
 						{
 							if (fieldName==type) 
 							{
-								keyTable.add( type,value );
+								keyArray.push( { type: type, value: value } );
 							}
 						}
 						
@@ -684,13 +687,10 @@
 						}
 					}
 					
-					
-					
-					
-					
 					graphic.addEventListener( MouseEvent.CLICK, mouseClickGraphic );
 					graphic.addEventListener( MouseEvent.ROLL_OVER, mouseOverGraphic );
 					graphic.addEventListener( MouseEvent.ROLL_OUT, mouseOutGraphic );
+					
 					var queryResult:QueryResult = new QueryResult();
 					queryResult.title = title;
 					queryResult.id = id;
@@ -699,7 +699,7 @@
 					queryResult.point = getGeomCenter(graphic);
 					queryResult.link = link ? link : null;
 					queryResult.geometry = graphic.geometry;
-					queryResult.keyTable = keyTable;
+//					queryResult.keyArray = keyArray;
 					if(arrayCollection != null)
 						if(isContainsId(arrayCollection,id))
 							queryResult.buttons = buttonArray;
@@ -724,28 +724,56 @@
 							defaultRankSymbol.count++;
 						}
 					}
-					queryResult.symbol = graphic.symbol;
+//					queryResult.symbol = graphic.symbol;
 					graphic.attributes = queryResult;
 					
-					// make sure it is a valid point
 					var hideflag:Boolean = true;				
-					for (var j:int = 0; j < hidekeyvalueAarray.length; j++) 
+					for (var j:int = 0; j < hidekeyvalueArray.length; j++) 
 					{
 						
-						if(keyValue==hidekeyvalueAarray[j]){
+						if(keyValue==hidekeyvalueArray[j]){
 							hideflag = false;
-							break;}
+							break;
+						}
 					}
-					
 					if(hideflag)
 					{
 						if (queryResult.point && !isNaN(queryResult.point.x) && !isNaN(queryResult.point.y)) 
 						{
 							result.addItem(queryResult);
-							/* if ( graphic.geometry.type == Geometry.POLYLINE ) {
-							graphic.symbol = new SimpleLineSymbol( "solid", 0x277cd9, 0.3, 10 );
-							} */
-							addToGraphLayer(graphic);
+							
+							if (isShowCheckWid) 
+							{
+								if (checkValue.size>0) 
+								{
+									var typeFields:Array = checkValue.getKeySet();
+									var flag:int = 0;
+									
+									for each (var type:String in typeFields) 
+									{
+										for each ( var keyObj:Object in keyArray )
+										{
+											if ( keyObj.type == type )
+											{
+												if (keyObj.value == checkValue.find(type)||checkValue.find(type)=="all") 
+												{
+													flag++;
+												}
+												break;
+											}
+										}
+										
+									}
+									if (flag==checkValue.size) 
+									{
+										graphicsLayer.add( graphic );
+										countnum++;
+									}
+								}
+								
+							}else{
+								graphicsLayer.add( graphic );
+							}
 						}
 					}
 					
@@ -1216,15 +1244,24 @@
 					if (checkValue.size>0) 
 					{
 						var typeFields:Array = checkValue.getKeySet();
-						var keytable:Hashtable = graphic.attributes.keyTable;
+						var keyArray:Array = (graphic.attributes as QueryResult).keyArray;
 						var flag:int = 0;
 						
 						for each (var type:String in typeFields) 
 						{
-							if (keytable.find(type)==checkValue.find(type)||checkValue.find(type)=="all") 
+							for each ( var keyObj:Object in keyArray )
 							{
-								flag++;
+								if ( keyObj.type == type )
+								{
+									var value:String = keyObj.value;
+									if (value == checkValue.find(type)||checkValue.find(type)=="all") 
+									{
+										flag++;
+									}
+									break;
+								}
 							}
+							
 						}
 						if (flag==checkValue.size) 
 						{

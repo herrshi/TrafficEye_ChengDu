@@ -43,4 +43,8 @@
 			<picturemarkersymbol url="assets/images/mapIcons/BiaoZhiBiaoXian/GuZhang_XiaFa.png"/>
 		</uniquevalueinfo>
 	</uniquevaluerenderer>
+	
+	<clickfunction>
+		<action>showInfoWindow</action>
+	</clickfunction>
 </configuration>
