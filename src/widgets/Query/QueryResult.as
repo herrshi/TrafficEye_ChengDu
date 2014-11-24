@@ -16,8 +16,8 @@ package widgets.Query
 	import com.esri.ags.geometry.MapPoint;
 	import com.esri.ags.symbols.Symbol;
 	
-	/*[Bindable]
-	[RemoteClass(alias="widgets.Query.QueryResult")]*/
+	[Bindable]
+	[RemoteClass(alias="widgets.Query.QueryResult")]
 	
 	public class QueryResult
 	{

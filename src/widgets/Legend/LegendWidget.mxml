@@ -25,13 +25,10 @@
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
             import com.esri.viewer.AppEvent;
-            import com.esri.viewer.ViewerContainer;
-
+            
             import mx.collections.ArrayCollection;
-            import mx.utils.ObjectUtil;
 
             private var arrOperationalLayers:Array;
             private var arrBaseMapLayers:Array;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 有界面，根据配置文件生成若干组checkbox，对单个图层进行过滤 -->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   xmlns:viewer="com.esri.viewer.*">
+	
+	<viewer:WidgetTemplate>
+		
+	</viewer:WidgetTemplate>
+</viewer:BaseWidget>

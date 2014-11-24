@@ -536,6 +536,19 @@ public class AppEvent extends Event
 	 * */
 	public static const REFRESH_SINGLE_POLICE:String = "refreshSinglePolice";
 	
+	/**
+	 * 页面输入查询条件对图层进行过滤
+	 * <listing>
+	 * var data:Object =
+	 *   {
+	 *     var serviceName:String，服务名，配置在config.xml中的layer.label。为空则设置所有dynamic/feature服务的definition。
+	 *     var layerId:Number，图层序号。为空则设置服务下的所有layer。
+	 *     var whereClause:String，查询条件。
+	 *   }
+	 * </listing>
+	 * */
+	public static const SET_LAYER_FILTER_DEFINITION:String = "setLayerFilterDifinition";
+	
     //--------------------------------------------------------------------------
     //
     //  Constructor

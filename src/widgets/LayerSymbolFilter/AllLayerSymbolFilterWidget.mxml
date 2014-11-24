@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置FeatureLayer和DynamicLayer的difinition参数对symbol进行过滤 -->
+<!-- 没有界面，接受参数对所有图层进行过滤 -->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:viewer="com.esri.viewer.*"
+					   layout="absolute" 
+					   creationComplete="this_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.Layer;
+			import com.esri.ags.layers.supportClasses.LayerInfo;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.components.toc.utils.MapUtil;
+			
+			import mx.events.FlexEvent;
+			
+			
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				AppEvent.addListener( AppEvent.SET_LAYER_FILTER_DEFINITION, 
+					appevent_setLayerFilterDifinitionHandler );
+			}
+			
+			private function appevent_setLayerFilterDifinitionHandler( event:AppEvent ):void
+			{
+				var serviceName:String = event.data.serviceName;
+				var layerIds:String = event.data.layerIds;
+				var whereClause:String = event.data.whereClause;
+				//条件为空则都不显示
+				if ( whereClause == "" )
+				{
+					whereClause = "1!=1";
+				}
+				var idArray:Array = [];
+				if ( layerIds )
+				{
+					idArray = layerIds.split( "," );
+				}
+				
+				MapUtil.forEachMapLayer(map, function(layer:Layer):void
+				{
+					if ( serviceName == "" || layer.name == serviceName )
+					{
+						//FeatureLayer
+						if ( layer is FeatureLayer )
+						{
+							var featureLayer:FeatureLayer = layer as FeatureLayer;
+							featureLayer.definitionExpression = whereClause;
+							featureLayer.refresh();
+						}
+						//DynamicLayer
+						else if ( layer is ArcGISDynamicMapServiceLayer )
+						{
+							var dynamicLayer:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
+							//保留原有的definition
+							var layerDefinitions:Array = dynamicLayer.layerDefinitions || [];
+							
+							//设置指定layerId的图层
+							if ( idArray.length > 0 )
+							{
+								for each ( var layerId:Number in idArray )
+								{
+									layerDefinitions[ layerId ] = whereClause;
+								}
+							}
+							//没有指定layerId则设置所有图层的definition
+							else
+							{
+								for each ( var layerInfo:LayerInfo in dynamicLayer.layerInfos )
+								{
+									layerId = layerInfo.layerId;
+									layerDefinitions[ layerId ] = whereClause;
+								}
+							}
+							
+							dynamicLayer.layerDefinitions = layerDefinitions;
+							dynamicLayer.refresh();
+						}
+					}
+				});
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	
+</viewer:BaseWidget>
