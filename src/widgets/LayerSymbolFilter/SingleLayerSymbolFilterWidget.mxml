@@ -3,9 +3,577 @@
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009" 
 				   xmlns:s="library://ns.adobe.com/flex/spark" 
 				   xmlns:mx="library://ns.adobe.com/flex/mx" 
-				   xmlns:viewer="com.esri.viewer.*">
+				   xmlns:viewer="com.esri.viewer.*" 
+				   widgetConfigLoaded="this_widgetConfigLoadedHandler(event)" 
+				   creationComplete="this_creationCompleteHandler(event)" xmlns:LayerSymbolFilter="widgets.LayerSymbolFilter.*">
 	
-	<viewer:WidgetTemplate>
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.Map;
+			import com.esri.ags.events.LayerEvent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Multipoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.geometry.Polyline;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.supportClasses.FeatureCollection;
+			import com.esri.ags.layers.supportClasses.LayerDetails;
+			import com.esri.ags.portal.PopUpRenderer;
+			import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+			import com.esri.ags.renderers.IRenderer;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.components.PopUpInfoWithButtons;
+			import com.esri.viewer.skins.PopUpRenderer.AdvancedPopUpRendererSkin;
+			import com.esri.viewer.skins.PopUpRenderer.ClassicPopUpRendererSkinWithButtons;
+			import com.esri.viewer.skins.PopUpRenderer.ZaKongPopUpRendererSkin;
+			import com.esri.viewer.utils.PopUpInfoParser;
+			import com.esri.viewer.utils.RendererParser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.utils.StringUtil;
+			
+			
+			
+			
+			/**
+			 * 执行查询的图层
+			 * */
+			private var _queryLayer:FeatureLayer;
+			private var _queryExpr:String;
+			private var _layerDetails:LayerDetails;
+			private var _queryFields:XMLList;
+			private var _queryTitleField:String;
+			
+			private var _refreshRate:Number;
+			/**
+			 * 刷新时是否要重新查询图层。
+			 * 若显示的字段需要更新则要重新查询，否则只需要刷新_resultFeatureLayer更新图标
+			 * */
+			private var _refreshNeedQuery:Boolean;
+			
+			/**
+			 * 展示结果的图层
+			 * */
+			private var _resultFeatureLayer:FeatureLayer;
+			
+			private var _timer:Timer;
+			
+			private var _graphicToResultAttributes:Dictionary;
+			
+			[Bindable]
+			private var _msgVisible:Boolean = false;
+			[Bindable]
+			private var _widgetVisible:Boolean = true;
+			
+			private var _loadingLabel:String;
+			private var _noResultLabel:String;
+			private var _featuresFoundLabel:String;
+			
+			private var _popUpInfo:PopUpInfoWithButtons;
+			private var _popUpSkinClass:String;
+			
+			[Bindable]
+			private var _filterGroupAC:ArrayCollection;
+			
+			/**
+			 * 点击图标直接触发事件
+			 * */
+			private var _clickFunctionInfo:Object;
+			
+			protected function this_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function this_widgetConfigLoadedHandler(event:Event):void
+			{
+				if ( configXML )
+				{
+					_widgetVisible = configXML.widgetvisible == "true" ? true : false;
+					if ( _widgetVisible )
+					{
+						_loadingLabel = configXML.labels.loadinglabel || getDefaultString("loadingLabel");
+						_noResultLabel = configXML.labels.noresultlabel || getDefaultString("noFeatures");;
+						_featuresFoundLabel = configXML.labels.featuresfoundlabel || getDefaultString("featuresFoundLabel");
+					}
+					
+					//clickFunciton
+					if ( configXML.clickfunction )
+					{
+						_clickFunctionInfo = 
+							{
+								action: String( configXML.clickfunction.action ),
+								type: String( configXML.clickfunction.type ),
+								idField: String( configXML.clickfunction.idfield )
+							};
+					}
+					
+					//filter
+					var filterList:XMLList = configXML..filter;
+					if ( filterList )
+					{
+						_filterGroupAC = new ArrayCollection();
+						for each ( var filterXML:XML in filterList )
+						{
+							var filterName:String = filterXML.name;
+							var filterTemplate:String = filterXML.template;
+							var filterTypes:String = filterXML.types;
+							var filterTypeArray:Array = filterTypes.split( "," );
+							var filterTypeDescs:String = filterXML.type_descs;
+							var filterTypeDescArray:Array = filterTypeDescs.split( "," );
+							
+							var filterOptionAC:ArrayCollection = new ArrayCollection();
+							for ( var i:uint = 0; i < filterTypeArray.length; i++ )
+							{
+								var filterType:String = filterTypeArray[i];
+								var filterTypeDesc:String = filterTypeDescArray[i];
+								var definition:String = filterTemplate.replace( "REPLACE_STR", filterType );
+								var optionObj:Object = 
+									{
+										typeDesc: filterTypeDesc,
+										definition: definition,
+										selected: true
+									};
+								filterOptionAC.addItem( optionObj );
+							}
+							
+							var groupObj:Object = 
+								{
+									name: filterName,
+									optionAC: filterOptionAC
+								};
+							_filterGroupAC.addItem( groupObj );
+						}
+					}
+					
+					
+					var layerURL:String = configXML.layer;
+					if (layerURL)
+					{
+						layerURL = layerURL.replace( "[serverip]", configData.serverIp );
+						
+						_queryExpr = configXML.query;
+						if (!_queryExpr) 
+						{
+							_queryExpr = "1=1"; 
+						}
+						
+						_queryFields = configXML.popup.fields;
+						_queryLayer = new FeatureLayer();
+						_queryLayer.addEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+						_queryLayer.addEventListener(LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler);
+						
+						_refreshRate = configXML.refreshrate;
+						if ( _refreshRate )
+						{
+							_queryLayer.disableClientCaching = true; // turn on only if using a refresh timer
+						}
+						
+						_refreshNeedQuery = configXML.refreshneedquery == "true" ? true : false;
+						
+						_queryLayer.url = layerURL;
+					}
+					
+					
+					_resultFeatureLayer = new FeatureLayer();
+					_resultFeatureLayer.outFields = _queryLayer.outFields;
+					_resultFeatureLayer.visible = false;
+					_resultFeatureLayer.isEditable = false;
+					_resultFeatureLayer.name = configXML.layername || widgetTitle;
+					_resultFeatureLayer.addEventListener(FlexEvent.HIDE, resultFeatureLayer_hideHandler);
+					map.addLayer(_resultFeatureLayer);
+					
+					//renderer
+					var rendererParser:RendererParser = new RendererParser;
+					var renderer:IRenderer = rendererParser.parseRenderer( configXML );
+					_resultFeatureLayer.renderer = renderer;
+					
+					var popupXML:XML = configXML.popup[0];
+					_popUpInfo = PopUpInfoParser.parsePopUpInfo( popupXML );
+					
+					_queryLayer.outFields = [];
+					for each ( var fieldInfo:PopUpFieldInfo in _popUpInfo.popUpFieldInfos )
+					{
+						_queryLayer.outFields.push( fieldInfo.fieldName );
+					}
+					
+					_popUpSkinClass = configXML.popupskinclass || "Classic";
+				}
+			}
+			
+			private function queryLayer_loadHandler(event:LayerEvent):void
+			{
+				_queryLayer.removeEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+				_queryLayer.removeEventListener(LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler);
+				
+				_layerDetails = _queryLayer.layerDetails;
+				_layerDetails.minScale = 0; // removing scale dependency
+				_layerDetails.maxScale = 0;
+				createAndStartWidgetTimer();
+				queryFeatures();
+			}
+			
+			private function queryLayer_loadErrorHandler(event:LayerEvent):void
+			{
+				_queryLayer.removeEventListener( LayerEvent.LOAD, queryLayer_loadHandler );
+				_queryLayer.removeEventListener( LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler );
+				
+				showError( event.fault.toString() );
+			}
+			
+			private function resultFeatureLayer_hideHandler(event:FlexEvent):void
+			{
+				hideInfoWindow();
+			}
+			
+			private function createAndStartWidgetTimer():void
+			{
+				if ( _refreshRate && _refreshRate != 0 )
+				{
+					if ( !_timer )
+					{
+						var seconds:Number = Number( _refreshRate );
+						var rate:Number = seconds * 1000;
+						_timer = new Timer( rate );
+						_timer.addEventListener( TimerEvent.TIMER, timerTick );
+					}
+					_timer.start();
+				}
+			}
+			
+			private function stopWidgetTimer():void
+			{
+				if (_timer && _timer.running)
+				{
+					_timer.stop();
+				}
+			}
+			
+			private function startWidgetTimer():void
+			{
+				if (_timer && !_timer.running)
+				{
+					_timer.start();
+				}
+			}
+			
+			private function timerTick( event:TimerEvent ):void
+			{
+				if ( _refreshNeedQuery )
+				{
+					queryFeatures();
+				}
+				else
+				{
+					_resultFeatureLayer.refresh();
+				}
+			}
+			
+			private function queryFeatures():void
+			{
+				if ( _queryLayer )
+				{
+					_graphicToResultAttributes = new Dictionary;
+					
+					var query:Query = new Query();
+					query.where = _queryExpr;
+					query.outSpatialReference = map.spatialReference;
+					_queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault));
+					showMessage( _loadingLabel, true );
+					
+					function onResult(featureSet:FeatureSet, token:Object = null):void
+					{
+						try
+						{
+							clearMessage();
+							showMessage( StringUtil.substitute(_featuresFoundLabel, featureSet.features.length ), false );
+							
+							if (!_queryTitleField)
+							{
+								_queryTitleField = featureSet.displayFieldName;
+							}
+							
+							for each (var graphic:Graphic in featureSet.features)
+							{
+								graphic.addEventListener( MouseEvent.MOUSE_OVER, graphic_mouseOverHandler );
+//								graphic.addEventListener( MouseEvent.MOUSE_OUT, graphic_mouseOutHandler );
+								if ( _clickFunctionInfo )
+								{
+									var action:String = _clickFunctionInfo.action;
+									switch( action.toLowerCase() )
+									{
+										case "opendevice":
+											graphic.addEventListener( MouseEvent.CLICK, openDevice_clickHandler );
+											break;
+									}
+								}
+							}
+							_resultFeatureLayer.visible = true;
+							_resultFeatureLayer.featureCollection = new FeatureCollection( featureSet, 
+								_layerDetails );
+						}
+						catch (error:Error)
+						{
+							showMessage(error.message, false);
+						}
+					}
+					
+					function onFault(info:Object, token:Object = null):void
+					{
+						showMessage(info.toString(), false);
+					}
+				}
+			}
+			
+			private function openDevice_clickHandler( event:MouseEvent ):void
+			{
+				var graphic:Graphic = event.currentTarget as Graphic;
+				
+				var type:String = _clickFunctionInfo.type;
+				
+				var idField:String = _clickFunctionInfo.idField;
+				var id:String = graphic.attributes[ idField ];
+				
+				AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
+					{
+						functionName: "openDevice",
+						params: [ type, id ]
+					} 
+				);
+			}
+			
+			private function graphic_mouseOverHandler( event:MouseEvent ):void
+			{
+				var graphic:Graphic = event.currentTarget as Graphic;
+				var centerPt:MapPoint;
+				switch( graphic.geometry.type )
+				{
+					case Geometry.POLYGON:
+					case Geometry.POLYLINE:
+						var localPt:Point = new Point( event.stageX, event.stageY );
+						centerPt = map.toMap( localPt );
+						break;
+					
+					default:
+						centerPt = getGeomCenter( graphic );
+						break;
+				}
+				
+				var popupRenderer:PopUpRenderer = new PopUpRenderer();
+				popupRenderer.graphic = graphic;
+				popupRenderer.popUpInfo = _popUpInfo;
+				switch( _popUpSkinClass )
+				{
+					case "advanced":
+						popupRenderer.setStyle( "skinClass", Class( AdvancedPopUpRendererSkin ) );
+						break;
+					
+					case "ZaKong":
+						popupRenderer.setStyle( "skinClass", Class( ZaKongPopUpRendererSkin ) );
+						break;
+					
+					default:
+						popupRenderer.setStyle( "skinClass", Class( ClassicPopUpRendererSkinWithButtons ) );
+						break;
+				}
+				map.infoWindow.content = popupRenderer;
+				map.infoWindow.contentOwner = popupRenderer.graphic;
+				map.infoWindow.show( centerPt );
+			}
+			
+			private function graphic_clickHandler( event:MouseEvent ):void
+			{
+				
+			}
+			
+			private function graphic_mouseOutHandler( event:MouseEvent ):void
+			{
+				hideInfoWindow();
+			}
+			
+			private function showMessage(msg:String, swfVisible:Boolean):void
+			{
+				txtMessage.text = msg;
+				swfMessage.visible = swfVisible;
+				_msgVisible = true;
+			}
+			
+			private function clearMessage():void
+			{
+				_msgVisible = false;
+			}
+			
+			private function hideInfoWindow():void
+			{
+				if (map.infoWindow.contentOwner &&
+					((map.infoWindow.contentOwner is Graphic && Graphic(map.infoWindow.contentOwner).graphicsLayer === _resultFeatureLayer) || map.infoWindow.contentOwner is Map))
+				{
+					map.infoWindow.hide();
+				}
+			}
+			
+			private function getGeomCenter(gra:Graphic):MapPoint {
+				var pt:MapPoint;
+				switch (gra.geometry.type) {
+					case Geometry.MAPPOINT: {
+						pt = gra.geometry as MapPoint;
+						break;
+					}
+					case Geometry.MULTIPOINT: {
+						const multipoint:Multipoint = gra.geometry as Multipoint;
+						pt = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
+						break;
+					}
+					case Geometry.POLYLINE: {
+						const pl:Polyline = gra.geometry as Polyline;
+						const pathCount:Number = pl.paths.length;
+						const pathIndex:int = pathCount % 2 == 0 || pathCount == 1 ? pathCount / 2 : pathCount / 2 + 1;
+						const midPath:Array = pl.paths[pathIndex];
+						const ptCount:Number = midPath.length;
+						const ptIndex:int = ptCount % 2 == 0 || ptCount == 1 ? ptCount / 2 : ptCount / 2 + 1;
+						pt = pl.getPoint(pathIndex, ptIndex);
+						break;
+					}
+					case Geometry.POLYGON: {
+						const poly:Polygon = gra.geometry as Polygon;
+						pt = poly.extent.center;
+						break;
+					}
+				}
+				return pt;
+			}
+			
+			protected function widgetClosedHandler(event:Event):void
+			{
+				map.removeLayer( _resultFeatureLayer );
+				stopWidgetTimer();
+				hideInfoWindow();
+			}
+			
+			protected function widgetOpenHandler(event:Event):void
+			{
+				if ( _resultFeatureLayer )
+				{
+					map.addLayer( _resultFeatureLayer );
+				}
+				startWidgetTimer();
+			}
+			
+			protected function filterGroupDataGroup_filterOptionChangedHandler(event:Event):void
+			{
+				var finalDefinition:String = "";
+				var finalAllSelected:Boolean = true;
+				
+				for ( var i:uint = 0; i < _filterGroupAC.length; i++ )
+				{
+					var groupObj:Object = _filterGroupAC.getItemAt( i );
+					var groupName:String = groupObj.name;
+					var optionAC:ArrayCollection = groupObj.optionAC;
+					
+					var groupDefinition:String = "";
+					var groupAllSelected:Boolean = true;
+					for ( var j:uint = 0; j < optionAC.length; j++ )
+					{
+						var optionObj:Object = optionAC.getItemAt( j );
+						var typeDesc:String = optionObj.typeDesc;
+						var definition:String = optionObj.definition;
+						var selected:Boolean = optionObj.selected;
+						
+						groupAllSelected = groupAllSelected && selected;
+						
+						if ( selected )
+						{
+							groupDefinition += definition + " or ";
+						}
+					}
+					
+					finalAllSelected = finalAllSelected && groupAllSelected;
+					
+					if ( groupDefinition != "" )
+					{
+						if ( groupAllSelected )
+						{
+							groupDefinition = "1=1";
+						}
+						
+						//去掉最后的or
+						if ( groupDefinition.substring( groupDefinition.length - 4 ) == " or " )
+						{
+							groupDefinition = groupDefinition.substring( 0, groupDefinition.length - 4 );
+						}
+						finalDefinition += "(" + groupDefinition + ")";
+						
+						if ( i != _filterGroupAC.length - 1 )
+						{
+							finalDefinition += " and ";
+						}
+						
+					}
+					
+				}
+				
+				//去掉最后的and
+				if ( finalDefinition.substring( finalDefinition.length - 5 ) == " and " )
+				{
+					finalDefinition = finalDefinition.substring( 0, finalDefinition.length - 5 );
+				}
+				//全部条件都没选中
+				if ( finalDefinition == "" )
+				{
+					showMessage( StringUtil.substitute( _featuresFoundLabel, 0 ), false );
+					_resultFeatureLayer.visible = false;
+				}
+				else
+				{
+					/*if ( finalAllSelected )
+					{
+						finalDefinition = "1=1";
+					}*/
+					trace( finalDefinition );
+					_queryExpr = finalDefinition;
+					queryFeatures();
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<viewer:WidgetTemplate width="300" 
+						   visible="{_widgetVisible}" includeInLayout="{_widgetVisible}" 
+						   closed="widgetClosedHandler(event)" 
+						   open="widgetOpenHandler(event)">
+		<s:VGroup id="container" width="100%" 
+				  paddingLeft="5" paddingRight="5">
+			<s:HGroup id="boxMessage"
+					  width="100%"
+					  includeInLayout="{_msgVisible}"
+					  visible="{_msgVisible}">
+				<mx:Image id="swfMessage"
+						  source="assets/images/loader.swf"
+						  visible="false"/>
+				<s:Label id="txtMessage"
+						 width="90%"
+						 text=""/>
+			</s:HGroup>
+			
+			<LayerSymbolFilter:FilterGroupDataGroup id="filterGroupDataGroup" 
+													width="100%" 
+													dataProvider="{_filterGroupAC}" 
+													filterOptionChanged="filterGroupDataGroup_filterOptionChangedHandler(event)">
+				<LayerSymbolFilter:layout>
+					<s:VerticalLayout/>
+				</LayerSymbolFilter:layout>
+			</LayerSymbolFilter:FilterGroupDataGroup>
+		</s:VGroup>
+		
 		
 	</viewer:WidgetTemplate>
 </viewer:BaseWidget>

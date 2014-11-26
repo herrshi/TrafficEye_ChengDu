@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu/cd_fbd/MapServer/0</layer>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_fbd_201406/MapServer/0</layer>
 	<titlefield>发布段.FBD_NAME</titlefield>
 	<idfield>发布段.FBD_CODE</idfield>
 	<type>FBD</type>
@@ -20,7 +20,7 @@
 		<name></name>
 		<alias></alias>
 	</filterfield>
-	<refreshrate>5</refreshrate>
+	<refreshrate>20</refreshrate>
 	<refreshratetype>发布段图层</refreshratetype>
 	<hinttimeout>0</hinttimeout>
 	<query>1=1</query>

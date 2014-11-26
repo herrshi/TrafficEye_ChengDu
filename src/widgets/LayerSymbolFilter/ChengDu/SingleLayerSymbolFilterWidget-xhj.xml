@@ -1,0 +1,28 @@
+<!--信号机 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device/MapServer/1</layer>
+	
+	<refreshrate>0</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>false</widgetvisible>
+	
+	<popup>
+		<title>{desc_}</title>
+		<fields>
+			<field name="desc_"/>
+			<field name="name" alias="设备编号：" visible="true" />
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>XHJ</type>
+		<idfield>name</idfield>
+	</clickfunction>
+	
+	<simplerenderer>
+		<picturemarkersymbol url="assets/images/device/xhj20.png"/>
+	</simplerenderer>
+</configuration>

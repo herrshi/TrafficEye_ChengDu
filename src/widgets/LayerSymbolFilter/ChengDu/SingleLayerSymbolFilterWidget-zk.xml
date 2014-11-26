@@ -1,0 +1,72 @@
+<!--匝控 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/4</layer>
+	
+	<labels>
+		<featuresfoundlabel>找到的匝控设备: {0}个</featuresfoundlabel>
+	</labels>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>true</widgetvisible>
+	
+	<popupskinclass>ZaKong</popupskinclass>
+	<popup>
+		<title>{匝控.name}</title>
+		<fields>
+			<field name="匝控.name"/>
+			<field name="匝控.deviceid" alias="设备编号：" visible="true"/>
+			<field name="匝控.loction" alias="设备位置：" visible="true"/>
+			<field name="STATE_CH" alias="设备状态：" visible="true"/>
+			<field name="STATE"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+		<buttons>
+			<button label="查看/管控" action="openDevice" type="rcShowCkgk" idfield="id" />
+			<button label="视频监控" action="openDevice" type="rcShowGlYdb" idfield="id" />
+			<button label="综合检测" action="openDevice" type="rcShowGlSpEvent" idfield="id" />
+			<button label="诱导屏" action="openDevice" type="rcShowGlSpCctv" idfield="id" />
+			<button label="事件检测" action="openDevice" type="rcShowGlSpDetector" idfield="id" />
+		</buttons>
+	</popup>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/device/zk-unknown-20-20.png"/>
+		
+		<uniquevalueinfo value="close">
+			<picturemarkersymbol url="assets/images/device/zk-close-20-20.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="">
+			<picturemarkersymbol url="assets/images/device/zk-unknown-20-20.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="unknown">
+			<picturemarkersymbol url="assets/images/device/zk-unknown-20-20.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="disconnect">
+			<picturemarkersymbol url="assets/images/device/zk-unknown-20-20.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="open">
+			<picturemarkersymbol url="assets/images/device/zk-open-20-20.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<filters>
+		<filter>
+			<name>设备状态：</name>
+			<template>STATE = 'REPLACE_STR'</template>
+			<types>close,open,disconnect</types>
+            <type_descs>匝道关闭,匝道开放,设备故障</type_descs>
+		</filter>
+		<filter>
+			<name>设备位置：</name>
+			<template>匝控.type = 'REPLACE_STR'</template>
+			<types>三环,二环路面,二环高架,成温路面,成温高架</types>
+            <type_descs>三环,二环路面,二环高架,成温路面,成温高架</type_descs>
+		</filter>
+	</filters>
+</configuration>

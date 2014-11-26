@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/9</layer>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/9</layer>
 	<titlefield>name</titlefield>
 	<idfield>ID</idfield>
 	<type>JASS</type>

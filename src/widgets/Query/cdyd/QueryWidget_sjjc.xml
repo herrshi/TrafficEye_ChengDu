@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/3</layer>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/3</layer>
 	<titlefield>事件检测.name</titlefield>
 	<idfield>事件检测.ip</idfield>
 	<type>SJJC</type>
@@ -9,8 +9,10 @@
 		<showField name="事件检测.type" alias="设备位置">
 			<field keyvalue="三环" alias="三环" />
 			<field keyvalue="城区隧道" alias="城区隧道" />
-			<field keyvalue="二环桥下" alias="二环地面" />
-			<field keyvalue="二环桥上" alias="二环高架" />
+			<field keyvalue="二环地面" alias="二环地面" />
+			<field keyvalue="二环高架" alias="二环高架" />
+			<field keyvalue="成温高架" alias="成温高架" />
+			<field keyvalue="成温地面" alias="成温地面" />
 			<field keyvalue="2.5环" alias="2.5环" />
 		</showField>
 		<showField name="STATE" alias="设备状态">
@@ -21,8 +23,8 @@
 	<fields all="false">
 		<field name="事件检测.name" alias="设备名称" />
 		<field name="事件检测.deviceid" alias="编号" />
-<!-- 		<field name="事件检测.type" alias="设备位置" /> -->
-<!-- 		<field name="事件检测.location" alias="设备方向" /> -->
+		<field name="事件检测.type" alias="设备位置" />
+		<field name="事件检测.location" alias="设备方向" />
 		<field name="STATE_CH" alias="设备状态" />
 		<field name="事件检测.ip" show="false" />
 		<field name="STATE" show="false" />

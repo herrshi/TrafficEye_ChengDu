@@ -131,11 +131,11 @@
 							{
 								var fieldLabel:Label = new Label();
 								fieldLabel.text = ( fieldInfo.label || fieldInfo.fieldName );
+								fieldLabel.setStyle( "fontWeight", "bold" );
 								fieldLabel.setStyle( "textAlign", "end" );
 								fieldLabel.left = 0;
 								fieldLabel.right = "col1:0";
 								fieldLabel.top = "row" + rowID + ":" + (rowID == 1 ? 5 : 15);
-								fieldLabel.setStyle( "fontWeight", "bold" );
 //								fieldLabel.setStyle( "backgroundColor", getStyle( "selectionColor" ) );
 								keyValueGroup.addElement(fieldLabel);
 								

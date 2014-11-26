@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:LayerSymbolFilter="widgets.LayerSymbolFilter.*" 
+				width="100%"
+				autoDrawBackground="false" 
+				dataChange="this_dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _filterName:String;
+			
+			[Bindable]
+			private var _filterOptionAC:ArrayCollection;
+			
+			protected function this_dataChangeHandler(event:FlexEvent):void
+			{
+				_filterName = data.name;
+				_filterOptionAC = data.optionAC
+			}
+			
+			protected function chkAll_clickHandler(event:MouseEvent):void
+			{
+				for each ( var optionObj:Object in _filterOptionAC )
+				{
+					optionObj.selected = chkAll.selected;
+				}
+				//手动触发ItemRenderer的dataChange事件
+				filterOptionDataGroup.dataProvider = null;
+				filterOptionDataGroup.dataProvider = _filterOptionAC;
+				
+				dispatchEvent( new Event( "filterOptionChanged", true ) );
+			}
+			
+			protected function filterOptionDataGroup_filterOptionClickHandler(event:Event):void
+			{
+//				var optionObj:Object = ItemRenderer( event.target ).data;
+				//判断是否全部选中
+				var allSelected:Boolean = true;
+				for each ( var optionObj:Object in _filterOptionAC )
+				{
+					allSelected = allSelected && optionObj.selected;
+				}
+				chkAll.selected = allSelected;
+				
+				dispatchEvent( new Event( "filterOptionChanged", true ) );
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="80">
+		<s:HGroup width="100%" height="20" verticalAlign="middle">
+			<s:Label text="{_filterName}" fontWeight="bold" fontSize="14"/>
+			<s:CheckBox id="chkAll" label="全部" selected="true" 
+						click="chkAll_clickHandler(event)"/>
+		</s:HGroup>
+		<LayerSymbolFilter:FilterOptionDataGroup id="filterOptionDataGroup" 
+												 width="100%" 
+												 dataProvider="{_filterOptionAC}" 
+												 filterOptionClick="filterOptionDataGroup_filterOptionClickHandler(event)">
+			<LayerSymbolFilter:layout>
+				<s:TileLayout orientation="rows"/>
+			</LayerSymbolFilter:layout>
+		</LayerSymbolFilter:FilterOptionDataGroup>
+	</s:VGroup>
+	
+</s:ItemRenderer>

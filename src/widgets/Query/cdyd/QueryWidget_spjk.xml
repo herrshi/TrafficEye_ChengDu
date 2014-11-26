@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/2</layer>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/2</layer>
 	<titlefield>视频监控.name</titlefield>
 	<idfield>视频监控.channelid</idfield>
 	<type>SPJK</type>
@@ -9,6 +9,7 @@
 		<showField name="视频监控.type" alias="设备位置">
 			<field keyvalue="三环" alias="三环" />
 			<field keyvalue="隧道" alias="隧道" />
+			<field keyvalue="电警关联" alias="电警关联" />
 			<field keyvalue="二环地面" alias="二环地面" />
 			<field keyvalue="二环高架" alias="二环高架" />
 			<field keyvalue="高点" alias="高点" />
@@ -24,7 +25,7 @@
 	<fields all="false">
 		<field name="视频监控.name" alias="设备名称" />
 		<field name="视频监控.deviceid" alias="编号" />
-<!-- 		<field name="视频监控.type" alias="设备位置" /> -->
+		<field name="视频监控.type" alias="设备位置" />
 		<field name="STATE_CH" alias="设备状态" />
 		<field name="视频监控.channelid" show="false" />
 		<field name="STATE" show="false" />
@@ -47,7 +48,6 @@
 		<symbol keyvalue="default" alias="默认">
 			<picturemarkersymbol url="assets\images\device\sxj_gj30_b_err.png"
 				height="12" width="12" />
-			height="16" width="16" />
 		</symbol>
 		<symbol keyvalue="2" alias="设备故障">
 			<picturemarkersymbol url="assets\images\device\sxj_gj30_b_err.png"

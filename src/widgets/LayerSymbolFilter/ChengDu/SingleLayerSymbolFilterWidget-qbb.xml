@@ -1,0 +1,28 @@
+<!--情报板 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device/MapServer/4</layer>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>false</widgetvisible>
+	
+	<popup>
+		<title>{des}</title>
+		<fields>
+			<field name="des"/>
+			<field name="deviceid" alias="设备编号：" visible="true" />
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>QBB</type>
+		<idfield>deviceid</idfield>
+	</clickfunction>
+	
+	<simplerenderer>
+		<picturemarkersymbol url="assets/images/device/qbb20.png"/>
+	</simplerenderer>
+</configuration>

@@ -1,0 +1,65 @@
+<!--事件检测 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/3</layer>
+	
+	<labels>
+		<featuresfoundlabel>找到的事件检测设备: {0}个</featuresfoundlabel>
+	</labels>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>true</widgetvisible>
+	
+	<popupskinclass>classic</popupskinclass>
+	<popup>
+		<title>{事件检测.name}</title>
+		<fields>
+			<field name="事件检测.name"/>
+			<field name="事件检测.deviceid" alias="设备编号：" visible="true"/>
+			<field name="事件检测.type" alias="设备位置：" visible="true"/>
+			<field name="STATE_CH" alias="设备状态：" visible="true"/>
+			<field name="事件检测.location" alias="设备方向：" visible="true"/>
+			<field name="STATE"/>
+			<field name="事件检测.ip"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>SJJC</type>
+		<idfield>事件检测.ip</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/device/dzjc_gj30_b.png"/>
+		
+		<uniquevalueinfo value="0">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj30_b.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="1">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj30.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="2">
+			<picturemarkersymbol url="assets/images/device/dzjc_gj20_y.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<filters>
+		<filter>
+			<name>设备状态：</name>
+			<template>STATE = 'REPLACE_STR'</template>
+			<types>0,1,2</types>
+            <type_descs>未知,设备正常,设备故障</type_descs>
+		</filter>
+		<filter>
+			<name>设备位置：</name>
+			<template>事件检测.type = 'REPLACE_STR'</template>
+			<types>城区隧道,三环,二环地面,二环高架,成温地面,成温高架,2.5环</types>
+            <type_descs>城区隧道,三环,二环地面,二环高架,成温地面,成温高架,2.5环</type_descs>
+		</filter>
+	</filters>
+</configuration>

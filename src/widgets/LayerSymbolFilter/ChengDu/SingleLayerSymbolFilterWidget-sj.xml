@@ -1,0 +1,42 @@
+<!--事件定位 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/6</layer>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>false</widgetvisible>
+	
+	<popup>
+		<title>{事件定位.name}</title>
+		<fields>
+			<field name="事件定位.name"/>
+			<field name="事件定位.deviceid" alias="设备信息：" visible="true" />
+			<field name="STATE_CH" alias="设备状态：" visible="true" />
+			<field name="STATE" show="false" />
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>SJ</type>
+		<idfield>事件定位.deviceid</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/dzjc30_b.png"/>
+		
+		<uniquevalueinfo value="1">
+			<picturemarkersymbol url="assets/images/event/light_green.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="2">
+			<picturemarkersymbol url="assets/images/event/light.swf"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="3">
+			<picturemarkersymbol url="assets/images/event/light_red.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+</configuration>

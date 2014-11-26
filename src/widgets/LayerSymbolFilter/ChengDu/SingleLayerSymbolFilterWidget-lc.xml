@@ -1,0 +1,69 @@
+<!--车道控制 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/8</layer>
+	
+	<labels>
+		<featuresfoundlabel>找到的车道控制设备: {0}个</featuresfoundlabel>
+	</labels>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>true</widgetvisible>
+	
+	<popupskinclass>classic</popupskinclass>
+	<popup>
+		<title>{车道.name}</title>
+		<fields>
+			<field name="车道.name"/>
+			<field name="车道.deviceid" alias="设备编号：" visible="true"/>
+			<field name="车道.location" alias="设备位置：" visible="true"/>
+			<field name="STATE_CH" alias="设备状态：" visible="true"/>
+			<field name="STATE"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>lc</type>
+		<idfield>车道.deviceid</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/device/icon-zdd-unknown-white.png"/>
+		
+		<uniquevalueinfo value="blank">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-black.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="incorrect">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-unknown-yellow.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="partopen">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-open&close.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="allclose">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-close.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="disconnect">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-unknown-white.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="allopen">
+			<picturemarkersymbol url="assets/images/device/icon-zdd-open.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<filters>
+		<filter>
+			<name>设备状态：</name>
+			<template>STATE = 'REPLACE_STR'</template>
+			<types>allopen,allclose,partopen,incorrect,blank,disconnect</types>
+            <type_descs>全部开放,全部关闭,部分关闭,部分正常,黑屏,设备故障</type_descs>
+		</filter>
+	</filters>
+</configuration>

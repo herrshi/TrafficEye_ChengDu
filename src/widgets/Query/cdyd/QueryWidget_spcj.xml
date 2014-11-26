@@ -1,7 +1,7 @@
 ﻿<!--视频采集 -->
 <?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/5</layer>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/5</layer>
 	<titlefield>视频采集.deviceid</titlefield>
 	<idfield>视频采集.ip</idfield>
 	<type>SPCJ</type>
@@ -9,9 +9,12 @@
 	<CheckWindow name="筛选面板" show="true">
 		<showField name="视频采集.type" alias="设备位置">
 			<field keyvalue="三环" alias="三环" />
-			<field keyvalue="二环桥下" alias="二环地面" />
-			<field keyvalue="二环桥上" alias="二环高架" />
+			<field keyvalue="二环地面" alias="二环地面" />
+			<field keyvalue="电警关联" alias="电警关联" />
+			<field keyvalue="二环高架" alias="二环高架" />
 			<field keyvalue="城区" alias="城区" />
+			<field keyvalue="成温地面" alias="成温地面" />
+			<field keyvalue="成温高架" alias="成温高架" />
 			<field keyvalue="2.5环" alias="2.5环" />
 		</showField>
 		<showField name="STATE" alias="设备状态">
@@ -24,7 +27,7 @@
 		<field name="视频采集.name" alias="设备描述" />
 		<field name="视频采集.deviceid" alias="设备编号" />
 		<field name="视频采集.ip" show="false" />
-<!-- 		<field name="视频采集.type" alias="设备位置" /> -->
+		<field name="视频采集.type" alias="设备位置" />
 		<field name="视频采集.location" alias="设备方向" />
 		<field name="STATE_CH" alias="设备状态" />
 		<field name="STATE" show="false" />

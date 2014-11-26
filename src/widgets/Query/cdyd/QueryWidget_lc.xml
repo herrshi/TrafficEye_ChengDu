@@ -1,7 +1,7 @@
 ﻿<!--诱导板 -->
 <?xml version="1.0" ?>
 <configuration>
-	<layer>http://[serverip]/arcgis/rest/services/chengdu_yd/yd_device/MapServer/8</layer>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/8</layer>
 	<titlefield>车道.name</titlefield>
 	<idfield>车道.deviceid</idfield>
 	<type>lc</type>
@@ -59,7 +59,7 @@
 			<picturemarkersymbol url="assets/images/device/icon-zdd-open.png"
 				height="20" width="20" />
 		</symbol>
-		<symbol keyvalue="default" alias="未知">
+		<symbol keyvalue="unknown" alias="未知">
 			<picturemarkersymbol
 				url="assets/images/device/icon-zdd-unknown-white.png" height="20"
 				width="20" />

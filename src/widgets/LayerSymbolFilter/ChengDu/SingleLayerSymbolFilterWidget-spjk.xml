@@ -1,0 +1,64 @@
+<!--视频监控 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/2</layer>
+	
+	<labels>
+		<featuresfoundlabel>找到的视频监控设备: {0}个</featuresfoundlabel>
+	</labels>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>true</widgetvisible>
+	
+	<popupskinclass>classic</popupskinclass>
+	<popup>
+		<title>{视频监控.name}</title>
+		<fields>
+			<field name="视频监控.name"/>
+			<field name="视频监控.deviceid" alias="设备编号：" visible="true"/>
+			<field name="视频监控.type" alias="设备位置：" visible="true"/>
+			<field name="STATE_CH" alias="设备状态：" visible="true"/>
+			<field name="STATE"/>
+			<field name="视频监控.channelid"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>SPJK</type>
+		<idfield>视频监控.channelid</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/device/sxj_gj30_b_err.png"/>
+		
+		<uniquevalueinfo value="0">
+			<picturemarkersymbol url="assets/images/device/sxj_gj30_b_err.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="1">
+			<picturemarkersymbol url="assets/images/device/sxj_dm20_0.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="2">
+			<picturemarkersymbol url="assets/images/device/sxj_gj30_b_err.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<filters>
+		<filter>
+			<name>设备状态：</name>
+			<template>STATE = 'REPLACE_STR'</template>
+			<types>0,1,2</types>
+            <type_descs>未知,设备正常,设备故障</type_descs>
+		</filter>
+		<filter>
+			<name>设备位置：</name>
+			<template>视频监控.type = 'REPLACE_STR'</template>
+			<types>隧道,电警关联,三环,二环地面,二环高架,高点,2.5环</types>
+            <type_descs>隧道,电警关联,三环,二环地面,二环高架,高点,2.5环</type_descs>
+		</filter>
+	</filters>
+</configuration>

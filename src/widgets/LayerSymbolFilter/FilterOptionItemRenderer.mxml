@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				autoDrawBackground="false" 
+				width="100%" 
+				click="this_clickHandler(event)" 
+				dataChange="this_dataChangeHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _checkLabel:String;
+			
+			[Bindable]
+			private var _checkSelected:Boolean;
+			
+			protected function this_clickHandler(event:MouseEvent):void
+			{
+				data.selected = chkOption.selected;
+				dispatchEvent( new Event( "filterOptionClick", true ) );
+			}
+			
+			protected function this_dataChangeHandler(event:FlexEvent):void
+			{
+				chkOption.label = data.typeDesc;
+				chkOption.selected = data.selected;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:CheckBox id="chkOption"/>
+</s:ItemRenderer>

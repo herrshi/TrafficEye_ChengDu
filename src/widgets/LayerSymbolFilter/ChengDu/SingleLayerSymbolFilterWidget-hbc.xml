@@ -1,0 +1,30 @@
+<!--黄标车 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/7</layer>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>false</widgetvisible>
+	
+	<popup>
+		<title>{黄标车.name}</title>
+		<fields>
+			<field name="黄标车.name"/>
+			<field name="黄标车.deviceid" alias="设备编号：" visible="true" />
+			<field name="STATE"/>
+			<field name="CASEID"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>HPC</type>
+		<idfield>CASEID</idfield>
+	</clickfunction>
+	
+	<simplerenderer>
+		<picturemarkersymbol url="assets/images/event/case_sj_r.swf"/>
+	</simplerenderer>
+</configuration>

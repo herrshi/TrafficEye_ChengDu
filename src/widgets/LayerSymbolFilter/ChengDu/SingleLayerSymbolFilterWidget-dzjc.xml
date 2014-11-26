@@ -1,0 +1,50 @@
+<!--电子警察 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/201406chengdu/cd_device_201406/MapServer/1</layer>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>false</widgetvisible>
+	
+	<popup>
+		<title>{电子警察.name}</title>
+		<fields>
+			<field name="电子警察.name"/>
+			<field name="电子警察.deviceid" alias="设备编号：" visible="true" />
+			<field name="STATE_CH" alias="设备状态：" visible="true" />
+			<field name="STATE"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>DZJC</type>
+		<idfield>电子警察.deviceid</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="STATE">
+		<picturemarkersymbol url="assets/images/dzjc30_b.png"/>
+		
+		<uniquevalueinfo value="close">
+			<picturemarkersymbol url="assets/images/dzjc30.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="">
+			<picturemarkersymbol url="assets/images/dzjc30_b.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="unknown">
+			<picturemarkersymbol url="assets/images/dzjc30_b.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="disconnect">
+			<picturemarkersymbol url="assets/images/device/zk-unknown-20-20.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="open">
+			<picturemarkersymbol url="assets/images/dzjc30_r.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+</configuration>

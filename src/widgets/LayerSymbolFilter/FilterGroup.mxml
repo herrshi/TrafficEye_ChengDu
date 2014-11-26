@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:LayerSymbolFilter="widgets.LayerSymbolFilter.*"
+		  width="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			[Bindable]
+			private var _filterName:String = "";
+
+			public function get filterName():String
+			{
+				return _filterName;
+			}
+
+			public function set filterName(value:String):void
+			{
+				_filterName = value;
+			}
+			
+			[Bindable]
+			private var _filterOptionAC:ArrayCollection;
+			
+			public function get filterOptionAC():ArrayCollection
+			{
+				return _filterOptionAC;
+			}
+			
+			public function set filterOptionAC(value:ArrayCollection):void
+			{
+				_filterOptionAC = value;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="20" verticalAlign="middle">
+		<s:Label text="{_filterName}"/>
+		<s:CheckBox label="全部"/>
+	</s:HGroup>
+	<LayerSymbolFilter:FilterOptionDataGroup width="100%" dataProvider="{_filterOptionAC}">
+		<LayerSymbolFilter:layout>
+			<s:TileLayout orientation="rows"/>
+		</LayerSymbolFilter:layout>
+	</LayerSymbolFilter:FilterOptionDataGroup>
+</s:VGroup>

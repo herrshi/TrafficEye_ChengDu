@@ -1,0 +1,63 @@
+<!--诱导板 -->
+<configuration>
+	<layer>http://[serverip]/arcgis/rest/services/cd_device_0609/MapServer/0</layer>
+	
+	<labels>
+		<featuresfoundlabel>找到的诱导板: {0}个</featuresfoundlabel>
+	</labels>
+	
+	<refreshrate>30</refreshrate>
+	<refreshneedquery>false</refreshneedquery>
+	
+	<widgetvisible>true</widgetvisible>
+	
+	<popupskinclass>classic</popupskinclass>
+	<popup>
+		<title>{诱导板.name}</title>
+		<fields>
+			<field name="诱导板.name"/>
+			<field name="诱导板.deviceid" alias="设备编号：" visible="true"/>
+			<field name="诱导板.type" alias="设备位置：" visible="true"/>
+			<field name="STATE_CH" alias="设备状态：" visible="true"/>
+			<field name="FSTR_STATE"/>
+		</fields>
+		<showzoomtobutton>false</showzoomtobutton>
+	</popup>
+	
+	<clickfunction>
+		<action>openDevice</action>
+		<type>YDB</type>
+		<idfield>诱导板.deviceid</idfield>
+	</clickfunction>
+	
+	<uniquevaluerenderer field="FSTR_STATE">
+		<picturemarkersymbol url="assets/images/device/ydb-b-30.png"/>
+		
+		<uniquevalueinfo value="connect">
+			<picturemarkersymbol url="assets/images/device/ydb-30.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="disconnect">
+			<picturemarkersymbol url="assets/images/device/ydb-b-30.png"/>
+		</uniquevalueinfo>
+		
+		<uniquevalueinfo value="">
+			<picturemarkersymbol url="assets/images/device/ydb-b-30.png"/>
+		</uniquevalueinfo>
+	</uniquevaluerenderer>
+	
+	<filters>
+		<filter>
+			<name>设备状态：</name>
+			<template>FSTR_STATE = 'REPLACE_STR'</template>
+			<types>connect,disconnect</types>
+            <type_descs>设备正常,设备故障</type_descs>
+		</filter>
+		<filter>
+			<name>设备位置：</name>
+			<template>诱导板.type = 'REPLACE_STR'</template>
+			<types>三环,成温路面,成温高架,二环路面,二环高架,红星射线,城区</types>
+            <type_descs>三环,成温路面,成温高架,二环路面,二环高架,红星射线,城区</type_descs>
+		</filter>
+	</filters>
+</configuration>
