@@ -23,11 +23,11 @@
 		</fields>
 		<showzoomtobutton>false</showzoomtobutton>
 		<buttons>
-			<button label="查看/管控" action="openDevice" type="rcShowCkgk" idfield="id" />
-			<button label="视频监控" action="openDevice" type="rcShowGlYdb" idfield="id" />
-			<button label="综合检测" action="openDevice" type="rcShowGlSpEvent" idfield="id" />
-			<button label="诱导屏" action="openDevice" type="rcShowGlSpCctv" idfield="id" />
-			<button label="事件检测" action="openDevice" type="rcShowGlSpDetector" idfield="id" />
+			<button label="查看/管控" action="openDevice" type="rcShowCkgk" idfield="匝控.deviceid" />
+			<button label="视频监控" action="openDevice" type="rcShowGlYdb" idfield="匝控.deviceid" />
+			<button label="综合检测" action="openDevice" type="rcShowGlSpEvent" idfield="匝控.deviceid" />
+			<button label="诱导屏" action="openDevice" type="rcShowGlSpCctv" idfield="匝控.deviceid" />
+			<button label="事件检测" action="openDevice" type="rcShowGlSpDetector" idfield="匝控.deviceid" />
 		</buttons>
 	</popup>
 	

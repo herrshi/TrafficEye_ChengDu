@@ -22,7 +22,6 @@
 			import com.esri.ags.utils.StringUtil;
 			import com.esri.viewer.AppEvent;
 			import com.esri.viewer.components.PopUpInfoWithButtons;
-			import com.esri.viewer.skins.btSkin;
 			
 			import mx.containers.utilityClasses.ConstraintRow;
 			import mx.events.FlexEvent;
@@ -37,10 +36,6 @@
 			import flashx.textLayout.formats.TextDecoration;
 			import flashx.textLayout.formats.TextLayoutFormat;
 			import flashx.textLayout.formats.WhiteSpaceCollapse;
-			
-			
-			
-			
 			
 			
 			private var _textLayoutConfiguration:Configuration;
@@ -173,7 +168,7 @@
 					if ( _buttonArray && _buttonArray.length > 0 )
 					{
 						footer.addElement( naviContainer );
-						//						footerLine.includeInLayout = footerLine.visible = true;
+//						footerLine.includeInLayout = footerLine.visible = true;
 						for each ( var buttonObj:Object in _buttonArray )
 						{
 							var label:String = buttonObj.label;
@@ -214,6 +209,7 @@
 								var checkBox:CheckBox = new CheckBox();
 								checkBox.label = label;
 								checkBox.id = id;
+								checkBox.selected = buttonObj.selected || false;
 								switch( action.toLowerCase() )
 								{
 									case "opendevice":
@@ -256,10 +252,11 @@
 				{
 					if ( buttonObj.label == buttonLabel )
 					{
+						buttonObj.selected = checkbox.selected;
 						AppEvent.dispatch( AppEvent.EXTERNAL_CALL, 
 							{
 								functionName: "openDevice",
-								params: [ buttonObj.type, checkbox.id ]
+								params: [ buttonObj.type, checkbox.id + "," + checkbox.selected ]
 							} 
 						);
 						break;
